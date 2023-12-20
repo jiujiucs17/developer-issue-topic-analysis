@@ -1,0 +1,564 @@
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+A simple sample of Location Attention uses gigabytes of memory after 1000 iterations to store backward information. Using a similar attention model for audio generation, where 10 seconds of audio is approximately 800 iterations.
+My investigation has led me to find that adding detach stems the problem; therefore, the memory consumed is due to gradient data. It is not clear to me how an alignment of size [64, 128] grows to 11 gigabytes of memory. An LSTM, a much more complicated unit, does not use this much memory after so many iterations.
+Posted a sister thread here: https://discuss.pytorch.org/t/location-model-memory-growth/17304
+Code example
+
+System Info
+PyTorch version: 0.4.0
+Is debug build: No
+CUDA used to build PyTorch: 9.0.176
+OS: Ubuntu 16.04.4 LTS
+GCC version: (Ubuntu 5.4.0-6ubuntu1~16.04.9) 5.4.0 20160609
+CMake version: version 3.5.1
+Python version: 3.6
+Is CUDA available: Yes
+CUDA runtime version: 9.0.176
+GPU models and configuration: GPU 0: GeForce GTX 1080 Ti
+Nvidia driver version: 390.30
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.6.0.21
+/usr/lib/x86_64-linux-gnu/libcudnn.so.7.0.5
+/usr/local/lib/python2.7/dist-packages/torch/lib/libcudnn-7a90c013.so.7.0.5
+/usr/local/lib/python3.5/dist-packages/torch/lib/libcudnn-3f9a723f.so.6.0.21
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Encountered a ZeroDivisionError on torch.compile mode. And there was no bug  triggered on eagermode.
+
+error trace:
+
+
+Versions
+PyTorch version: 2.2.0.dev20231023+cu118
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 22.04.3 LTS (x86_64)
+GCC version: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
+Clang version: Could not collect
+CMake version: version 3.22.1
+Libc version: glibc-2.35
+Python version: 3.9.18 (main, Sep 11 2023, 13:41:44) [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-86-generic-x86_64-with-glibc2.35
+Is CUDA available: True
+CUDA runtime version: 12.1.105
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration:
+GPU 0: NVIDIA GeForce RTX 2070
+GPU 1: NVIDIA GeForce RTX 2070
+GPU 2: NVIDIA GeForce RTX 2070
+GPU 3: NVIDIA GeForce RTX 2070
+Nvidia driver version: 535.104.12
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture: x86_64
+CPU op-mode(s): 32-bit, 64-bit
+Address sizes: 46 bits physical, 48 bits virtual
+Byte Order: Little Endian
+CPU(s): 32
+On-line CPU(s) list: 0-31
+Vendor ID: GenuineIntel
+Model name: Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz
+CPU family: 6
+Model: 63
+Thread(s) per core: 2
+Core(s) per socket: 8
+Socket(s): 2
+Stepping: 2
+CPU max MHz: 3200.0000
+CPU min MHz: 1200.0000
+BogoMIPS: 4794.64
+Flags: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm cpuid_fault epb invpcid_single pti ssbd ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm xsaveopt cqm_llc cqm_occup_llc dtherm ida arat pln pts md_clear flush_l1d
+Virtualization: VT-x
+L1d cache: 512 KiB (16 instances)
+L1i cache: 512 KiB (16 instances)
+L2 cache: 4 MiB (16 instances)
+L3 cache: 40 MiB (2 instances)
+NUMA node(s): 2
+NUMA node0 CPU(s): 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30
+NUMA node1 CPU(s): 1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31
+Vulnerability Gather data sampling: Not affected
+Vulnerability Itlb multihit: KVM: Mitigation: VMX disabled
+Vulnerability L1tf: Mitigation; PTE Inversion; VMX conditional cache flushes, SMT vulnerable
+Vulnerability Mds: Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Meltdown: Mitigation; PTI
+Vulnerability Mmio stale data: Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Retbleed: Not affected
+Vulnerability Spec rstack overflow: Not affected
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1: Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2: Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP conditional, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds: Not affected
+Vulnerability Tsx async abort: Not affected
+Versions of relevant libraries:
+[pip3] numpy==1.26.1
+[pip3] pytorch-triton==2.1.0+6e4932cda8
+[pip3] torch==2.2.0.dev20231023+cu118
+[pip3] torchaudio==2.2.0.dev20231023+cu118
+[pip3] torchvision==0.17.0.dev20231023+cu118
+[conda] cudatoolkit 11.8.0 h6a678d5_0 defaults
+[conda] numpy 1.26.1 pypi_0 pypi
+[conda] pytorch-triton 2.1.0+6e4932cda8 pypi_0 pypi
+[conda] torch 2.2.0.dev20231023+cu118 pypi_0 pypi
+[conda] torchaudio 2.2.0.dev20231023+cu118 pypi_0 pypi
+[conda] torchvision 0.17.0.dev20231023+cu118 pypi_0 pypi
+cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @zou3519 @voznesenskym @penguinwu @EikanWang @jgong5 @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @wenzhe-nrv @jiayisunx @peterbell10 @ipiszy @yf225 @chenyang78 @kadeng @muchulee8 @aakhundov @ColinPeppler
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+(Most?) torch.distributions' cdf and log_prob work for inputs that are either torch.Tensors or native python floats. However, torch.distributions.uniform.Uniform.log_prob() fails for python-float inputs.
+To Reproduce
+Steps to reproduce the behavior:
+
+Expected behavior
+Either one of the following:
+
+cdf,  icdf and log_prob fail consistently for native python inputs across all distributions
+torch.distributions.Uniform.log_prob returns correct log_probability when given native python inputs.
+
+Environment
+Collecting environment information...
+PyTorch version: 1.1.0
+Is debug build: No
+CUDA used to build PyTorch: 10.0.130
+OS: Ubuntu 18.04.2 LTS
+GCC version: (Ubuntu 7.4.0-1ubuntu1~18.04.1) 7.4.0
+CMake version: version 3.10.2
+Python version: 3.7
+Is CUDA available: Yes
+CUDA runtime version: Could not collect
+GPU models and configuration:
+GPU 0: GeForce RTX 2080 Ti
+GPU 1: GeForce RTX 2080 Ti
+GPU 2: GeForce RTX 2080 Ti
+GPU 3: GeForce RTX 2080 Ti
+GPU 4: GeForce RTX 2080 Ti
+GPU 5: GeForce RTX 2080 Ti
+GPU 6: GeForce RTX 2080 Ti
+GPU 7: GeForce RTX 2080 Ti
+Nvidia driver version: 430.26
+cuDNN version: Could not collect
+Versions of relevant libraries:
+[pip] numpy==1.16.4
+[pip] torch==1.1.0
+[pip] torchvision==0.3.0
+[conda] blas                      1.0                         mkl
+[conda] mkl                       2019.4                      243
+[conda] mkl_fft                   1.0.12           py37ha843d7b_0
+[conda] mkl_random                1.0.2            py37hd81dba3_0
+[conda] pytorch                   1.1.0           py3.7_cuda10.0.130_cudnn7.5.1_0    pytorch
+[conda] torchvision               0.3.0           py37_cu10.0.130_1    pytorch
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+I implemented functions to perform a cholesky update via PyTorch and hoped for better execution times by utilizing the jit decorator. Unfortunately, then the result of the cholesky update is not longer correct. However, while debugging I realized that I am able to get the correct result when using a print-statement within the update function.
+To Reproduce
+
+Executing the code without the print-statement in cholupdate leads to the following wrong result:
+
+Uncommenting the print-statement fixes the issue and the function output is correct:
+
+Expected behavior
+The print-statement should not have any impact on the output of cholupdate, which should always produce the correct result.
+Environment
+Collecting environment information...
+PyTorch version: 1.0.1
+Is debug build: No
+CUDA used to build PyTorch: 9.0.176
+OS: Ubuntu 18.04.2 LTS
+GCC version: (Ubuntu 7.4.0-1ubuntu1~18.04.1) 7.4.0
+CMake version: Could not collect
+Python version: 3.7
+Is CUDA available: Yes
+CUDA runtime version: 9.0.176
+GPU models and configuration: GPU 0: GeForce GTX 1080 Ti
+Nvidia driver version: 390.116
+cuDNN version: Could not collect
+Versions of relevant libraries:
+[pip3] numpy==1.16.2
+[pip3] numpydoc==0.8.0
+[pip3] torch==1.0.1
+[pip3] torchvision==0.2.1
+[conda] blas                      1.0                         mkl
+[conda] mkl                       2019.3                      199
+[conda] mkl-service               1.1.2            py37he904b0f_5
+[conda] mkl_fft                   1.0.10           py37ha843d7b_0
+[conda] mkl_random                1.0.2            py37hd81dba3_0
+[conda] pytorch                   1.0.1           cuda90py37h8b0c50b_0
+[conda] torchvision               0.2.1                      py_2    pytorch
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Similarly than bug #12284 but with an instance of Adam optimizer.
+The stored file and gpu memory usage grow very quick.
+Expected behavior
+No memory increase.
+Environment
+Collecting environment information...
+PyTorch version: 1.0.0a0
+Is debug build: No
+CUDA used to build PyTorch: 9.0.176
+OS: Ubuntu 16.04.5 LTS
+GCC version: (GCC) 8.2.0
+CMake version: version 3.12.0
+Python version: 3.5
+Is CUDA available: Yes
+CUDA runtime version: 9.0.176
+GPU models and configuration: GPU 0: GeForce GTX 1070
+Nvidia driver version: 396.54
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.7.3.1
+/usr/lib/x86_64-linux-gnu/libcudnn_static_v7.a
+Versions of relevant libraries:
+[pip] Could not collect
+[conda] Could not collect
+Additional context
+Note that I have the patch of bug #12284. This seem to be a similar but disjoint bug.
+cc @yf225 @glaringlee @vincentqb
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+When I use nn.DataParallel, nn.Module.parameters() returns a generator which yields nothing.
+This breaks Residual Flow (link to the code where nn.Module.parameters() has been used) because the custom torch.autograd.Function depends on nn.Module.parameters() to implement a memory-efficient backward routine.
+I've attached below a minimal reproducing example. This must be run on a multi-GPU machine for reproduction. To verify the issue is indeed related with nn.DataParallel, change the line with use_dataparallel = True to use_dataparallel = False.
+
+When 2 GPUs are allocated for the script (with CUDA_VISIBLE_DEVICES), with use_dataparallel = True the script prints the following,
+
+instead of printing the following.
+
+In contrast, with use_dataparallel = False the script prints the following.
+
+Versions
+It's broken with PyTorch 1.11.0, but it seems like the Residual Flow code had worked with previous PyTorch versions in multi-GPU settings. I didn't test the minimal reproducing example with previous PyTorch versions.
+Collecting environment information...
+PyTorch version: 1.11.0
+Is debug build: False
+CUDA used to build PyTorch: 11.3
+ROCM used to build PyTorch: N/A
+
+OS: Ubuntu 18.04.5 LTS (x86_64)
+GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+Clang version: Could not collect
+CMake version: version 3.10.Libc version: glibc-2.27
+
+Python version: 3.9.7 (default, Sep 16 2021, 13:09:58)  [GCC 7.5.0] (64-bit runtime)
+Python platform: Linux-4.15.0-140-generic-x86_64-with-glibc2.27
+Is CUDA available: True
+CUDA runtime version: 11.1.105
+GPU models and configuration: 
+GPU 0: GeForce RTX 3090
+GPU 1: GeForce RTX 3090
+GPU 2: GeForce RTX 3090
+GPU 3: GeForce RTX 3090
+GPU 4: GeForce RTX 3090
+GPU 5: GeForce RTX 3090
+GPU 6: GeForce RTX 3090
+GPU 7: GeForce RTX 3090
+
+Nvidia driver version: 460.39
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.0./usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.0./usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.0./usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.0./usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.0./usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.0./usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.0./usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn.so.8.0./usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.0./usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.0./usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.0./usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.0./usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.0./usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.0.HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+
+Versions of relevant libraries:
+[pip3] numpy==1.21.[pip3] torch==1.11.0
+[pip3] torchaudio==0.11.0
+[pip3] torchvision==0.12.0
+[conda] blas                      1.0                         mkl  
+[conda] cudatoolkit               11.3.1               h2bc3f7f_2  
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] mkl                       2021.4.0           h06a4308_640  
+[conda] mkl-service               2.4.0            py39h7f8727e_0  
+[conda] mkl_fft                   1.3.1            py39hd3c417c_0  
+[conda] mkl_random                1.2.2            py39h51133e4_0  
+[conda] numpy                     1.21.2           py39h20f2e39_0  
+[conda] numpy-base                1.21.2           py39h79a1101_0  
+[conda] pytorch                   1.11.0          py3.9_cuda11.3_cudnn8.2.0_0    pytorch
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torchaudio                0.11.0               py39_cu113    pytorch
+[conda] torchvision               0.12.0               py39_cu113    pytorch
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Different outputs of special_bessel_y0 between eager mode and default torch.compile mode were observed. It is worth noting that fn is a sequence consisted of three APIs and the there was no error if we comment out special_beseel_y0.
+FYI, the issue still exist in device = 'cuda'.
+
+error trace:
+
+Versions
+Collecting environment information...
+PyTorch version: 2.2.0.dev20231105+cu118
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 22.04.3 LTS (x86_64)
+GCC version: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
+Clang version: Could not collect
+CMake version: version 3.22.1
+Libc version: glibc-2.35
+Python version: 3.9.18 (main, Sep 11 2023, 13:41:44)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-86-generic-x86_64-with-glibc2.35
+Is CUDA available: True
+CUDA runtime version: 12.1.105
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration:
+GPU 0: NVIDIA GeForce RTX 2070
+GPU 1: NVIDIA GeForce RTX 2070
+GPU 2: NVIDIA GeForce RTX 2070
+GPU 3: NVIDIA GeForce RTX 2070
+Nvidia driver version: 535.104.12
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                       x86_64
+CPU op-mode(s):                     32-bit, 64-bit
+Address sizes:                      46 bits physical, 48 bits virtual
+Byte Order:                         Little Endian
+CPU(s):                             32
+On-line CPU(s) list:                0-31
+Vendor ID:                          GenuineIntel
+Model name:                         Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz
+CPU family:                         6
+Model:                              63
+Thread(s) per core:                 2
+Core(s) per socket:                 8
+Socket(s):                          2
+Stepping:                           2
+CPU max MHz:                        3200.0000
+CPU min MHz:                        1200.0000
+BogoMIPS:                           4794.64
+Flags:                              fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm cpuid_fault epb invpcid_single pti ssbd ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm xsaveopt cqm_llc cqm_occup_llc dtherm ida arat pln pts md_clear flush_l1d
+Virtualization:                     VT-x
+L1d cache:                          512 KiB (16 instances)
+L1i cache:                          512 KiB (16 instances)
+L2 cache:                           4 MiB (16 instances)
+L3 cache:                           40 MiB (2 instances)
+NUMA node(s):                       2
+NUMA node0 CPU(s):                  0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30
+NUMA node1 CPU(s):                  1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31
+Vulnerability Gather data sampling: Not affected
+Vulnerability Itlb multihit:        KVM: Mitigation: VMX disabled
+Vulnerability L1tf:                 Mitigation; PTE Inversion; VMX conditional cache flushes, SMT vulnerable
+Vulnerability Mds:                  Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Meltdown:             Mitigation; PTI
+Vulnerability Mmio stale data:      Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Retbleed:             Not affected
+Vulnerability Spec rstack overflow: Not affected
+Vulnerability Spec store bypass:    Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1:           Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:           Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP conditional, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds:                Not affected
+Vulnerability Tsx async abort:      Not affected
+Versions of relevant libraries:
+[pip3] numpy==1.26.1
+[pip3] pytorch-triton==2.1.0+6e4932cda8
+[pip3] torch==2.2.0.dev20231105+cu118
+[pip3] torchaudio==2.2.0.dev20231105+cu118
+[pip3] torchvision==0.17.0.dev20231105+cu118
+[conda] cudatoolkit               11.8.0               h6a678d5_0    defaults
+[conda] numpy                     1.26.1                   pypi_0    pypi
+[conda] pytorch-triton            2.1.0+6e4932cda8          pypi_0    pypi
+[conda] torch                     2.2.0.dev20231105+cu118          pypi_0    pypi
+[conda] torchaudio                2.2.0.dev20231105+cu118          pypi_0    pypi
+[conda] torchvision               0.17.0.dev20231105+cu118          pypi_0    pypi
+cc @ezyang @gchanan @zou3519 @kadeng @msaroufim @wconstab @bdhirsh @anijain2305
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+The number of calls reported by the profiler to different functions doesn't have the same total when you change how the profiler results are printed.
+Example: running the script
+
+the aten::empty function is called 319 times, with the following lines found by grep:
+
+However, if we change group_by_stack_n to 4, it's only called 47 times!
+The output is longer here, so you may find it helpful to use a line like
+
+but examining by eye should show that it's clearly far less than 300.
+Versions
+Collecting environment information...
+PyTorch version: 1.13.0a0+git4b3f1bd
+Is debug build: False
+CUDA used to build PyTorch: 11.6
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.1 LTS (x86_64)
+GCC version: (Ubuntu 9.3.0-10ubuntu2) 9.3.0
+Clang version: Could not collect
+CMake version: version 3.16.3
+Libc version: glibc-2.31
+Python version: 3.8.5 (default, Jul 28 2020, 12:59:40)  [GCC 9.3.0] (64-bit runtime)
+Python platform: Linux-5.4.0-47-generic-x86_64-with-glibc2.29
+Is CUDA available: True
+CUDA runtime version: 11.6.124
+GPU models and configuration:
+GPU 0: NVIDIA GeForce RTX 2080 Ti
+GPU 1: NVIDIA GeForce RTX 2080 Ti
+GPU 2: NVIDIA GeForce RTX 2080 Ti
+GPU 3: NVIDIA GeForce RTX 2080 Ti
+GPU 4: NVIDIA GeForce RTX 2080 Ti
+GPU 5: NVIDIA GeForce RTX 2080 Ti
+GPU 6: NVIDIA GeForce RTX 2080 Ti
+GPU 7: NVIDIA GeForce RTX 2080 Ti
+Nvidia driver version: 510.73.05
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.7.6.5
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.0.4
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.0.4
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.0.4
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.0.4
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.0.4
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.0.4
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.0.4
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.23.2
+[pip3] torch==1.13.0a0+git4b3f1bd
+[pip3] torchvision==0.14.0a0+9c3e2bf
+[conda] Could not collect
+cc @robieta @chaekit @aaronenyeshi @ngimel @nbcsm @guotuofeng @guyang3532 @gaoteng-git @tiffzhaofb
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I found the online evaluation results (evaluate when training) of my model did not match perfectly with the offline evaluation results (evaluate the saved checkpoint). After rounds of checking, a strange phenomenon appeared, that is, the computation results of the same conv2d function on CPU and GPU do not match. Here is an example.
+Codes:
+
+Output results:
+
+It seems like there is a large difference between the results computed on CPU and GPU. Is it acceptable?
+Versions
+Collecting environment information...
+PyTorch version: 1.6.0
+Is debug build: False
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 16.04.1 LTS (x86_64)
+GCC version: (Ubuntu 5.4.0-6ubuntu1~16.04.1) 5.4.0 20160609
+Clang version: Could not collect
+CMake version: Could not collect
+Libc version: glibc-2.9
+Python version: 3.6.10 |Anaconda, Inc.| (default, May  8 2020, 02:54:21)  [GCC 7.3.0] (64-bit runtime)
+Python platform: Linux-4.4.0-31-generic-x86_64-with-debian-stretch-sid
+Is CUDA available: True
+CUDA runtime version: Could not collect
+GPU models and configuration:
+GPU 0: GeForce RTX 2080 Ti
+GPU 1: GeForce RTX 2080 Ti
+GPU 2: GeForce RTX 2080 Ti
+GPU 3: GeForce RTX 2080 Ti
+GPU 4: GeForce RTX 2080 Ti
+GPU 5: GeForce RTX 2080 Ti
+GPU 6: GeForce RTX 2080 Ti
+GPU 7: GeForce RTX 2080 Ti
+Nvidia driver version: 460.67
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.19.1
+[pip3] torch==1.6.0
+[pip3] torch-geometric==1.6.2
+[pip3] torchcam==0.1.2
+[pip3] torchcontrib==0.0.2
+[pip3] torchsummary==1.5.1
+[pip3] torchvision==0.7.0
+[conda] blas                      1.0                         mkl    defaults
+[conda] cudatoolkit               10.2.89              hfd86e86_1    defaults
+[conda] mkl                       2020.2                      256    defaults
+[conda] mkl-service               2.3.0            py36he904b0f_0    defaults
+[conda] mkl_fft                   1.1.0            py36h23d657b_0    defaults
+[conda] mkl_random                1.1.1            py36h0573a6f_0    defaults
+[conda] numpy                     1.19.1           py36hbc911f0_0    defaults
+[conda] numpy-base                1.19.1           py36hfa32c7d_0    defaults
+[conda] pytorch                   1.6.0           py3.6_cuda10.2.89_cudnn7.6.5_0    https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch
+[conda] torch-geometric           1.6.2                    pypi_0    pypi
+[conda] torchcam                  0.1.2                    pypi_0    pypi
+[conda] torchcontrib              0.0.2                    pypi_0    pypi
+[conda] torchsummary              1.5.1                    pypi_0    pypi
+[conda] torchvision               0.7.0                py36_cu102    https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+When trying to run multi-GPU training using amp, I notice that training sometimes freezes. The GPUs have one of the two following stack traces:
+Current thread 0x00007f4aed99f740 (most recent call first):
+File "/home/hturki/miniconda3/envs/my-env/lib/python3.9/site-packages/torch/cuda/amp/grad_scaler.py", line 284 in 
+File "/home/hturki/miniconda3/envs/my-env/lib/python3.9/site-packages/torch/cuda/amp/grad_scaler.py", line 284 in _maybe_opt_step
+File "/home/hturki/miniconda3/envs/my-env/lib/python3.9/site-packages/torch/cuda/amp/grad_scaler.py", line 338 in step
+Current thread 0x00007f0a91baa740 (most recent call first):
+File "/data/hturki/my_code/models/my_model.py", line 28 in forward
+File "/home/hturki/miniconda3/envs/my-env/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1102 in _call_impl
+File "/home/hturki/miniconda3/envs/my-env/lib/python3.9/site-packages/torch/nn/parallel/distributed.py", line 886 in forward
+File "/home/hturki/miniconda3/envs/my-env/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1102 in _call_impl
+To Reproduce
+I'm having a hard time pinning a non-data-dependent repro, but my training code looks something like:
+
+And my model code is:
+
+Expected behavior
+I feel like this is likely due to user error, but it would be great to have a more informative description of what's incorrect vs things silently hanging indefinitely.
+Environment
+PyTorch version: 1.10.0
+Is debug build: False
+CUDA used to build PyTorch: 11.3
+ROCM used to build PyTorch: N/A
+OS: CentOS Linux 7 (Core) (x86_64)
+GCC version: (GCC) 8.4.0
+Clang version: Could not collect
+CMake version: version 2.8.12.2
+Libc version: glibc-2.17
+Python version: 3.9.7 (default, Sep 16 2021, 13:09:58)  [GCC 7.5.0] (64-bit runtime)
+Python platform: Linux-3.10.0-957.1.3.el7.x86_64-x86_64-with-glibc2.17
+Is CUDA available: True
+CUDA runtime version: Could not collect
+GPU models and configuration:
+GPU 0: GeForce RTX 2080 Ti
+GPU 1: GeForce RTX 2080 Ti
+GPU 2: GeForce RTX 2080 Ti
+GPU 3: GeForce RTX 2080 Ti
+GPU 4: GeForce RTX 2080 Ti
+GPU 5: GeForce RTX 2080 Ti
+GPU 6: GeForce RTX 2080 Ti
+GPU 7: GeForce RTX 2080 Ti
+GPU 8: GeForce RTX 2080 Ti
+GPU 9: GeForce RTX 2080 Ti
+Nvidia driver version: 455.38
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.21.2
+[pip3] torch==1.10.0
+[pip3] torchvision==0.11.1
+[conda] blas                      1.0                         mkl
+[conda] cudatoolkit               11.3.1               h2bc3f7f_2
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] mkl                       2021.4.0           h06a4308_640
+[conda] mkl-service               2.4.0            py39h7f8727e_0
+[conda] mkl_fft                   1.3.1            py39hd3c417c_0
+[conda] mkl_random                1.2.2            py39h51133e4_0
+[conda] numpy                     1.21.2           py39h20f2e39_0
+[conda] numpy-base                1.21.2           py39h79a1101_0
+[conda] pytorch                   1.10.0          py3.9_cuda11.3_cudnn8.2.0_0    pytorch
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torchvision               0.11.1               py39_cu113    pytorch
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @SciPioneer @H-Huang @ngimel @mcarilli @ptrblck
+

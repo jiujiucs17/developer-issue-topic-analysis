@@ -1,0 +1,978 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+``
+ 
+`import torch
+class TestSig(torch.nn.Module):
+def init(self):
+super().init()
+def forward(self, x):
+return torch.sigmoid(x)
+torch._dynamo.config.verbose=True
+opt_cpu = torch.compile(TestSig())
+print("cpu:", opt_cpu(torch.randn(1)))
+cuda_eager = TestSig().cuda()
+print("cuda eager:", cuda_eager(torch.randn(1).cuda()))
+opt_cuda = torch.compile(TestSig()).cuda() #torch.compile(TestSig().cuda()) also fails
+print("cuda opt:", opt_cuda(torch.randn(1).cuda()))`
+and I get:
+cpu: tensor([0.3198])
+cuda eager: tensor([0.4224], device='cuda:0')
+/usr/bin/ld: cannot find -lcuda: No such file or directory
+collect2: error: ld returned 1 exit status
+concurrent.futures.process._RemoteTraceback:
+"""
+Traceback (most recent call last):
+File "/root/anaconda3/lib/python3.9/concurrent/futures/process.py", line 246, in _process_worker
+r = call_item.fn(*call_item.args, **call_item.kwargs)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/codecache.py", line 549, in _worker_compile
+kernel.precompile(warm_cache_only_with_cc=cc)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/triton_ops/autotune.py", line 69, in precompile
+self.launchers = [
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/triton_ops/autotune.py", line 70, in 
+self._precompile_config(c, warm_cache_only_with_cc)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/triton_ops/autotune.py", line 83, in _precompile_config
+triton.compile(
+File "/root/anaconda3/lib/python3.9/site-packages/triton/compiler.py", line 1587, in compile
+so_path = make_stub(name, signature, constants)
+File "/root/anaconda3/lib/python3.9/site-packages/triton/compiler.py", line 1476, in make_stub
+so = _build(name, src_path, tmpdir)
+File "/root/anaconda3/lib/python3.9/site-packages/triton/compiler.py", line 1391, in build
+ret = subprocess.check_call(cc_cmd)
+File "/root/anaconda3/lib/python3.9/subprocess.py", line 373, in check_call
+raise CalledProcessError(retcode, cmd)
+subprocess.CalledProcessError: Command '['/usr/bin/gcc', '/tmp/tmphttesy02/main.c', '-O3', '-I/root/anaconda3/lib/python3.9/site-packages/triton/third_party/cuda/include', '-I/root/anaconda3/include/python3.9', '-I/tmp/tmphttesy02', '-shared', '-fPIC', '-lcuda', '-o', '/tmp/tmphttesy02/triton.cpython-39-x86_64-linux-gnu.so']' returned non-zero exit status 1.
+"""
+The above exception was the direct cause of the following exception:
+Traceback (most recent call last):
+File "/root/anaconda3/lib/python3.9/site-packages/torch/dynamo/output_graph.py", line 670, in call_user_compiler
+compiled_fn = compiler_fn(gm, self.fake_example_inputs())
+File "/root/anaconda3/lib/python3.9/site-packages/torch/dynamo/debug_utils.py", line 1055, in debug_wrapper
+compiled_gm = compiler_fn(gm, example_inputs)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/init.py", line 1390, in call
+return compile_fx(model, inputs, config_patches=self.config)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/compile_fx.py", line 455, in compile_fx
+return aot_autograd(
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/backends/common.py", line 48, in compiler_fn
+cg = aot_module_simplified(gm, example_inputs, **kwargs)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_functorch/aot_autograd.py", line 2805, in aot_module_simplified
+compiled_fn = create_aot_dispatcher_function(
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/utils.py", line 163, in time_wrapper
+r = func(*args, **kwargs)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_functorch/aot_autograd.py", line 2498, in create_aot_dispatcher_function
+compiled_fn = compiler_fn(flat_fn, fake_flat_args, aot_config)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_functorch/aot_autograd.py", line 1713, in aot_wrapper_dedupe
+return compiler_fn(flat_fn, leaf_flat_args, aot_config)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_functorch/aot_autograd.py", line 1326, in aot_dispatch_base
+compiled_fw = aot_config.fw_compiler(fw_module, flat_args_with_views_handled)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/utils.py", line 163, in time_wrapper
+r = func(*args, **kwargs)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/compile_fx.py", line 430, in fw_compiler
+return inner_compile(
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/debug_utils.py", line 595, in debug_wrapper
+compiled_fn = compiler_fn(gm, example_inputs)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/debug.py", line 239, in inner
+return fn(*args, **kwargs)
+File "/root/anaconda3/lib/python3.9/contextlib.py", line 79, in inner
+return func(*args, **kwds)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/compile_fx.py", line 177, in compile_fx_inner
+compiled_fn = graph.compile_to_fn()
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/graph.py", line 586, in compile_to_fn
+return self.compile_to_module().call
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/utils.py", line 163, in time_wrapper
+r = func(*args, **kwargs)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/graph.py", line 575, in compile_to_module
+mod = PyCodeCache.load(code)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/codecache.py", line 528, in load
+exec(code, mod.dict, mod.dict)
+File "/tmp/torchinductor_root/fl/cflyzetaelrdigwqk7eeqcd4ltjygnu2ngsoprkrcxeecyg274xg.py", line 42, in 
+async_compile.wait(globals())
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/codecache.py", line 715, in wait
+scope[key] = result.result()
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/codecache.py", line 573, in result
+self.future.result()
+File "/root/anaconda3/lib/python3.9/concurrent/futures/_base.py", line 446, in result
+return self.__get_result()
+File "/root/anaconda3/lib/python3.9/concurrent/futures/_base.py", line 391, in __get_result
+raise self.exception
+subprocess.CalledProcessError: Command '['/usr/bin/gcc', '/tmp/tmphttesy02/main.c', '-O3', '-I/root/anaconda3/lib/python3.9/site-packages/triton/third_party/cuda/include', '-I/root/anaconda3/include/python3.9', '-I/tmp/tmphttesy02', '-shared', '-fPIC', '-lcuda', '-o', '/tmp/tmphttesy02/triton.cpython-39-x86_64-linux-gnu.so']' returned non-zero exit status 1.
+The above exception was the direct cause of the following exception:
+Traceback (most recent call last):
+File "/data/py_projects/pegasus/test4.py", line 15, in 
+print("cuda opt:", opt_cuda(torch.randn(1).cuda()))
+File "/root/anaconda3/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+return forward_call(*args, **kwargs)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/eval_frame.py", line 82, in forward
+return self.dynamo_ctx(self._orig_mod.forward)(*args, **kwargs)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/eval_frame.py", line 209, in _fn
+return fn(*args, **kwargs)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/eval_frame.py", line 337, in catch_errors
+return callback(frame, cache_size, hooks)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/convert_frame.py", line 404, in _convert_frame
+result = inner_convert(frame, cache_size, hooks)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/convert_frame.py", line 104, in _fn
+return fn(*args, **kwargs)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/convert_frame.py", line 262, in _convert_frame_assert
+return _compile(
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/utils.py", line 163, in time_wrapper
+r = func(*args, **kwargs)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/convert_frame.py", line 324, in _compile
+out_code = transform_code_object(code, transform)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/bytecode_transformation.py", line 445, in transform_code_object
+transformations(instructions, code_options)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/convert_frame.py", line 311, in transform
+tracer.run()
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/symbolic_convert.py", line 1726, in run
+super().run()
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/symbolic_convert.py", line 576, in run
+and self.step()
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/symbolic_convert.py", line 540, in step
+getattr(self, inst.opname)(inst)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/symbolic_convert.py", line 1792, in RETURN_VALUE
+self.output.compile_subgraph(
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/output_graph.py", line 517, in compile_subgraph
+self.compile_and_call_fx_graph(tx, list(reversed(stack_values)), root)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/output_graph.py", line 588, in compile_and_call_fx_graph
+compiled_fn = self.call_user_compiler(gm)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/utils.py", line 163, in time_wrapper
+r = func(*args, **kwargs)
+File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/output_graph.py", line 675, in call_user_compiler
+raise BackendCompilerFailed(self.compiler_fn, e) from e
+torch.dynamo.exc.BackendCompilerFailed: debug_wrapper raised CalledProcessError: Command '['/usr/bin/gcc', '/tmp/tmphttesy02/main.c', '-O3', '-I/root/anaconda3/lib/python3.9/site-packages/triton/third_party/cuda/include', '-I/root/anaconda3/include/python3.9', '-I/tmp/tmphttesy02', '-shared', '-fPIC', '-lcuda', '-o', '/tmp/tmphttesy02/triton.cpython-39-x86_64-linux-gnu.so']' returned non-zero exit status 1.
+Set torch._dynamo.config.verbose=True for more information
+You can suppress this exception and fall back to eager by setting:
+torch._dynamo.config.suppress_errors = True
+Versions
+wsl2 pytorch2.0 cuda11.7
+cc @peterjc123 @mszhanyi @skyline75489 @nbcsm @vladimir-aubrecht @iremyux @Blackhex @cristianPanaite @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @soumith @ngimel
+
+----------------------------------------Comment 1----------------------------------------
+
+Steps to reproduce the behavior:
+Call torch.abs on a sparse tensor
+Below is a code sample:
+import torch
+i = torch.LongTensor([[0, 1, 1],
+[2, 0, 2],
+[2, 0, 2]])
+v  = torch.FloatTensor([3, -44, -5])
+s = torch.sparse.FloatTensor(i, v, torch.Size([2, 4, 4]))
+print(s.abs())
+Actual behavior
+Traceback (most recent call last):
+File "sparse_torch_abs.py", line 11, in 
+print(s.abs())
+RuntimeError: unsupported tensor layout: Sparse
+Expected behavior
+The absolute value Sparse Tensor should get printed properly as below:
+tensor(indices=tensor([[0, 1, 1],
+[2, 0, 2],
+[2, 0, 2]]),
+values=tensor([ 3., 44.,  5.]),
+size=(2, 4, 4), nnz=3, layout=torch.sparse_coo)
+Environment
+Versions of relevant libraries:
+[pip3] numpy==1.19.1
+[pip3] torch==1.8.0a0
+[pip3] torchtext==0.8.0a0+7e267d2
+[pip3] torchvision==0.8.0a0+be8192e
+[conda] blas 1.0 mkl
+[conda] cudatoolkit 10.2.89 hfd86e86_1
+[conda] magma-cuda102 2.5.2 1 pytorch
+[conda] mkl 2020.1 217
+[conda] mkl-include 2020.1 217
+[conda] mkl-service 2.3.0 py38he904b0f_0
+[conda] mkl_fft 1.1.0 py38h23d657b_0
+[conda] mkl_random 1.1.1 py38h0573a6f_0
+[conda] numpy 1.19.1 py38hbc911f0_0
+[conda] numpy-base 1.19.1 py38hfa32c7d_0
+[conda] torch 1.8.0a0 dev_0
+[conda] torchtext 0.8.0a0+7e267d2 pypi_0 pypi
+[conda] torchvision 0.8.0a0+be8192e pypi_0 pypi
+PyTorch Version: 1.8.0a0
+OS: Linux
+How you installed PyTorch (conda, pip, source): source
+Build command you used (if compiling from source): python setup.py develop
+Python version: 3.8
+CUDA/cuDNN version: 10.2
+cc @aocsa @nikitaved @pearu @mruberry
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+The following operation failed in the TorchScript interpreter.
+ 
+Traceback of TorchScript, serialized code (most recent call last):
+ 
+  File "code/torch/ai360_net.py", line 34, in forward
+ 
+    confidences = []
+ 
+    locations = []
+ 
+    x0 = (self.base_net).forward(x, )
+ 
+          ~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
+ 
+    _1 = self.extras
+ 
+    _2 = getattr(_1, "0")
+ 
+  File "code/torch/torch/nn/modules/container/___torch_mangle_189.py", line 47, in forward
+ 
+    input0 = (_0).forward(input, )
+ 
+    input1 = (_1).forward(input0, )
+ 
+    input2 = (_2).forward(input1, )
+ 
+              ~~~~~~~~~~~ <--- HERE
+ 
+    input3 = (_3).forward(input2, )
+ 
+    input4 = (_4).forward(input3, )
+ 
+  File "code/torch/ai360_net/___torch_mangle_16.py", line 13, in forward
+ 
+      _0 = torch.add(x, (self.conv).forward(x, ), alpha=1)
+ 
+    else:
+ 
+      _0 = (self.conv).forward(x, )
+ 
+            ~~~~~~~~~~~~~~~~~~ <--- HERE
+ 
+    return _0
+ 
+  File "code/torch/torch/nn/modules/container/___torch_mangle_15.py", line 23, in forward
+ 
+    _6 = getattr(self, "6")
+ 
+    _7 = getattr(self, "7")
+ 
+    input0 = (_0).forward(input, )
+ 
+              ~~~~~~~~~~~ <--- HERE
+ 
+    input1 = (_1).forward(input0, )
+ 
+    input2 = (_2).forward(input1, )
+ 
+  File "code/torch/torch/nn/modules/conv/___torch_mangle_10.py", line 9, in forward
+ 
+  def forward(self: torch.torch.nn.modules.conv.___torch_mangle_10.Conv2d,
+ 
+    input: Tensor) -> Tensor:
+ 
+    _0 = (self).conv2d_forward(input, self.weight, )
+ 
+          ~~~~~~~~~~~~~~~~~~~~ <--- HERE
+ 
+    return _0
+ 
+  def conv2d_forward(self: torch.torch.nn.modules.conv.___torch_mangle_10.Conv2d,
+ 
+  File "code/torch/torch/nn/modules/conv/___torch_mangle_10.py", line 29, in conv2d_forward
+ 
+      _11 = _4
+ 
+    else:
+ 
+      _11 = torch.conv2d(input, weight, None, [1, 1], [0, 0], [1, 1], 1)
+ 
+            ~~~~~~~~~~~~ <--- HERE
+ 
+    return _11
+ 
+ 
+ 
+Traceback of TorchScript, original code (most recent call last):
+ 
+  File "/home/tony/anaconda3/envs/pytorch1.4/lib/python3.6/site-packages/torch/nn/modules/container.py", line 100, in forward
+ 
+    def forward(self, input):
+ 
+        for module in self:
+ 
+            input = module(input)
+ 
+                    ~~~~~~ <--- HERE
+ 
+        return input
+ 
+  File "/home/tony/anaconda3/envs/pytorch1.4/lib/python3.6/site-packages/torch/nn/modules/container.py", line 100, in forward
+ 
+    def forward(self, input):
+ 
+        for module in self:
+ 
+            input = module(input)
+ 
+                    ~~~~~~ <--- HERE
+ 
+        return input
+ 
+  File "/home/tony/anaconda3/envs/pytorch1.4/lib/python3.6/site-packages/torch/nn/modules/conv.py", line 345, in forward
+ 
+    def forward(self, input):
+ 
+        return self.conv2d_forward(input, self.weight)
+ 
+               ~~~~~~~~~~~~~~~~~~~ <--- HERE
+ 
+  File "/home/tony/anaconda3/envs/pytorch1.4/lib/python3.6/site-packages/torch/nn/modules/conv.py", line 341, in conv2d_forward
+ 
+                            weight, self.bias, self.stride,
+ 
+                            _pair(0), self.dilation, self.groups)
+ 
+        return F.conv2d(input, weight, self.bias, self.stride,
+ 
+               ~~~~~~~~ <--- HERE
+ 
+                        self.padding, self.dilation, self.groups)
+ 
+RuntimeError: [enforce fail at CPUAllocator.cpp:68] . DefaultCPUAllocator: can't allocate memory: you tried to allocate 4860032 bytes. Error code 12 (Cannot allocate memory)
+ 
+Versions
+Pytorch 3.0
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+When I try to compile the ddp + amp model using torch.compile, I get the following error：
+
+Can you help me with this error?
+Error logs
+eager train time 0: 2.062772216796875 loss: 12.34566593170166
+eager train time 29: 0.12792012786865234 loss: 12.378190040588379
+~~~~~~~~~~
+
+[rank0]:[2023-10-20 15:17:41,173] [1/0] torch._dynamo.variables.torch: [WARNING] Profiler function <class 'torch.autograd.profiler.record_function'> will be ignored
+Traceback (most recent call last):
+  File "elastic_ddp.py", line 347, in <module>
+    demo_basic()
+  File "elastic_ddp.py", line 330, in demo_basic
+    loss, compile_time = timed(
+  File "elastic_ddp.py", line 288, in timed
+    result = fn()
+  File "elastic_ddp.py", line 331, in <lambda>
+    lambda: train_opt(ddp_model, inp, opt, grad_scaler))
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 328, in _fn
+    return fn(*args, **kwargs)
+  File "elastic_ddp.py", line 267, in train
+    opt.zero_grad(True)
+  File "elastic_ddp.py", line 269, in <resume in train>
+    predict = model(data[0])
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/parallel/distributed.py", line 1519, in forward
+    else self._run_ddp_forward(*inputs, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/parallel/distributed.py", line 1355, in _run_ddp_forward
+    return self.module(*inputs, **kwargs)  # type: ignore[index]
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 487, in catch_errors
+    return hijacked_callback(frame, cache_entry, hooks, frame_state)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 641, in _convert_frame
+    result = inner_convert(frame, cache_size, hooks, frame_state)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 133, in _fn
+    return fn(*args, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 389, in _convert_frame_assert
+    return _compile(
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 569, in _compile
+    guarded_code = compile_inner(code, one_graph, hooks, transform)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/utils.py", line 189, in time_wrapper
+    r = func(*args, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 491, in compile_inner
+    out_code = transform_code_object(code, transform)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/bytecode_transformation.py", line 1028, in transform_code_object
+    transformations(instructions, code_options)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 458, in transform
+    tracer.run()
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 2074, in run
+    super().run()
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 724, in run
+    and self.step()
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 688, in step
+    getattr(self, inst.opname)(inst)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 2162, in RETURN_VALUE
+    self.output.compile_subgraph(
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/output_graph.py", line 833, in compile_subgraph
+    self.compile_and_call_fx_graph(tx, list(reversed(stack_values)), root)
+  File "/opt/conda/lib/python3.8/contextlib.py", line 75, in inner
+    return func(*args, **kwds)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/output_graph.py", line 957, in compile_and_call_fx_graph
+    compiled_fn = self.call_user_compiler(gm)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/utils.py", line 189, in time_wrapper
+    r = func(*args, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/output_graph.py", line 1024, in call_user_compiler
+    raise BackendCompilerFailed(self.compiler_fn, e).with_traceback(
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/output_graph.py", line 1009, in call_user_compiler
+    compiled_fn = compiler_fn(gm, self.example_inputs())
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/backends/distributed.py", line 436, in compile_fn
+    submod_compiler.run(*example_inputs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/fx/interpreter.py", line 138, in run
+    self.env[node] = self.run_node(node)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/backends/distributed.py", line 417, in run_node
+    compiled_submod_real = self.compile_submod(
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/backends/distributed.py", line 361, in compile_submod
+    self.compiler(input_mod, args),
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/repro/after_dynamo.py", line 117, in debug_wrapper
+    compiled_gm = compiler_fn(gm, example_inputs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/__init__.py", line 1568, in __call__
+    return compile_fx(model_, inputs_, config_patches=self.config)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_inductor/compile_fx.py", line 961, in compile_fx
+    return compile_fx(
+  File "/opt/conda/lib/python3.8/site-packages/torch/_inductor/compile_fx.py", line 1150, in compile_fx
+    return aot_autograd(
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/backends/common.py", line 55, in compiler_fn
+    cg = aot_module_simplified(gm, example_inputs, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 3891, in aot_module_simplified
+    compiled_fn = create_aot_dispatcher_function(
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/utils.py", line 189, in time_wrapper
+    r = func(*args, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 3429, in create_aot_dispatcher_function
+    compiled_fn = compiler_fn(flat_fn, fake_flat_args, aot_config, fw_metadata=fw_metadata)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 2212, in aot_wrapper_dedupe
+    return compiler_fn(flat_fn, leaf_flat_args, aot_config, fw_metadata=fw_metadata)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 2392, in aot_wrapper_synthetic_base
+    return compiler_fn(flat_fn, flat_args, aot_config, fw_metadata=fw_metadata)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 2804, in aot_dispatch_autograd
+    fx_g = aot_dispatch_autograd_graph(flat_fn, flat_args, aot_config, fw_metadata=fw_metadata)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 2781, in aot_dispatch_autograd_graph
+    fx_g = create_functionalized_graph(
+  File "/opt/conda/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 1420, in create_functionalized_graph
+    fx_g = make_fx(helper, decomposition_table=aot_config.decompositions)(*args)
+  File "/opt/conda/lib/python3.8/site-packages/torch/fx/experimental/proxy_tensor.py", line 809, in wrapped
+    t = dispatch_trace(wrap_key(func, args, fx_tracer, pre_dispatch), tracer=fx_tracer, concrete_args=tuple(phs))
+  File "/opt/conda/lib/python3.8/site-packages/torch/_compile.py", line 24, in inner
+    return torch._dynamo.disable(fn, recursive)(*args, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 328, in _fn
+    return fn(*args, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/external_utils.py", line 17, in inner
+    return fn(*args, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/fx/experimental/proxy_tensor.py", line 468, in dispatch_trace
+    graph = tracer.trace(root, concrete_args)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 328, in _fn
+    return fn(*args, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/external_utils.py", line 17, in inner
+    return fn(*args, **kwargs)
+  File "/opt/conda/lib/python3.8/site-packages/torch/fx/_symbolic_trace.py", line 817, in trace
+    (self.create_arg(fn(*args)),),
+  File "/opt/conda/lib/python3.8/site-packages/torch/fx/experimental/proxy_tensor.py", line 451, in create_arg
+    return super().create_arg(a)
+  File "/opt/conda/lib/python3.8/site-packages/torch/fx/_symbolic_trace.py", line 385, in create_arg
+    return super().create_arg(a)
+  File "/opt/conda/lib/python3.8/site-packages/torch/fx/proxy.py", line 255, in create_arg
+    return type(a)(self.create_arg(elem) for elem in a)
+  File "/opt/conda/lib/python3.8/site-packages/torch/fx/proxy.py", line 255, in <genexpr>
+    return type(a)(self.create_arg(elem) for elem in a)
+  File "/opt/conda/lib/python3.8/site-packages/torch/fx/experimental/proxy_tensor.py", line 451, in create_arg
+    return super().create_arg(a)
+  File "/opt/conda/lib/python3.8/site-packages/torch/fx/_symbolic_trace.py", line 385, in create_arg
+    return super().create_arg(a)
+  File "/opt/conda/lib/python3.8/site-packages/torch/fx/proxy.py", line 291, in create_arg
+    raise NotImplementedError(f"argument of type: {type(a)}")
+torch._dynamo.exc.BackendCompilerFailed: backend='compile_fn' raised:
+
+While executing %submod_0 : [num_users=3] = call_module[target=submod_0](args = (%l_x_,), kwargs = {})
+Original traceback:
+None
+
+Set TORCH_LOGS="+dynamo" and TORCHDYNAMO_VERBOSE=1 for more information
+
+
+You can suppress this exception and fall back to eager by setting:
+    import torch._dynamo
+    torch._dynamo.config.suppress_errors = True
+
+233522-10ea61f2-6f10-11ee-9682-4ee5ea5d12cf-6mprp:6107:6116 [0] NCCL INFO [Service thread] Connection closed by localRank 0
+233522-10ea61f2-6f10-11ee-9682-4ee5ea5d12cf-6mprp:6107:6107 [0] NCCL INFO comm 0x55b1609f2ad0 rank 0 nranks 1 cudaDev 0 busId b1000 - Abort COMPLETE
+
+
+Minified repro
+The code for elastic_ddp.py is shown below.
+
+The running commands are as follows:
+
+Versions
+
+cc @mcarilli @ptrblck @leslie-fang-intel @jgong5 @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @zou3519 @voznesenskym @penguinwu @EikanWang @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @wenzhe-nrv @jiayisunx @chenyang78 @aakhundov @kadeng
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+
+Traceback (most recent call last):
+File "/scratch/anijain/work/pytorch/repro.py", line 58, in 
+run_repro(mod, load_args, accuracy=False, command='run', save_dir='/scratch/anijain/work/pytorch/torch_compile_debug/run_2023_06_12_21_07_15_426800-pid_3076854/minifier/checkpoints', tracing_mode='real')
+File "/scratch/anijain/work/pytorch/torch/_dynamo/repro/after_aot.py", line 903, in run_repro
+COMMAND_FNS[options.command](options, mod, load_args)
+File "/scratch/anijain/work/pytorch/torch/_dynamo/repro/after_aot.py", line 691, in repro_run
+ref = compiled(args)
+File "/scratch/anijain/work/pytorch/torch/_inductor/compile_fx.py", line 437, in run
+return model(new_inputs)
+File "/tmp/torchinductor_anijain/ht/chtqnrybmli6m5weq3royxscgqsxzjj7dxzfracjhf2pe2f4xdpx.py", line 130, in call
+del buf0
+UnboundLocalError: local variable 'buf0' referenced before assignment
+
+
+----------------------------------------Comment 1----------------------------------------
+
+Hi,when I try to use data distributed parallel to speed up training model, an error occurs: AttributeError: '_MultiProcessingDataLoaderIter' object has no attribute '_workers_status'. But it's ok to use data parallel. I have been struggling for this bug for several days, thanks for provides any hints or some informations!
+The output of  python -m torch.utils.collect_env is as followed:
+Collecting environment information...
+PyTorch version: 1.9.0+cu102
+Is debug build: False
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.5 LTS (x86_64)
+GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+Clang version: Could not collect
+CMake version: version 3.18.20200915-gb7590b8
+Libc version: glibc-2.17
+Python version: 3.7 (64-bit runtime)
+Python platform: Linux-3.10.0-957.el7.x86_64-x86_64-with-debian-buster-sid
+Is CUDA available: True
+CUDA runtime version: 10.2.89
+GPU models and configuration:
+GPU 0: GeForce RTX 2080 Ti
+GPU 1: GeForce RTX 2080 Ti
+GPU 2: GeForce RTX 2080 Ti
+GPU 3: GeForce RTX 2080 Ti
+Nvidia driver version: 450.80.02
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.0.2
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.0.2
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.0.2
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.0.2
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.0.2
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.0.2
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.0.2
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.21.2
+[pip3] pytorch-transformers==1.2.0
+[pip3] torch==1.9.0
+[pip3] torchtext==0.10.0
+[pip3] torchvision==0.10.0
+[conda] numpy                     1.21.2                   pypi_0    pypi
+[conda] pytorch-transformers      1.2.0                    pypi_0    pypi
+[conda] torch                     1.9.0                    pypi_0    pypi
+[conda] torchtext                 0.10.0                   pypi_0    pypi
+[conda] torchvision               0.10.0                   pypi_0    pypi1
+And the all error infomation is as followed:
+ Exception ignored in: <function _MultiProcessingDataLoaderIter.__del__ at 0x7fb1d6035d40> Traceback (most recent call last): File "/root/anaconda3/envs/m4c/lib/python3.7/site-packages/torch-1.9.0-py3.7-linux-x86_64.egg/torch/utils/data/dataloader.py", line 1328, in __del__ self._shutdown_workers() File "/root/anaconda3/envs/m4c/lib/python3.7/site-packages/torch-1.9.0-py3.7-linux-x86_64.egg/torch/utils/data/dataloader.py", line 1295, in _shutdown_workers if self._persistent_workers or self._workers_status[worker_id]: AttributeError: '_MultiProcessingDataLoaderIter' object has no attribute '_workers_status'
+
+----------------------------------------Comment 1----------------------------------------
+
+LR: 2e-06
+V2: False
+Steps:   0%|                                          | 0/12200 [00:00<?, ?it/s][2023-06-04 16:51:32,596] torch._dynamo.convert_frame: [ERROR] WON'T CONVERT get_rng_state /root/miniconda3/lib/python3.8/site-packages/torch/random.py line 21
+23           0 LOAD_GLOBAL              0 (default_generator)
+2 LOAD_METHOD              1 (get_state)
+4 CALL_METHOD              0
+6 RETURN_VALUE
+========== TorchDynamo Stack Trace ==========
+Traceback (most recent call last):
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 324, in _compile
+out_code = transform_code_object(code, transform)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/bytecode_transformation.py", line 445, in transform_code_object
+transformations(instructions, code_options)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 311, in transform
+tracer.run()
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 1726, in run
+super().run()
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 576, in run
+and self.step()
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 540, in step
+getattr(self, inst.opname)(inst)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 342, in wrapper
+return inner_fn(self, inst)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 965, in CALL_FUNCTION
+self.call_function(fn, args, {})
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 474, in call_function
+self.push(fn.call_function(self, args, kwargs))
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/variables/torch.py", line 368, in call_function
+return wrap_fx_proxy(
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/variables/builder.py", line 754, in wrap_fx_proxy
+return wrap_fx_proxy_cls(
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/variables/builder.py", line 812, in wrap_fx_proxy_cls
+assert "source" in options and options["source"] is not None
+AssertionError:
+========== The above exception occurred while processing the following code ==========
+File "/root/miniconda3/lib/python3.8/threading.py", line 890, in _bootstrap
+self._bootstrap_inner()
+File "/root/miniconda3/lib/python3.8/threading.py", line 932, in _bootstrap_inner
+self.run()
+File "/root/miniconda3/lib/python3.8/site-packages/anyio/_backends/_asyncio.py", line 867, in run
+result = context.run(func, *args)
+File "/root/autodl-tmp/stable-diffusion-webui/extensions/sd_dreambooth_extension/dreambooth/utils/utils.py", line 190, in f
+res = func(*args, **kwargs)
+File "/root/autodl-tmp/stable-diffusion-webui/extensions/sd_dreambooth_extension/dreambooth/ui_functions.py", line 727, in start_training
+result = main(class_gen_method=class_gen_method)
+File "/root/autodl-tmp/stable-diffusion-webui/extensions/sd_dreambooth_extension/dreambooth/train_dreambooth.py", line 1375, in main
+return inner_loop()
+File "/root/autodl-tmp/stable-diffusion-webui/extensions/sd_dreambooth_extension/dreambooth/memory.py", line 119, in decorator
+return function(batch_size, grad_size, prof, *args, **kwargs)
+File "/root/autodl-tmp/stable-diffusion-webui/extensions/sd_dreambooth_extension/dreambooth/train_dreambooth.py", line 1173, in inner_loop
+noise_pred = unet(
+File "/root/miniconda3/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+return forward_call(*args, **kwargs)
+File "/root/miniconda3/lib/python3.8/site-packages/accelerate/utils/operations.py", line 495, in call
+return convert_to_fp32(self.model_forward(*args, **kwargs))
+File "/root/miniconda3/lib/python3.8/site-packages/torch/amp/autocast_mode.py", line 14, in decorate_autocast
+return func(*args, **kwargs)
+File "/root/miniconda3/lib/python3.8/site-packages/diffusers/models/unet_2d_condition.py", line 582, in forward
+sample, res_samples = downsample_block(
+File "/root/miniconda3/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+return forward_call(*args, **kwargs)
+File "/root/miniconda3/lib/python3.8/site-packages/diffusers/models/unet_2d_blocks.py", line 828, in forward
+hidden_states = torch.utils.checkpoint.checkpoint(create_custom_forward(resnet), hidden_states, temb)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/utils/checkpoint.py", line 250, in checkpoint
+return CheckpointFunction.apply(function, preserve, *args)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/autograd/function.py", line 506, in apply
+return super().apply(*args, **kwargs)  # type: ignore[misc]
+File "/root/miniconda3/lib/python3.8/site-packages/torch/utils/checkpoint.py", line 82, in forward
+ctx.fwd_cpu_state = torch.get_rng_state()
+File "/root/miniconda3/lib/python3.8/site-packages/torch/random.py", line 21, in get_rng_state
+def get_rng_state() -> torch.Tensor:
+File "/root/miniconda3/lib/python3.8/site-packages/torch/random.py", line 23, in get_rng_state
+return default_generator.get_state()
+==========
+[2023-06-04 16:52:05,617] torch._dynamo.convert_frame: [ERROR] WON'T CONVERT init /root/miniconda3/lib/python3.8/site-packages/torch/nn/modules/container.py line 276
+277           0 LOAD_GLOBAL              0 (super)
+2 CALL_FUNCTION            0
+4 LOAD_METHOD              1 (init)
+6 CALL_METHOD              0
+8 POP_TOP
+278          10 LOAD_FAST                1 (modules)
+12 LOAD_CONST               0 (None)
+14 COMPARE_OP               9 (is not)
+16 POP_JUMP_IF_FALSE       26
+279          18 LOAD_FAST                0 (self)
+20 LOAD_FAST                1 (modules)
+22 INPLACE_ADD
+24 STORE_FAST               0 (self)
+>>   26 LOAD_CONST               0 (None)
+28 RETURN_VALUE
+========== TorchDynamo Stack Trace ==========
+Traceback (most recent call last):
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 364, in _compile
+check_fn = CheckFunctionManager(
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/guards.py", line 547, in init
+guard.create(local_builder, global_builder)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_guards.py", line 163, in create
+return self.create_fn(self.source.select(local_builder, global_builder), self)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/guards.py", line 299, in NN_MODULE
+unimplemented(f"Guard setup for uninitialized class {type(val)}")
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/exc.py", line 71, in unimplemented
+raise Unsupported(msg)
+torch._dynamo.exc.Unsupported: Guard setup for uninitialized class <class 'torch.nn.modules.container.ModuleList'>
+========== The above exception occurred while processing the following code ==========
+File "/root/miniconda3/lib/python3.8/threading.py", line 890, in _bootstrap
+self._bootstrap_inner()
+File "/root/miniconda3/lib/python3.8/threading.py", line 932, in _bootstrap_inner
+self.run()
+File "/root/miniconda3/lib/python3.8/site-packages/anyio/_backends/_asyncio.py", line 867, in run
+result = context.run(func, *args)
+File "/root/autodl-tmp/stable-diffusion-webui/extensions/sd_dreambooth_extension/dreambooth/utils/utils.py", line 190, in f
+res = func(*args, **kwargs)
+File "/root/autodl-tmp/stable-diffusion-webui/extensions/sd_dreambooth_extension/dreambooth/ui_functions.py", line 727, in start_training
+result = main(class_gen_method=class_gen_method)
+File "/root/autodl-tmp/stable-diffusion-webui/extensions/sd_dreambooth_extension/dreambooth/train_dreambooth.py", line 1375, in main
+return inner_loop()
+File "/root/autodl-tmp/stable-diffusion-webui/extensions/sd_dreambooth_extension/dreambooth/memory.py", line 119, in decorator
+return function(batch_size, grad_size, prof, *args, **kwargs)
+File "/root/autodl-tmp/stable-diffusion-webui/extensions/sd_dreambooth_extension/dreambooth/train_dreambooth.py", line 1173, in inner_loop
+noise_pred = unet(
+File "/root/miniconda3/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+return forward_call(*args, **kwargs)
+File "/root/miniconda3/lib/python3.8/site-packages/accelerate/utils/operations.py", line 495, in call
+return convert_to_fp32(self.model_forward(*args, **kwargs))
+File "/root/miniconda3/lib/python3.8/site-packages/torch/amp/autocast_mode.py", line 14, in decorate_autocast
+return func(*args, **kwargs)
+File "/root/miniconda3/lib/python3.8/site-packages/diffusers/models/unet_2d_condition.py", line 607, in forward
+sample = self.mid_block(
+File "/root/miniconda3/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+return forward_call(*args, **kwargs)
+File "/root/miniconda3/lib/python3.8/site-packages/diffusers/models/unet_2d_blocks.py", line 539, in forward
+for attn, resnet in zip(self.attentions, self.resnets[1:]):
+File "/root/miniconda3/lib/python3.8/site-packages/torch/nn/modules/container.py", line 293, in getitem
+return self.class(list(self._modules.values())[idx])
+File "/root/miniconda3/lib/python3.8/site-packages/torch/nn/modules/container.py", line 276, in init
+def init(self, modules: Optional[Iterable[Module]] = None) -> None:
+Steps:   5%| | 610/12200 [04:59<47:54,  4.03it/s, inst_loss=0, loss=0.0111, lr=2
+Saving weights:   0%|                                     | 0/4 [00:00<?, ?it/s]
+Saving weights:   0%|                                     | 0/4 [00:00<?, ?it/s]
+Generating Samples:   0%|                                 | 0/4 [00:03<?, ?it/s]
+Generating Samples:   0%|                                 | 0/3 [00:00<?, ?it/s]
+Generating Samples:  33%|████████▎                | 1/3 [00:02<00:04,  2.16s/it]Model name: motorbike
+Saving /root/autodl-tmp/stable-diffusion-webui/models/dreambooth/motorbike/logging/loss_plot_0.png
+Saving /root/autodl-tmp/stable-diffusion-webui/models/dreambooth/motorbike/logging/ram_plot_0.png
+Cleanup log parse.
+Generating Samples: 100%|█████████████████████████| 3/3 [00:05<00:00,  1.85s/it]
+Traceback (most recent call last):
+File "/root/autodl-tmp/stable-diffusion-webui/extensions/sd_dreambooth_extension/dreambooth/ui_functions.py", line 727, in start_training
+result = main(class_gen_method=class_gen_method)
+File "/root/autodl-tmp/stable-diffusion-webui/extensions/sd_dreambooth_extension/dreambooth/train_dreambooth.py", line 1375, in main
+return inner_loop()
+File "/root/autodl-tmp/stable-diffusion-webui/extensions/sd_dreambooth_extension/dreambooth/memory.py", line 119, in decorator
+return function(batch_size, grad_size, prof, *args, **kwargs)
+File "/root/autodl-tmp/stable-diffusion-webui/extensions/sd_dreambooth_extension/dreambooth/train_dreambooth.py", line 1173, in inner_loop
+noise_pred = unet(
+File "/root/miniconda3/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+return forward_call(*args, **kwargs)
+File "/root/miniconda3/lib/python3.8/site-packages/accelerate/utils/operations.py", line 495, in call
+return convert_to_fp32(self.model_forward(*args, **kwargs))
+File "/root/miniconda3/lib/python3.8/site-packages/torch/amp/autocast_mode.py", line 14, in decorate_autocast
+return func(*args, **kwargs)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 82, in forward
+return self.dynamo_ctx(self._orig_mod.forward)(*args, **kwargs)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 209, in _fn
+return fn(*args, **kwargs)
+File "/root/miniconda3/lib/python3.8/site-packages/diffusers/models/unet_2d_condition.py", line 563, in forward
+emb = self.time_embedding(t_emb, timestep_cond)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+return forward_call(*args, **kwargs)
+File "/root/miniconda3/lib/python3.8/site-packages/diffusers/models/embeddings.py", line 200, in forward
+def forward(self, sample, condition=None):
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 209, in _fn
+return fn(*args, **kwargs)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 2836, in forward
+return compiled_fn(full_args)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 1224, in g
+return f(*args)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 2403, in debug_compiled_function
+return compiled_function(*args)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 1900, in runtime_wrapper
+all_outs = call_func_with_args(
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 1249, in call_func_with_args
+out = normalize_as_list(f(args))
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 1224, in g
+return f(*args)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/autograd/function.py", line 506, in apply
+return super().apply(*args, **kwargs)  # type: ignore[misc]
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 2168, in forward
+fw_outs = call_func_with_args(
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 1249, in call_func_with_args
+out = normalize_as_list(f(args))
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_inductor/compile_fx.py", line 248, in run
+return model(new_inputs)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_inductor/compile_fx.py", line 267, in run
+return compiled_fn(new_inputs)
+File "/root/miniconda3/lib/python3.8/site-packages/torch/_inductor/compile_fx.py", line 340, in run
+assert dst.data_ptr() == src.data_ptr()
+AssertionError
+
+----------------------------------------Comment 1----------------------------------------
+
+@peterjc123, @yf225
+When we call
+
+it will show errors:
+Traceback (most recent call last):
+Traceback (most recent call last):
+File "", line 1, in 
+File "", line 1, in 
+File "C:\C:\Python36_X64\lib\multiprocessing\forking.py", line 381, in main
+File "C:\C:\Python36_X64\lib\multiprocessing\forking.py", line 381, in main
+self = load(from_parent)
+File "C:\C:\Python36_X64\lib\pickle.py", line 1384, in load
+self = load(from_parent)
+File "C:\C:\Python36_X64\lib\pickle.py", line 1384, in load
+return Unpickler(file).load()
+File "C:\C:\Python36_X64\lib\pickle.py", line 864, in load
+return Unpickler(file).load()
+File "C:\C:\Python36_X64\lib\pickle.py", line 864, in load
+dispatchkey
+File "C:\C:\Python36_X64\lib\pickle.py", line 1221, in load_build
+setstate = getattr(inst, "setstate", None)
+dispatchkey
+File "C:\C:\Python36_X64\lib\site-packages\torch\multiprocessing\queue.py", line 27, in getattr
+File "C:\C:\Python36_X64\lib\pickle.py", line 1221, in load_build
+return getattr(self.conn, name)
+File "C:\C:\Python36_X64\lib\site-packages\torch\multiprocessing\queue.py", line 27, in getattr
+return getattr(self.conn, name)
+File "C:\C:\Python36_X64\lib\site-packages\torch\multiprocessing\queue.py", line 27, in getattr
+return getattr(self.conn, name)
+File "C:\C:\Python36_X64\lib\site-packages\torch\multiprocessing\queue.py", line 27, in getattr
+...
+return getattr(self.conn, name)
+RuntimeError: maximum recursion depth exceeded
+if we set num_workers=2, the code can run.
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+I run the server-side program on one GPU server, and run the client-side program on another GPU server,using rpc.init_rpc(), but 127.0.1.1:xxxx (xxxx is the port number, different each time) appears after the startup, refused connection on the server side, it is used by default The agreement is gloo, and the error is reported in the gloo file.
+To Reproduce
+Steps to reproduce the behavior:
+
+put server code on one server, put client server on another server
+2.on server machine run script python server.py
+3.on client machine run script python client.py
+
+server.py
+import os
+import torch.distributed.rpc as rpc
+os.environ['MASTER_ADDR'] = '192.168.1.130'
+os.environ['MASTER_PORT'] = '8880'
+def my_script_add(t1, t2):
+return torch.add(t1, t2)
+rpc.init_rpc("worker0", rank=0, world_size=2)
+print("init success")
+ret = rpc.rpc_sync("worker1", my_script_add, args=(torch.ones(2), 3))
+print("worker1 success")
+rpc.shutdown()
+client.py
+import os
+import torch.distributed.rpc as rpc
+os.environ['MASTER_ADDR'] = '192.168.1.130'
+os.environ['MASTER_PORT'] = '8880'
+def my_script_add(t1, t2):
+return torch.add(t1, t2)
+rpc.init_rpc("worker1", rank=1, world_size=2)
+print("success")
+rpc.shutdown()
+error information
+Traceback (most recent call last):
+File "server.py", line 10, in 
+rpc.init_rpc("worker0", rank=0, world_size=2)
+File "/home/haozhao/software/anaconda3/lib/python3.7/site-packages/torch/distributed/rpc/init.py", line 78, in init_rpc
+_init_rpc_backend(backend, store, name, rank, world_size, rpc_backend_options)
+File "/home/haozhao/software/anaconda3/lib/python3.7/site-packages/torch/distributed/rpc/api.py", line 146, in _init_rpc_backend
+rpc_backend_options=rpc_backend_options,
+File "/home/haozhao/software/anaconda3/lib/python3.7/site-packages/torch/distributed/rpc/backend_registry.py", line 75, in init_backend
+return backend.value.init_backend_handler(*args, **kwargs)
+File "/home/haozhao/software/anaconda3/lib/python3.7/site-packages/torch/distributed/rpc/backend_registry.py", line 105, in _process_group_init_backend_handler
+backend="gloo", store=store, rank=rank, world_size=world_size
+File "/home/haozhao/software/anaconda3/lib/python3.7/site-packages/torch/distributed/distributed_c10d.py", line 407, in init_process_group
+timeout=timeout)
+File "/home/haozhao/software/anaconda3/lib/python3.7/site-packages/torch/distributed/distributed_c10d.py", line 475, in _new_process_group_helper
+timeout=timeout)
+RuntimeError: [/pytorch/third_party/gloo/gloo/transport/tcp/pair.cc:761] connect [127.0.1.1]:21400: Connection refused
+Environment
+Collecting environment information...
+PyTorch version: 1.4.0+cu100
+Is debug build: False
+CUDA used to build PyTorch: 10.0
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 16.04.6 LTS (x86_64)
+GCC version: (Ubuntu 5.4.0-6ubuntu1~16.04.12) 5.4.0 20160609
+Clang version: Could not collect
+CMake version: version 3.3.2
+Python version: 3.7 (64-bit runtime)
+Is CUDA available: True
+CUDA runtime version: 10.0.130
+GPU models and configuration:
+GPU 0: GeForce GTX 1080 Ti
+GPU 1: GeForce GTX 1080 Ti
+GPU 2: GeForce GTX 1080 Ti
+GPU 3: GeForce GTX 1080 Ti
+Nvidia driver version: 410.73
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip] numpy==1.17.2
+[pip] numpydoc==0.9.1
+[pip] torch==1.4.0+cu100
+[pip] torchvision==0.5.0+cu100
+[conda] blas                      1.0                         mkl
+[conda] cudatoolkit               10.0.130                      0
+[conda] mkl                       2019.4                      243
+[conda] mkl-service               2.3.0            py37he904b0f_0
+[conda] mkl_fft                   1.0.14           py37ha843d7b_0
+[conda] mkl_random                1.1.0            py37hd6b4f25_0
+[conda] numpy                     1.17.2           py37haad9e8e_0
+[conda] numpy-base                1.17.2           py37hde5b4d6_0
+[conda] numpydoc                  0.9.1                      py_0
+[conda] torch                     1.4.0+cu100              pypi_0    pypi
+[conda] torchvision               0.5.0+cu100              pypi_0    pypi
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @gqchen @aazzolini @rohan-varma @xush6528 @jjlilley @osalpekar @jiayisuse
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+def get_density(sampled_xyzs, xyzs):
+# input: (b, m,3), (b, n, 3)
+batch_size = xyzs.shape[0]
+sample_num = sampled_xyzs.shape[1]
+xyzs_trans = xyzs
+sampled_xyzs_trans = sampled_xyzs
+ori2sample_idx = knnquery_heap(xyzs_trans, sampled_xyzs_trans, 1)
+print('ori2sample_idx shape is:', ori2sample_idx.shape)
+downsample_num = torch.zeros((batch_size, sample_num)).cuda()
+for i in range(batch_size):
+uniques, counts = torch.unique(ori2sample_idx[i], return_counts=True)
+downsample_num[i][uniques.long()] = counts.float()
+
+Traceback (most recent call last):
+File "train.py", line 258, in 
+main(args)
+File "train.py", line 201, in main
+bpp, coor_recon, cd, gt_xyzs, gt_dnums, gt_mdis, pred_dnum, pred_dis = model(points, global_step=global_step)
+File "/home/zhe/anaconda3/envs/PCT_PCC/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
+result = self.forward(*input, **kwargs)
+File "/home/zhe/Downloads/PCTPCC/PCT_PCC_density_loss/models/PCT_PCC.py", line 117, in forward
+pred_dnum, pred_dis = get_density(pred_dnum, pred_xyzs)
+File "/home/zhe/Downloads/PCTPCC/PCT_PCC_density_loss/models/utils.py", line 87, in get_density
+uniques, counts = torch.unique(ori2sample_idx[i], return_counts=True)
+File "/home/zhe/anaconda3/envs/PCT_PCC/lib/python3.7/site-packages/torch/_jit_internal.py", line 267, in fn
+return if_false(*args, **kwargs)
+File "/home/zhe/anaconda3/envs/PCT_PCC/lib/python3.7/site-packages/torch/_jit_internal.py", line 265, in fn
+return if_true(*args, **kwargs)
+File "/home/zhe/anaconda3/envs/PCT_PCC/lib/python3.7/site-packages/torch/functional.py", line 756, in _return_counts
+output, _, counts = _unique_impl(input, sorted, return_inverse, return_counts, dim)
+File "/home/zhe/anaconda3/envs/PCT_PCC/lib/python3.7/site-packages/torch/functional.py", line 682, in _unique_impl
+return_counts=return_counts,
+RuntimeError: isDifferentiableType(variable.scalar_type()) INTERNAL ASSERT FAILED at "/opt/conda/conda-bld/pytorch_1603729047590/work/torch/csrc/autograd/functions/utils.h":64, please report a bug to PyTorch.
+Versions
+Collecting environment information...
+PyTorch version: 1.7.0
+Is debug build: True
+CUDA used to build PyTorch: 11.0
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.6 LTS (x86_64)
+GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+Clang version: Could not collect
+CMake version: version 3.10.2
+Libc version: glibc-2.17
+Python version: 3.7.15 (default, Nov  7 2022, 22:00:21)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.4.0-122-generic-x86_64-with-debian-buster-sid
+Is CUDA available: True
+CUDA runtime version: 11.0.194
+CUDA_MODULE_LOADING set to:
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 3080
+Nvidia driver version: 515.48.07
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.21.5
+[pip3] pytorch3d==0.3.0
+[pip3] torch==1.7.0
+[pip3] torchaudio==0.7.0a0+ac17b64
+[pip3] torchvision==0.8.0
+[conda] blas                      1.0                         mkl
+[conda] cudatoolkit               11.0.221             h6bb024c_0
+[conda] mkl                       2021.4.0           h06a4308_640
+[conda] mkl-service               2.4.0            py37h7f8727e_0
+[conda] mkl_fft                   1.3.1            py37hd3c417c_0
+[conda] mkl_random                1.2.2            py37h51133e4_0
+[conda] numpy                     1.21.5           py37h6c91a56_3
+[conda] numpy-base                1.21.5           py37ha15fc14_3
+[conda] pytorch                   1.7.0           py3.7_cuda11.0.221_cudnn8.0.3_0    pytorch
+[conda] pytorch3d                 0.3.0           py37_cu110_pyt170    pytorch3d
+[conda] torchaudio                0.7.0                      py37    pytorch
+[conda] torchvision               0.8.0                py37_cu110    pytorch
+

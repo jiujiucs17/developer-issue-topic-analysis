@@ -1,0 +1,549 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+The tests test_svd_errors_and_warnings_cpu_complex128, test_svd_errors_and_warnings_cpu_complex64, test_svd_errors_and_warnings_cpu_float32 and test_svd_errors_and_warnings_cpu_float64 fail with the following traceback:
+
+To Reproduce
+Steps to reproduce the behavior:
+
+Install PyTorch 1.10.0 from sources, building against OpenBLAS 0.3.15
+Run python run_test.py -i test_linalg.TestLinalgCPU -v to run the relevant part of the test suite
+(alternative): instead of running the test from the test suite, simply do
+
+
+Expected behavior
+It makes sense that torch.svd wouldn't complete on a tensor of NaN's. However, the test suite clearly expects this type of error:
+
+But instead, I get the error above. That error looks more serious: it seems the implementation calling the backend library makes some invalid call in this particular scenario. Note that a
+
+Runs without any issues, it's really the NaN input that breaks it.
+Summarizing: one wouldn't assume a torch.svd(a) to complete succesfully when a contains NaN's, but I (and the test suite) do expect a different error.
+Environment
+
+PyTorch Version (e.g., 1.0): 1.10.0
+OS (e.g., Linux): CentOS 8
+How you installed PyTorch (conda, pip, source): source
+Build command you used (if compiling from source):
+
+
+
+Python version: 3.9.5
+CUDA/cuDNN version: CUDA: 11.3.1, cuDNN: 8.2.1.32
+GPU models and configuration: N/A
+Any other relevant information: I'm building against OpenBLAS 0.3.15, so that should be the CPU backend in this case.
+
+Additional context
+I've also hit this issue due to the fact that my numpy was compiled against the same OpenBLAS version, and apparantly the behaviour of how NaN's are propagated has changed from OpenBLAS 0.3.15 onwards (see numpy/numpy#18914). I'm not sure if the current issue is related, but since it occurs specifically when the input matrices contain NaN's, I guess it could be.
+cc @jianyuh @nikitaved @pearu @mruberry @walterddr @IvanYashchuk @xwang233 @lezcano
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Passing the max_norm parameter when creating an Embedding will cause the forward pass to fail when inside a DataParallel module.
+To Reproduce
+
+Expected behavior
+The module should process as expect. Instead, the following error is produced on Device 0:
+
+RuntimeError: Output 0 of BroadcastBackward is a view and its base or another view of its base has been modified inplace. This view is the output of a function that returns multiple views. Such functions do not allow the output views to be modified inplace. You should replace the inplace operation by an out-of-place one.
+
+Environment
+
+PyTorch Version (e.g., 1.0): 1.5.0
+OS (e.g., Linux): Linux
+How you installed PyTorch (conda, pip, source): pip
+Python version: 3.6.5
+CUDA/cuDNN version: 10.2
+GPU models and configuration: AWS ml.p2.8xlarge
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+In PyTorch 1.5 (not 1.4) using cdist produces NANs instead of regular gradients. This happens on both CPU and GPU.
+To Reproduce
+Steps to reproduce the behavior:
+
+Download the tensors
+Run the code
+
+
+
+The printed gradients will be NAN.
+
+Expected behavior
+Actual numerical gradients.
+Environment
+
+PyTorch Version (e.g., 1.0): 1.5.0
+OS (e.g., Linux): Linux
+How you installed PyTorch (conda, pip, source): conda
+Build command you used (if compiling from source):
+Python version: 3.7.6
+CUDA/cuDNN version: 10.2
+GPU models and configuration: Nvidia 1080 Ti (but it also happens on CPU)
+Any other relevant information:
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I’m doing some graph editing using torch.fx and timm liblary.
+I was editing already resnet18 and it was completely successful.
+But when using mobilenet I run into problem cause obtained graph doesn’t have some keys already that our original model had.
+As an outcome of that our orignal model is fitting good (as supposed) but the obtained graph is not fitting.
+Example
+
+
+Versions
+Collecting environment information...
+PyTorch version: 2.0.0+cu118
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.4 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+Clang version: Could not collect
+CMake version: version 3.25.0
+Libc version: glibc-2.31
+Python version: 3.8.10 (default, Mar 13 2023, 10:26:41)  [GCC 9.4.0] (64-bit runtime)
+Python platform: Linux-5.15.0-69-generic-x86_64-with-glibc2.29
+Is CUDA available: True
+CUDA runtime version: 12.1.66
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 3090
+Nvidia driver version: 530.30.02
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   48 bits physical, 48 bits virtual
+CPU(s):                          16
+On-line CPU(s) list:             0-15
+Thread(s) per core:              2
+Core(s) per socket:              8
+Socket(s):                       1
+NUMA node(s):                    1
+Vendor ID:                       AuthenticAMD
+CPU family:                      25
+Model:                           33
+Model name:                      AMD Ryzen 7 5800X 8-Core Processor
+Stepping:                        0
+Frequency boost:                 enabled
+CPU MHz:                         2200.000
+CPU max MHz:                     3800,0000
+CPU min MHz:                     2200,0000
+BogoMIPS:                        7585.45
+Virtualization:                  AMD-V
+L1d cache:                       256 KiB
+L1i cache:                       256 KiB
+L2 cache:                        4 MiB
+L3 cache:                        32 MiB
+NUMA node0 CPU(s):               0-15
+Vulnerability Itlb multihit:     Not affected
+Vulnerability L1tf:              Not affected
+Vulnerability Mds:               Not affected
+Vulnerability Meltdown:          Not affected
+Vulnerability Mmio stale data:   Not affected
+Vulnerability Retbleed:          Not affected
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP always-on, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+Versions of relevant libraries:
+[pip3] efficientnet-pytorch==0.6.3
+[pip3] flamingo-pytorch==0.1.2
+[pip3] lion-pytorch==0.0.7
+[pip3] mypy-extensions==1.0.0
+[pip3] numpy==1.23.5
+[pip3] pytorch-ignite==0.4.8
+[pip3] pytorch-lightning==1.7.0
+[pip3] pytorch-metric-learning==1.6.3
+[pip3] segmentation-models-pytorch==0.2.1
+[pip3] torch==2.0.0+cu118
+[pip3] torch-audiomentations==0.11.0
+[pip3] torch-pitch-shift==1.2.2
+[pip3] torchaudio==0.9.0
+[pip3] torchmetrics==0.10.2
+[pip3] torchsummary==1.5.1
+[pip3] torchvision==0.15.1+cu118
+[pip3] vit-pytorch==1.2.0
+[conda] Could not collect
+cc @ezyang @SherlockNoMad @soumith @EikanWang @jgong5 @wenzhe-nrv
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+addmm returns an incorrect result when the out= parameter is passed. The input and output are the same shape.
+To Reproduce
+Steps to reproduce the behavior:
+
+Output:
+
+
+Output:
+
+Expected behavior
+addmm should return the same values (all ones) for both calls. I understand from browsing other issues that out= can do unexpected things if the input and output are different shapes, but it should work if they are the same.
+Environment
+Collecting environment information...
+PyTorch version: 1.7.0+cu110
+Is debug build: True
+CUDA used to build PyTorch: 11.0
+ROCM used to build PyTorch: N/A
+OS: Arch Linux (x86_64)
+GCC version: (GCC) 10.2.0
+Clang version: Could not collect
+CMake version: Could not collect
+Python version: 3.8 (64-bit runtime)
+Is CUDA available: True
+CUDA runtime version: Could not collect
+GPU models and configuration: GPU 0: GeForce RTX 3080
+Nvidia driver version: 455.45.01
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.19.4
+[pip3] pytorch-memlab==0.2.3
+[pip3] torch==1.7.0+cu110
+[pip3] torchvision==0.8.1+cu110
+[conda] Could not collect
+cc @ezyang @gchanan @zou3519 @bdhirsh @jlin27 @mruberry @jianyuh @nikitaved @pearu @heitorschueroff @walterddr
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I tried to run the following code, but it fails with error
+Traceback (most recent call last):
+File "bug.py", line 70, in 
+main()
+File "bug.py", line 65, in main
+script_f(*arg_list)
+File ".../pytorch/torch/nn/modules/module.py", line 1131, in _call_impl
+return forward_call(*input, **kwargs)
+RuntimeError: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript (most recent call last):
+RuntimeError: The following operation failed in the TorchScript interpreter.
+Traceback of TorchScript (most recent call last):
+RuntimeError: vector::_M_range_check: __n (which is 18446744073709551615) >= this->size() (which is 3)
+
+Versions
+Collecting environment information...
+PyTorch version: 1.13.0a0+git9244547
+Is debug build: False
+CUDA used to build PyTorch: 11.6
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.6 LTS (x86_64)
+GCC version: (conda-forge gcc 12.1.0-16) 12.1.0
+Clang version: 6.0.0-1ubuntu2 (tags/RELEASE_600/final)
+CMake version: version 3.22.5
+Libc version: glibc-2.27
+Python version: 3.8.13 (default, Mar 28 2022, 11:38:47)  [GCC 7.5.0] (64-bit runtime)
+Python platform: Linux-5.4.0-1069-aws-x86_64-with-glibc2.17
+Is CUDA available: True
+CUDA runtime version: 11.6.112
+GPU models and configuration:
+GPU 0: NVIDIA A100-SXM4-40GB
+GPU 1: NVIDIA A100-SXM4-40GB
+GPU 2: NVIDIA A100-SXM4-40GB
+GPU 3: NVIDIA A100-SXM4-40GB
+GPU 4: NVIDIA A100-SXM4-40GB
+GPU 5: NVIDIA A100-SXM4-40GB
+GPU 6: NVIDIA A100-SXM4-40GB
+GPU 7: NVIDIA A100-SXM4-40GB
+Nvidia driver version: 510.47.03
+cuDNN version: Probably one of the following:
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn.so.8.0.5
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.0.5
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.0.5
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.0.5
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.0.5
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.0.5
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.0.5
+/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn.so.8.0.5
+/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.0.5
+/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.0.5
+/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.0.5
+/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.0.5
+/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.0.5
+/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.0.5
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn.so.8.1.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.1.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.1.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.1.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.1.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.1.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.1.1
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: False
+Versions of relevant libraries:
+[pip3] bert-pytorch==0.0.1a4
+[pip3] botorch==0.6.4
+[pip3] flowtorch==0.8
+[pip3] functorch==0.3.0a0+6cfb462
+[pip3] gpytorch==1.6.0
+[pip3] mypy==0.950
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.22.3
+[pip3] numpyro==0.9.2
+[pip3] pytorch-transformers==1.2.0
+[pip3] torch==1.13.0a0+git9244547
+[pip3] torch-struct==0.5
+[pip3] torchaudio==0.12.0a0+4d2fa19
+[pip3] torchdynamo==0.2.0
+[pip3] torchfile==0.1.0
+[pip3] torchmetrics==0.9.1
+[pip3] torchrec-nightly==2022.4.26
+[pip3] torchtext==0.13.0a0+d6e3550
+[pip3] torchvision==0.14.0a0+a7e4fbd
+[pip3] torchx-nightly==2022.6.8
+[conda] bert-pytorch              0.0.1a4                   dev_0    
+[conda] blas                      1.0                         mkl
+[conda] botorch                   0.6.4                    pypi_0    pypi
+[conda] flowtorch                 0.8                      pypi_0    pypi
+[conda] functorch                 0.3.0a0+6cfb462           dev_0    
+[conda] gpytorch                  1.6.0                    pypi_0    pypi
+[conda] magma-cuda110             2.5.2                         1    pytorch
+[conda] magma-cuda116             2.6.1                         0    pytorch
+[conda] mkl                       2022.1.0                 pypi_0    pypi
+[conda] mkl-include               2022.0.1           h06a4308_117
+[conda] mkl-service               2.4.0            py38h7f8727e_0
+[conda] mkl_fft                   1.3.1            py38hd3c417c_0
+[conda] mkl_random                1.2.2            py38h51133e4_0
+[conda] numpy                     1.20.0                   pypi_0    pypi
+[conda] numpy-base                1.22.3           py38hf524024_0
+[conda] numpyro                   0.9.2                    pypi_0    pypi
+[conda] pytorch-transformers      1.2.0                    pypi_0    pypi
+[conda] torch                     1.13.0a0+git9244547           dev_0    
+[conda] torch-struct              0.5                      pypi_0    pypi
+[conda] torchaudio                0.12.0a0+4d2fa19           dev_0    
+[conda] torchdynamo               0.2.0                     dev_0    
+[conda] torchfile                 0.1.0                    pypi_0    pypi
+[conda] torchmetrics              0.9.0                    pypi_0    pypi
+[conda] torchrec-nightly          2022.4.26                pypi_0    pypi
+[conda] torchtext                 0.13.0a0+d6e3550           dev_0    
+[conda] torchvision               0.14.0a0+a7e4fbd           dev_0    
+[conda] torchx-nightly            2022.6.6                 pypi_0    pypi
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+This recent addition uses splitting on commas to get the integer part of the cuda version to determine if bfloat16 is supported. We should find a way to do this that doesn't rely on decimals being stored as commas in the user's locale.
+It looks like this PR (#64122) would fix this issue once it is merged.
+To Reproduce
+Steps to reproduce the behavior:
+
+Given the issue introduced here:
+6324d98#diff-9189d159e01ea5173c234ead87f40f4a99cb1aa01264a3259b99a162fee4248cR85
+You get this error when you call
+
+Manually changing ',' on that line to '.' fixed the issue for me. However I understand that someone in another locale may have the exact opposite preference. Ideally a change that works in all locales would be preferred.
+Expected behavior
+
+Environment
+Collecting environment information...
+PyTorch version: 1.10.0.dev20210830
+Is debug build: False
+CUDA used to build PyTorch: 11.1
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.2 LTS (x86_64)
+GCC version: (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+Clang version: Could not collect
+CMake version: Could not collect
+Libc version: glibc-2.31
+Python version: 3.9.6 | packaged by conda-forge | (default, Jul 11 2021, 03:39:48)  [GCC 9.3.0] (64-bit runtime)
+Python platform: Linux-5.4.0-77-generic-x86_64-with-glibc2.31
+Is CUDA available: True
+CUDA runtime version: 11.4.48
+GPU models and configuration:
+GPU 0: NVIDIA A10
+GPU 1: NVIDIA A10
+Nvidia driver version: 470.42.01
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.21.1
+[pip3] pytorch-ignite==0.4.6
+[pip3] pytorch-lightning==1.5.0.dev0
+[pip3] torch==1.10.0.dev20210830
+[pip3] torchaudio==0.10.0.dev20210830
+[pip3] torchmetrics==0.4.1
+[pip3] torchsummary==1.5.1
+[pip3] torchvision==0.11.0.dev20210830
+[conda] blas                      2.110                       mkl    conda-forge
+[conda] blas-devel                3.9.0                    10_mkl    conda-forge
+[conda] captum                    0.4.0                         0    pytorch
+[conda] cudatoolkit               11.1.74              h6bb024c_0    nvidia
+[conda] ignite                    0.4.6                      py_0    pytorch
+[conda] libblas                   3.9.0                    10_mkl    conda-forge
+[conda] libcblas                  3.9.0                    10_mkl    conda-forge
+[conda] liblapack                 3.9.0                    10_mkl    conda-forge
+[conda] liblapacke                3.9.0                    10_mkl    conda-forge
+[conda] mkl                       2021.3.0           h06a4308_520
+[conda] mkl-devel                 2021.3.0           h66538d2_520
+[conda] mkl-include               2021.3.0           h06a4308_520
+[conda] numpy                     1.21.1           py39hdbf815f_0    conda-forge
+[conda] pytorch                   1.10.0.dev20210830 py3.9_cuda11.1_cudnn8.0.5_0    pytorch-nightly
+[conda] pytorch-lightning         1.5.0.dev0               pypi_0    pypi
+[conda] torchaudio                0.10.0.dev20210830            py39    pytorch-nightly
+[conda] torchmetrics              0.4.1              pyhd8ed1ab_0    conda-forge
+[conda] torchsummary              1.5.1                    py39_0    ravelbio
+[conda] torchvision               0.11.0.dev20210830      py39_cu111    pytorch-nightly
+Additional context
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+torch.pca_lowrank and torch.svd_lowrank does not work with automatic mixed precision, even if the inputs are 32 bit.
+
+Trace:
+
+Likely the matmul in get_approximate_basis in _lowrank.py downcasts to float16, which is not supported in torch.linalg.qr.
+Versions
+Collecting environment information...
+PyTorch version: 1.13.1+cu117
+Is debug build: False
+CUDA used to build PyTorch: 11.7
+ROCM used to build PyTorch: N/A
+OS: Manjaro Linux (x86_64)
+GCC version: (GCC) 11.3.0
+Clang version: 15.0.7
+CMake version: version 3.25.2
+Libc version: glibc-2.37
+Python version: 3.10.9 (main, Dec 19 2022, 17:35:49) [GCC 12.2.0] (64-bit runtime)
+Python platform: Linux-5.15.102-1-MANJARO-x86_64-with-glibc2.37
+Is CUDA available: True
+CUDA runtime version: 11.8.89
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 3070 Laptop GPU
+Nvidia driver version: 525.89.02
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Address sizes:                   39 bits physical, 48 bits virtual
+Byte Order:                      Little Endian
+CPU(s):                          16
+On-line CPU(s) list:             0-15
+Vendor ID:                       GenuineIntel
+Model name:                      11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz
+CPU family:                      6
+Model:                           141
+Thread(s) per core:              2
+Core(s) per socket:              8
+Socket(s):                       1
+Stepping:                        1
+CPU(s) scaling MHz:              79%
+CPU max MHz:                     4600,0000
+CPU min MHz:                     800,0000
+BogoMIPS:                        4609,00
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l2 invpcid_single cdp_l2 ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves split_lock_detect dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp hwp_pkg_req avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid movdiri movdir64b fsrm avx512_vp2intersect md_clear flush_l1d arch_capabilities
+Virtualization:                  VT-x
+L1d cache:                       384 KiB (8 instances)
+L1i cache:                       256 KiB (8 instances)
+L2 cache:                        10 MiB (8 instances)
+L3 cache:                        24 MiB (1 instance)
+NUMA node(s):                    1
+NUMA node0 CPU(s):               0-15
+Vulnerability Itlb multihit:     Not affected
+Vulnerability L1tf:              Not affected
+Vulnerability Mds:               Not affected
+Vulnerability Meltdown:          Not affected
+Vulnerability Mmio stale data:   Not affected
+Vulnerability Retbleed:          Not affected
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Vulnerable: eIBRS with unprivileged eBPF
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
+Versions of relevant libraries:
+[pip3] flake8==6.0.0
+[pip3] numpy==1.23.3
+[pip3] pytorch-lightning==1.9.4
+[pip3] pytorch3d==0.7.2
+[pip3] torch==1.13.1
+[pip3] torchmeta==1.8.0
+[pip3] torchmetrics==0.11.4
+[pip3] torchvision==0.14.1
+[pip3] torchviz==0.0.2
+[conda] No relevant packages
+cc @ngimel @jianyuh @nikitaved @pearu @mruberry @walterddr @IvanYashchuk @xwang233 @lezcano @mcarilli @ptrblck @leslie-fang-intel @jgong5
+
+----------------------------------------Comment 1----------------------------------------
+
+forward is implemented as follows:
+
+Expected behavior
+I suppose that there is should be
+
+Environment
+PyTorch version: 1.4.0
+Is debug build: No
+CUDA used to build PyTorch: 10.1
+OS: Microsoft Windows 10 Enterprise
+GCC version: (x86_64-posix-seh-rev0, Built by MinGW-W64 project) 8.1.0
+CMake version: version 3.15.5
+Python version: 3.6
+Is CUDA available: Yes
+CUDA runtime version: 10.1.105
+GPU models and configuration: GPU 0: GeForce GTX 1080 Ti
+Nvidia driver version: 418.96
+cuDNN version: Could not collect
+Versions of relevant libraries:
+[pip] numpy==1.18.1
+[pip] pytorch-memlab==0.0.2
+[pip] torch==1.4.0
+[pip] torchvision==0.5.0
+[conda] blas 1.0 mkl
+[conda] libmklml 2019.0.3 0
+[conda] mkl 2019.5 281 anaconda
+[conda] mkl-service 2.3.0 py36hb782905_0 anaconda
+[conda] mkl_fft 1.0.12 py36h14836fe_0
+[conda] mkl_random 1.0.2 py36h343c172_0
+[conda] pytorch 1.4.0 py3.6_cuda101_cudnn7_0 pytorch
+[conda] pytorch-memlab 0.0.2 pypi_0 pypi
+[conda] torchvision 0.5.0 py36_cu101 pytorch
+cc @jerryzh168 @jianyuh @dzhulgakov @raghuramank100 @jamesr66a
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+To Reproduce
+Steps to reproduce the behavior:
+
+Expected behavior
+torch.argsort(a) sholud be:
+
+Environment
+PyTorch version: 1.2.0
+Is debug build: No
+CUDA used to build PyTorch: 10.0.130
+OS: Ubuntu 18.04.3 LTS
+GCC version: (Ubuntu 7.4.0-1ubuntu1~18.04.1) 7.4.0
+CMake version: Could not collect
+Python version: 3.6
+Is CUDA available: Yes
+CUDA runtime version: Could not collect
+GPU models and configuration: GPU 0: GeForce RTX 2080 Ti
+Nvidia driver version: 430.40
+cuDNN version: Could not collect
+Versions of relevant libraries:
+[pip3] numpy==1.17.0
+[pip3] pytorch-transformers==1.0.0
+[conda] mkl                       2019.4                      243    https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main
+[conda] pytorch                   1.2.0           py3.6_cuda10.0.130_cudnn7.6.2_0    https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch
+[conda] torchvision               0.4.0                py36_cu100    https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/pytorch
+Additional context
+

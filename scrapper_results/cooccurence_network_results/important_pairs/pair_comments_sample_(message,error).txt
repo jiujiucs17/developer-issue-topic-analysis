@@ -1,0 +1,2078 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+This might be related to a few previous issues like #43476, #51871. I find that when my modified ResNet has the size of any of its intermediate layers to be larger than 2**31 (max value of int32), which can happen if you have 100 batch size, 200 channels, 512*512 images, it may raise an error when you try to backprop your loss.
+See below for a minimal example to reproduce the issue, although you may want to run it on a large memory GPU, otherwise you'll first get the GPU out of memory error before this int32 error.
+I checked that with 80GB A100 the GPU memory is not the real issue; the restriction of int32 unnecessarily limits the application of CNN to high resolution images. Please consider use int64 instead; I suppose it just needs a switch of data type that will not deteriorate the performance.
+
+The last line leads to the following error,
+
+FYI, below is the actual error message I got from a real world example, which I believe has the same origin as the minimal toy example above.
+
+Versions
+(hejia@della-5) [hejia@della-l07g3 ~]$ python collect_env.py
+Collecting environment information...
+PyTorch version: 2.1.1
+Is debug build: False
+CUDA used to build PyTorch: 12.1
+ROCM used to build PyTorch: N/A
+OS: Springdale Linux release 8.8 (Modena) (x86_64)
+GCC version: (GCC) 8.5.0 20210514 (Red Hat 8.5.0-18)
+Clang version: Could not collect
+CMake version: version 3.20.2
+Libc version: glibc-2.28
+Python version: 3.11.5 (main, Sep 11 2023, 13:54:46) [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-4.18.0-477.27.1.el8_8.x86_64-x86_64-with-glibc2.28
+Is CUDA available: True
+CUDA runtime version: Could not collect
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: NVIDIA A100-SXM4-80GB
+Nvidia driver version: 535.104.05
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:        x86_64
+OS: Springdale Linux release 8.8 (Modena) (x86_64)
+CPU op-mode(s):      32-bit, 64-bit
+Byte Order:          Little Endian
+CPU(s):              48
+On-line CPU(s) list: 0-47
+Thread(s) per core:  1
+Core(s) per socket:  24
+Socket(s):           2
+NUMA node(s):        2
+Vendor ID:           AuthenticAMD
+CPU family:          25
+Model:               1
+Model name:          AMD EPYC 7413 24-Core Processor
+Stepping:            1
+CPU MHz:             2650.000
+CPU max MHz:         3630.8101
+CPU min MHz:         1500.0000
+BogoMIPS:            5290.31
+Virtualization:      AMD-V
+L1d cache:           32K
+L1i cache:           32K
+L2 cache:            512K
+L3 cache:            32768K
+NUMA node0 CPU(s):   0-23
+NUMA node1 CPU(s):   24-47
+Flags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpui
+d extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw
+ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 invpcid_single hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 invpcid cqm rdt_a rdseed adx
+smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd amd_ppin brs arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean
+flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca
+Versions of relevant libraries:
+[pip3] numpy==1.26.0
+[pip3] torch==2.1.1
+[pip3] torchsummary==1.5.1
+[pip3] torchvision==0.16.1
+[pip3] triton==2.1.0
+[conda] blas                      1.0                         mkl
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] libjpeg-turbo             2.0.0                h9bf148f_0    pytorch
+[conda] mkl                       2023.1.0         h213fc3f_46344
+[conda] mkl-service               2.4.0           py311h5eee18b_1
+[conda] mkl_fft                   1.3.8           py311h5eee18b_0
+[conda] mkl_random                1.2.4           py311hdb19cb5_0
+[conda] numpy                     1.26.0          py311h08b1b3b_0
+[conda] numpy-base                1.26.0          py311hf175353_0
+[conda] pytorch                   2.1.1           py3.11_cuda12.1_cudnn8.9.2_0    pytorch
+[conda] pytorch-cuda              12.1                 ha16c6d3_5    pytorch
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torchsummary              1.5.1                    pypi_0    pypi
+[conda] torchtriton               2.1.0                     py311    pytorch
+[conda] torchvision               0.16.1              py311_cu121    pytorch
+cc @ptrblck
+
+----------------------------------------Comment 1----------------------------------------
+
+❓ Questions and Help
+(base) C:\Users\Debo\pytorch>python setup.py install
+Building wheel torch-1.1.0a0+12d6725
+-- Building version 1.1.0a0+12d6725
+[0/1] Re-running CMake...
+-- std::exception_ptr is supported.
+-- NUMA is disabled
+-- Current compiler supports avx2 extension. Will build perfkernels.
+-- Current compiler supports avx512f extension. Will build fbgemm.
+-- Building using own protobuf under third_party per request.
+-- Use custom protobuf build.
+-- Caffe2 protobuf include directory: $&lt;BUILD_INTERFACE:C:/Users/Debo/pytorch/third_party/protobuf/src&gt;$&lt;INSTALL_INTERFACE:include>
+-- Trying to find preferred BLAS backend of choice: MKL
+CMake Warning at cmake/Dependencies.cmake:118 (message):
+MKL could not be found.  Defaulting to Eigen
+Call Stack (most recent call first):
+CMakeLists.txt:224 (include)
+CMake Warning at cmake/Dependencies.cmake:137 (message):
+Preferred BLAS (MKL) cannot be found, now searching for a general BLAS
+library
+Call Stack (most recent call first):
+CMakeLists.txt:224 (include)
+-- Checking for [mkl_intel_lp64 - mkl_intel_thread - mkl_core - libiomp5md]
+--   Library mkl_intel_lp64: not found
+-- Checking for [mkl_intel - mkl_intel_thread - mkl_core - libiomp5md]
+--   Library mkl_intel: not found
+-- Checking for [mkl_intel_lp64 - mkl_intel_thread - mkl_core]
+--   Library mkl_intel_lp64: not found
+-- Checking for [mkl_intel - mkl_intel_thread - mkl_core]
+--   Library mkl_intel: not found
+-- Checking for [mkl_intel_lp64 - mkl_sequential - mkl_core]
+--   Library mkl_intel_lp64: not found
+-- Checking for [mkl_intel - mkl_sequential - mkl_core]
+--   Library mkl_intel: not found
+-- Checking for [mkl_intel_lp64 - mkl_core - libiomp5md - pthread]
+--   Library mkl_intel_lp64: not found
+-- Checking for [mkl_intel - mkl_core - libiomp5md - pthread]
+--   Library mkl_intel: not found
+-- Checking for [mkl_intel_lp64 - mkl_core - pthread]
+--   Library mkl_intel_lp64: not found
+-- Checking for [mkl_intel - mkl_core - pthread]
+--   Library mkl_intel: not found
+-- Checking for [mkl - guide - pthread - m]
+--   Library mkl: not found
+-- MKL library not found
+-- Checking for [Accelerate]
+--   Library Accelerate: BLAS_Accelerate_LIBRARY-NOTFOUND
+-- Checking for [vecLib]
+--   Library vecLib: BLAS_vecLib_LIBRARY-NOTFOUND
+-- Checking for [openblas]
+--   Library openblas: BLAS_openblas_LIBRARY-NOTFOUND
+-- Checking for [openblas - pthread]
+--   Library openblas: BLAS_openblas_LIBRARY-NOTFOUND
+-- Checking for [libopenblas]
+--   Library libopenblas: BLAS_libopenblas_LIBRARY-NOTFOUND
+-- Checking for [goto2 - gfortran]
+--   Library goto2: BLAS_goto2_LIBRARY-NOTFOUND
+-- Checking for [goto2 - gfortran - pthread]
+--   Library goto2: BLAS_goto2_LIBRARY-NOTFOUND
+-- Checking for [acml - gfortran]
+--   Library acml: BLAS_acml_LIBRARY-NOTFOUND
+-- Checking for [ptf77blas - atlas - gfortran]
+--   Library ptf77blas: BLAS_ptf77blas_LIBRARY-NOTFOUND
+-- Checking for [blas]
+--   Library blas: BLAS_blas_LIBRARY-NOTFOUND
+-- Cannot find a library with BLAS API. Not using BLAS.
+CMake Warning at cmake/Dependencies.cmake:183 (message):
+Target platform "Windows" is not supported in QNNPACK.  Supported platforms
+are Android, iOS, Linux, and macOS.  Turn this warning off by
+USE_QNNPACK=OFF.
+Call Stack (most recent call first):
+CMakeLists.txt:224 (include)
+-- Found PythonInterp: C:/Program Files/Anaconda3/python.exe (found version "3.6.8")
+-- git Version: v1.4.0-505be96a
+-- Version: 1.4.0
+-- Performing Test HAVE_STD_REGEX -- success
+-- Performing Test HAVE_GNU_POSIX_REGEX -- failed to compile
+-- Performing Test HAVE_POSIX_REGEX -- failed to compile
+-- Performing Test HAVE_STEADY_CLOCK -- success
+-- Using third party subdirectory Eigen.
+Python 3.6.8 :: Anaconda, Inc.
+-- Found PythonInterp: C:/Program Files/Anaconda3/python.exe (found suitable version "3.6.8", minimum required is "2.7")
+-- Could NOT find pybind11 (missing: pybind11_DIR)
+-- Could NOT find pybind11 (missing: pybind11_INCLUDE_DIR)
+-- Using third_party/pybind11.
+-- Adding OpenMP CXX_FLAGS: -openmp
+-- No OpenMP library needs to be linked against
+-- Caffe2: CUDA detected: 10.1
+-- Caffe2: CUDA nvcc is: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1/bin/nvcc.exe
+-- Caffe2: CUDA toolkit directory: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1
+-- Caffe2: Header version is: 10.1
+-- Could NOT find CUDNN (missing: CUDNN_INCLUDE_DIR CUDNN_LIBRARY)
+CMake Warning at cmake/public/cuda.cmake:110 (message):
+Caffe2: Cannot find cuDNN library.  Turning the option off
+Call Stack (most recent call first):
+cmake/Dependencies.cmake:735 (include)
+CMakeLists.txt:224 (include)
+-- Autodetected CUDA architecture(s): 6.1
+-- Added CUDA NVCC flags for: -gencode;arch=compute_61,code=sm_61
+-- Could NOT find CUB (missing: CUB_INCLUDE_DIR)
+-- ******** Summary ********
+--   CMake version         : 3.14.0
+--   CMake command         : C:/Program Files/Anaconda3/Library/bin/cmake.exe
+--   System                : Windows
+--   C++ compiler          : C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Tools/MSVC/14.15.26726/bin/HostX64/x64/cl.exe
+--   C++ compiler version  : 19.15.26731.0
+--   CXX flags             :   /EHa -openmp
+--   Build type            : Release
+--   Compile definitions   :
+--   CMAKE_PREFIX_PATH     : C:\Program Files\Anaconda3\Lib\site-packages
+--   CMAKE_INSTALL_PREFIX  : C:/Users/Debo/pytorch/torch
+--   CMAKE_MODULE_PATH     : C:/Users/Debo/pytorch/cmake/Modules;C:/Users/Debo/pytorch/cmake/public/../Modules_CUDA_fix
+--   ONNX version          : 1.4.1
+--   ONNX NAMESPACE        : onnx_torch
+--   ONNX_BUILD_TESTS      : OFF
+--   ONNX_BUILD_BENCHMARKS : OFF
+--   ONNX_USE_LITE_PROTO   : OFF
+--   ONNXIFI_DUMMY_BACKEND : OFF
+--   ONNXIFI_ENABLE_EXT    : OFF
+--   Protobuf compiler     :
+--   Protobuf includes     :
+--   Protobuf libraries    :
+--   BUILD_ONNX_PYTHON     : OFF
+-- ******** Summary ********
+--   CMake version         : 3.14.0
+--   CMake command         : C:/Program Files/Anaconda3/Library/bin/cmake.exe
+--   System                : Windows
+--   C++ compiler          : C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Tools/MSVC/14.15.26726/bin/HostX64/x64/cl.exe
+--   C++ compiler version  : 19.15.26731.0
+--   CXX flags             :   /EHa -openmp
+--   Build type            : Release
+--   Compile definitions   :
+--   CMAKE_PREFIX_PATH     : C:\Program Files\Anaconda3\Lib\site-packages
+--   CMAKE_INSTALL_PREFIX  : C:/Users/Debo/pytorch/torch
+--   CMAKE_MODULE_PATH     : C:/Users/Debo/pytorch/cmake/Modules;C:/Users/Debo/pytorch/cmake/public/../Modules_CUDA_fix
+--   ONNX version          : 1.4.1
+--   ONNX NAMESPACE        : onnx_torch
+--   ONNX_BUILD_TESTS      : OFF
+--   ONNX_BUILD_BENCHMARKS : OFF
+--   ONNX_USE_LITE_PROTO   : OFF
+--   ONNXIFI_DUMMY_BACKEND : OFF
+--   Protobuf compiler     :
+--   Protobuf includes     :
+--   Protobuf libraries    :
+--   BUILD_ONNX_PYTHON     : OFF
+-- Found CUDA with FP16 support, compiling with torch.cuda.HalfTensor
+-- Removing -DNDEBUG from compile flags
+-- MAGMA not found. Compiling without MAGMA support
+-- Could not find hardware support for NEON on this machine.
+-- No OMAP3 processor on this machine.
+-- No OMAP4 processor on this machine.
+-- AVX compiler support found
+-- AVX2 compiler support found
+-- Atomics: using MSVC intrinsics
+-- Checking for [mkl_intel_lp64 - mkl_intel_thread - mkl_core - libiomp5md]
+--   Library mkl_intel_lp64: not found
+-- Checking for [mkl_intel - mkl_intel_thread - mkl_core - libiomp5md]
+--   Library mkl_intel: not found
+-- Checking for [mkl_intel_lp64 - mkl_intel_thread - mkl_core]
+--   Library mkl_intel_lp64: not found
+-- Checking for [mkl_intel - mkl_intel_thread - mkl_core]
+--   Library mkl_intel: not found
+-- Checking for [mkl_intel_lp64 - mkl_sequential - mkl_core]
+--   Library mkl_intel_lp64: not found
+-- Checking for [mkl_intel - mkl_sequential - mkl_core]
+--   Library mkl_intel: not found
+-- Checking for [mkl_intel_lp64 - mkl_core - libiomp5md - pthread]
+--   Library mkl_intel_lp64: not found
+-- Checking for [mkl_intel - mkl_core - libiomp5md - pthread]
+--   Library mkl_intel: not found
+-- Checking for [mkl_intel_lp64 - mkl_core - pthread]
+--   Library mkl_intel_lp64: not found
+-- Checking for [mkl_intel - mkl_core - pthread]
+--   Library mkl_intel: not found
+-- Checking for [mkl - guide - pthread - m]
+--   Library mkl: not found
+-- MKL library not found
+-- Checking for [Accelerate]
+--   Library Accelerate: BLAS_Accelerate_LIBRARY-NOTFOUND
+-- Checking for [vecLib]
+--   Library vecLib: BLAS_vecLib_LIBRARY-NOTFOUND
+-- Checking for [openblas]
+--   Library openblas: BLAS_openblas_LIBRARY-NOTFOUND
+-- Checking for [openblas - pthread]
+--   Library openblas: BLAS_openblas_LIBRARY-NOTFOUND
+-- Checking for [libopenblas]
+--   Library libopenblas: BLAS_libopenblas_LIBRARY-NOTFOUND
+-- Checking for [goto2 - gfortran]
+--   Library goto2: BLAS_goto2_LIBRARY-NOTFOUND
+-- Checking for [goto2 - gfortran - pthread]
+--   Library goto2: BLAS_goto2_LIBRARY-NOTFOUND
+-- Checking for [acml - gfortran]
+--   Library acml: BLAS_acml_LIBRARY-NOTFOUND
+-- Checking for [ptf77blas - atlas - gfortran]
+--   Library ptf77blas: BLAS_ptf77blas_LIBRARY-NOTFOUND
+-- Checking for [blas]
+--   Library blas: BLAS_blas_LIBRARY-NOTFOUND
+-- Cannot find a library with BLAS API. Not using BLAS.
+-- LAPACK requires BLAS
+-- Cannot find a library with LAPACK API. Not using LAPACK.
+-- CuDNN not found. Compiling without CuDNN support
+disabling ROCM because NOT USE_ROCM is set
+-- MIOpen not found. Compiling without MIOpen support
+-- MKL-DNN needs omp 3+ which is not supported in MSVC so far
+CMake Warning at cmake/Dependencies.cmake:1355 (MESSAGE):
+MKLDNN could not be found.
+Call Stack (most recent call first):
+CMakeLists.txt:224 (include)
+-- don't use NUMA
+-- pytorch is compiling with OpenMP.
+OpenMP CXX_FLAGS: -openmp.
+OpenMP libraries: .
+-- NCCL operators skipped due to no CUDA support
+-- Excluding ideep operators as we are not using ideep
+-- Excluding image processing operators due to no opencv
+-- Excluding video processing operators due to no opencv
+-- MPI operators skipped due to no MPI support
+-- Include Observer library
+-- Caffe2 is compiling with OpenMP.
+OpenMP CXX_FLAGS: -openmp.
+OpenMP libraries: .
+-- Using Lib/site-packages as python relative installation path
+CMake Warning at CMakeLists.txt:421 (message):
+Generated cmake files are only fully tested if one builds with system glog,
+gflags, and protobuf.  Other settings may generate files that are not well
+tested.
+--
+-- ******** Summary ********
+-- General:
+--   CMake version         : 3.14.0
+--   CMake command         : C:/Program Files/Anaconda3/Library/bin/cmake.exe
+--   System                : Windows
+--   C++ compiler          : C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Tools/MSVC/14.15.26726/bin/HostX64/x64/cl.exe
+--   C++ compiler id       : MSVC
+--   C++ compiler version  : 19.15.26731.0
+--   BLAS                  : MKL
+--   CXX flags             :   /EHa -openmp /MP /bigobj
+--   Build type            : Release
+--   Compile definitions   : ONNX_NAMESPACE=onnx_torch;_CRT_SECURE_NO_DEPRECATE=1;USE_MSC_ATOMICS=1
+--   CMAKE_PREFIX_PATH     : C:\Program Files\Anaconda3\Lib\site-packages
+--   CMAKE_INSTALL_PREFIX  : C:/Users/Debo/pytorch/torch
+--   TORCH_VERSION         : 1.1.0
+--   CAFFE2_VERSION        : 1.1.0
+--   BUILD_ATEN_MOBILE     : OFF
+--   BUILD_ATEN_ONLY       : OFF
+--   BUILD_BINARY          : False
+--   BUILD_CUSTOM_PROTOBUF : ON
+--     Link local protobuf : ON
+--   BUILD_DOCS            : OFF
+--   BUILD_PYTHON          : True
+--     Python version      : 3.6.8
+--     Python executable   : C:/Program Files/Anaconda3/python.exe
+--     Pythonlibs version  : 3.6.8
+--     Python library      : C:/Program Files/Anaconda3/libs/python36.lib
+--     Python includes     : C:/Program Files/Anaconda3/include
+--     Python site-packages: Lib/site-packages
+--   BUILD_CAFFE2_OPS      : True
+--   BUILD_SHARED_LIBS     : ON
+--   BUILD_TEST            : True
+--   USE_ASAN              : OFF
+--   USE_CUDA              : True
+--     CUDA static link    : False
+--     USE_CUDNN           : OFF
+--     CUDA version        : 10.1
+--     CUDA root directory : C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1
+--     CUDA library        : C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1/lib/x64/cuda.lib
+--     cudart library      : C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1/lib/x64/cudart.lib
+--     cublas library      : C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1/lib/x64/cublas.lib
+--     cufft library       : C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1/lib/x64/cufft.lib
+--     curand library      : C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1/lib/x64/curand.lib
+--     nvrtc               : C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1/lib/x64/nvrtc.lib
+--     CUDA include path   : C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1/include
+--     NVCC executable     : C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1/bin/nvcc.exe
+--     CUDA host compiler  : C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Tools/MSVC/14.15.26726/bin/HostX64/x64/cl.exe
+--     USE_TENSORRT        : OFF
+--   USE_ROCM              : False
+--   USE_EIGEN_FOR_BLAS    : ON
+--   USE_FBGEMM            : OFF
+--   USE_FFMPEG            : False
+--   USE_GFLAGS            : OFF
+--   USE_GLOG              : OFF
+--   USE_LEVELDB           : False
+--   USE_LITE_PROTO        : OFF
+--   USE_LMDB              : False
+--   USE_METAL             : OFF
+--   USE_MKL               : OFF
+--   USE_MKLDNN            : OFF
+--   USE_NCCL              : False
+--   USE_NNPACK            : OFF
+--   USE_NUMPY             : ON
+--   USE_OBSERVERS         : ON
+--   USE_OPENCL            : OFF
+--   USE_OPENCV            : False
+--   USE_OPENMP            : ON
+--   USE_PROF              : OFF
+--   USE_QNNPACK           : OFF
+--   USE_REDIS             : OFF
+--   USE_ROCKSDB           : OFF
+--   USE_ZMQ               : OFF
+--   USE_DISTRIBUTED       : False
+--   Public Dependencies  : Threads::Threads
+--   Private Dependencies : cpuinfo;fp16;aten_op_header_gen;foxi_loader
+-- Configuring done
+-- Generating done
+-- Build files have been written to: C:/Users/Debo/pytorch/build
+[1/858] Building NVCC (Device) object caffe2/CMakeFiles/c...n/src/THC/caffe2_gpu_generated_THCReduceApplyUtils.cu.obj
+FAILED: caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THC/caffe2_gpu_generated_THCReduceApplyUtils.cu.obj
+cmd.exe /C "cd /D C:\Users\Debo\pytorch\build\caffe2\CMakeFiles\caffe2_gpu.dir__\aten\src\THC && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -E make_directory C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THC/. && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -D verbose:BOOL=OFF -D build_configuration:STRING=Release -D generated_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THC/./caffe2_gpu_generated_THCReduceApplyUtils.cu.obj -D generated_cubin_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THC/./caffe2_gpu_generated_THCReduceApplyUtils.cu.obj.cubin.txt -P C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THC/caffe2_gpu_generated_THCReduceApplyUtils.cu.obj.Release.cmake"
+THCReduceApplyUtils.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+THCReduceApplyUtils.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+THCReduceApplyUtils.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+THCReduceApplyUtils.cu
+C:/Users/Debo/pytorch\c10/util/Exception.h(27): warning: base class dllexport/dllimport specification differs from that of the derived class
+C:/Users/Debo/pytorch\c10/util/Exception.h(28): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(29): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(34): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(35): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(21): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(183): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(60): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(66): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/cuda/CUDAStream.h(171): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/typeid.h(453): warning: dllexport/dllimport conflict with "caffe2::TypeMeta::_typeMetaDataInstance [with T=caffe2::detail::_Uninitialized]"
+(449): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(564): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(565): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(566): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(567): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(568): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int64_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(569): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::Half]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(570): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=float]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(571): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=double]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(572): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::ComplexHalf]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(573): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(574): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(577): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::string]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(578): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(579): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(580): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(581): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::mutex, std::default_deletestd::mutex>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(582): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::atomic<__nv_bool>, std::default_delete<std::atomic<__nv_bool>>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(583): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int32_t, std::allocator<int32_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(584): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int64_t, std::allocator<int64_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(585): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<unsigned long, std::allocator>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(586): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(587): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(588): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(608): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(609): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique<std::vector<long, std::allocator>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(613): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::_CaffeHighestPreallocatedTypeId]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(58): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(59): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeId.h(38): warning: dllexport/dllimport conflict with "c10::toString"
+(35): here; dllimport/dllexport dropped
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(32): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(45): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(46): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Storage.h(180): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/logging_is_not_google_glog.h(47): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1369): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1375): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1376): warning: field of class type without a DLL interface used in a class with a DLL interface
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+THCReduceApplyUtils.cu
+C:/Users/Debo/pytorch\c10/util/Exception.h(27): warning: base class dllexport/dllimport specification differs from that of the derived class
+C:/Users/Debo/pytorch\c10/util/Exception.h(28): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(29): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(34): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(35): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(21): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(183): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(60): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(66): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/cuda/CUDAStream.h(171): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(144): error: variable in constexpr function does not have automatic storage duration
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(150): error: variable in constexpr function does not have automatic storage duration
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(162): error: variable in constexpr function does not have automatic storage duration
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(187): error: variable in constexpr function does not have automatic storage duration
+C:/Users/Debo/pytorch\c10/util/typeid.h(453): warning: dllexport/dllimport conflict with "caffe2::TypeMeta::_typeMetaDataInstance [with T=caffe2::detail::_Uninitialized]"
+(449): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(564): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(565): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(566): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(567): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(568): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int64_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(569): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::Half]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(570): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=float]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(571): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=double]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(572): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::ComplexHalf]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(573): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(574): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(577): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::string]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(578): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=bool]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(579): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(580): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(581): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::mutex, std::default_deletestd::mutex>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(582): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::atomic, std::default_delete<std::atomic>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(583): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int32_t, std::allocator<int32_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(584): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int64_t, std::allocator<int64_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(585): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<unsigned long, std::allocator>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(586): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=bool *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(587): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(588): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(608): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(609): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique<std::vector<long, std::allocator>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(613): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::_CaffeHighestPreallocatedTypeId]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(58): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(59): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeId.h(38): warning: dllexport/dllimport conflict with "c10::toString"
+(35): here; dllimport/dllexport dropped
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(32): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(45): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(46): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Storage.h(180): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/logging_is_not_google_glog.h(47): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1369): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1375): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1376): warning: field of class type without a DLL interface used in a class with a DLL interface
+4 errors detected in the compilation of "C:/Users/Debo/AppData/Local/Temp/tmpxft_0000395c_00000000-8_THCReduceApplyUtils.cpp4.ii".
+THCReduceApplyUtils.cu
+CMake Error at caffe2_gpu_generated_THCReduceApplyUtils.cu.obj.Release.cmake:279 (message):
+Error generating file
+C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THC/./caffe2_gpu_generated_THCReduceApplyUtils.cu.obj
+[2/858] Building NVCC (Device) object caffe2/CMakeFiles/c.../src/THCUNN/caffe2_gpu_generated_SpatialMaxPooling.cu.obj
+FAILED: caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/caffe2_gpu_generated_SpatialMaxPooling.cu.obj
+cmd.exe /C "cd /D C:\Users\Debo\pytorch\build\caffe2\CMakeFiles\caffe2_gpu.dir__\aten\src\THCUNN && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -E make_directory C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/. && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -D verbose:BOOL=OFF -D build_configuration:STRING=Release -D generated_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialMaxPooling.cu.obj -D generated_cubin_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialMaxPooling.cu.obj.cubin.txt -P C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/caffe2_gpu_generated_SpatialMaxPooling.cu.obj.Release.cmake"
+SpatialMaxPooling.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialMaxPooling.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialMaxPooling.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialMaxPooling.cu
+C:/Users/Debo/pytorch\c10/util/Exception.h(27): warning: base class dllexport/dllimport specification differs from that of the derived class
+C:/Users/Debo/pytorch\c10/util/Exception.h(28): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(29): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(34): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(35): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(21): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(183): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(60): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(66): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/cuda/CUDAStream.h(171): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\THC/THCAllocator.h(14): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/typeid.h(453): warning: dllexport/dllimport conflict with "caffe2::TypeMeta::_typeMetaDataInstance [with T=caffe2::detail::_Uninitialized]"
+(449): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(564): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(565): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(566): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(567): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(568): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int64_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(569): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::Half]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(570): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=float]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(571): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=double]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(572): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::ComplexHalf]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(573): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(574): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(577): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::string]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(578): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(579): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(580): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(581): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::mutex, std::default_deletestd::mutex>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(582): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::atomic<__nv_bool>, std::default_delete<std::atomic<__nv_bool>>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(583): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int32_t, std::allocator<int32_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(584): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int64_t, std::allocator<int64_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(585): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<unsigned long, std::allocator>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(586): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(587): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(588): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(608): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(609): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique<std::vector<long, std::allocator>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(613): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::_CaffeHighestPreallocatedTypeId]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(58): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(59): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeId.h(38): warning: dllexport/dllimport conflict with "c10::toString"
+(35): here; dllimport/dllexport dropped
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(32): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(45): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(46): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Storage.h(180): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/logging_is_not_google_glog.h(47): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1369): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1375): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1376): warning: field of class type without a DLL interface used in a class with a DLL interface
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialMaxPooling.cu
+C:/Users/Debo/pytorch\c10/util/Exception.h(27): warning: base class dllexport/dllimport specification differs from that of the derived class
+C:/Users/Debo/pytorch\c10/util/Exception.h(28): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(29): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(34): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(35): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(21): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(183): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(60): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(66): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/cuda/CUDAStream.h(171): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\THC/THCAllocator.h(14): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(144): error: variable in constexpr function does not have automatic storage duration
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(150): error: variable in constexpr function does not have automatic storage duration
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(162): error: variable in constexpr function does not have automatic storage duration
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(187): error: variable in constexpr function does not have automatic storage duration
+C:/Users/Debo/pytorch\c10/util/typeid.h(453): warning: dllexport/dllimport conflict with "caffe2::TypeMeta::_typeMetaDataInstance [with T=caffe2::detail::_Uninitialized]"
+(449): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(564): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(565): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(566): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(567): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(568): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int64_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(569): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::Half]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(570): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=float]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(571): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=double]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(572): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::ComplexHalf]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(573): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(574): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(577): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::string]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(578): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=bool]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(579): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(580): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(581): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::mutex, std::default_deletestd::mutex>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(582): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::atomic, std::default_delete<std::atomic>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(583): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int32_t, std::allocator<int32_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(584): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int64_t, std::allocator<int64_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(585): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<unsigned long, std::allocator>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(586): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=bool *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(587): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(588): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(608): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(609): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique<std::vector<long, std::allocator>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(613): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::_CaffeHighestPreallocatedTypeId]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(58): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(59): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeId.h(38): warning: dllexport/dllimport conflict with "c10::toString"
+(35): here; dllimport/dllexport dropped
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(32): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(45): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(46): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Storage.h(180): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/logging_is_not_google_glog.h(47): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1369): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1375): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1376): warning: field of class type without a DLL interface used in a class with a DLL interface
+4 errors detected in the compilation of "C:/Users/Debo/AppData/Local/Temp/tmpxft_00002934_00000000-8_SpatialMaxPooling.cpp4.ii".
+SpatialMaxPooling.cu
+CMake Error at caffe2_gpu_generated_SpatialMaxPooling.cu.obj.Release.cmake:279 (message):
+Error generating file
+C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/./caffe2_gpu_generated_SpatialMaxPooling.cu.obj
+[3/858] Building NVCC (Device) object caffe2/CMakeFiles/c...src/THCUNN/caffe2_gpu_generated_SpatialCrossMapLRN.cu.obj
+FAILED: caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/caffe2_gpu_generated_SpatialCrossMapLRN.cu.obj
+cmd.exe /C "cd /D C:\Users\Debo\pytorch\build\caffe2\CMakeFiles\caffe2_gpu.dir__\aten\src\THCUNN && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -E make_directory C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/. && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -D verbose:BOOL=OFF -D build_configuration:STRING=Release -D generated_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialCrossMapLRN.cu.obj -D generated_cubin_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialCrossMapLRN.cu.obj.cubin.txt -P C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/caffe2_gpu_generated_SpatialCrossMapLRN.cu.obj.Release.cmake"
+SpatialCrossMapLRN.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialCrossMapLRN.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialCrossMapLRN.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialCrossMapLRN.cu
+C:/Users/Debo/pytorch\c10/util/Exception.h(27): warning: base class dllexport/dllimport specification differs from that of the derived class
+C:/Users/Debo/pytorch\c10/util/Exception.h(28): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(29): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(34): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(35): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(21): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(183): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(60): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(66): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/cuda/CUDAStream.h(171): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\THC/THCAllocator.h(14): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/typeid.h(453): warning: dllexport/dllimport conflict with "caffe2::TypeMeta::_typeMetaDataInstance [with T=caffe2::detail::_Uninitialized]"
+(449): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(564): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(565): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(566): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(567): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(568): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int64_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(569): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::Half]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(570): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=float]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(571): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=double]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(572): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::ComplexHalf]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(573): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(574): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(577): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::string]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(578): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(579): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(580): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(581): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::mutex, std::default_deletestd::mutex>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(582): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::atomic<__nv_bool>, std::default_delete<std::atomic<__nv_bool>>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(583): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int32_t, std::allocator<int32_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(584): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int64_t, std::allocator<int64_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(585): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<unsigned long, std::allocator>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(586): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(587): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(588): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(608): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(609): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique<std::vector<long, std::allocator>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(613): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::_CaffeHighestPreallocatedTypeId]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(58): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(59): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeId.h(38): warning: dllexport/dllimport conflict with "c10::toString"
+(35): here; dllimport/dllexport dropped
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(32): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(45): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(46): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Storage.h(180): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/logging_is_not_google_glog.h(47): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1369): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1375): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1376): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(742): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(770): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(146): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(147): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(148): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(152): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(153): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(154): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(144): error: variable in constexpr function does not have automatic storage duration
+detected during instantiation of "const T &c10::ArrayRef::front() const [with T=at::Tensor]"
+C:/Users/Debo/pytorch/aten/src\ATen/DeviceGuard.h(30): here
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(56): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(57): warning: field of class type without a DLL interface used in a class with a DLL interface
+1 error detected in the compilation of "C:/Users/Debo/AppData/Local/Temp/tmpxft_00002a3c_00000000-10_SpatialCrossMapLRN.cpp1.ii".
+SpatialCrossMapLRN.cu
+CMake Error at caffe2_gpu_generated_SpatialCrossMapLRN.cu.obj.Release.cmake:279 (message):
+Error generating file
+C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/./caffe2_gpu_generated_SpatialCrossMapLRN.cu.obj
+[4/858] Building NVCC (Device) object caffe2/CMakeFiles/c...rc/THCUNN/caffe2_gpu_generated_SpatialMaxUnpooling.cu.obj
+FAILED: caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/caffe2_gpu_generated_SpatialMaxUnpooling.cu.obj
+cmd.exe /C "cd /D C:\Users\Debo\pytorch\build\caffe2\CMakeFiles\caffe2_gpu.dir__\aten\src\THCUNN && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -E make_directory C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/. && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -D verbose:BOOL=OFF -D build_configuration:STRING=Release -D generated_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialMaxUnpooling.cu.obj -D generated_cubin_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialMaxUnpooling.cu.obj.cubin.txt -P C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/caffe2_gpu_generated_SpatialMaxUnpooling.cu.obj.Release.cmake"
+SpatialMaxUnpooling.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialMaxUnpooling.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialMaxUnpooling.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialMaxUnpooling.cu
+C:/Users/Debo/pytorch\c10/util/Exception.h(27): warning: base class dllexport/dllimport specification differs from that of the derived class
+C:/Users/Debo/pytorch\c10/util/Exception.h(28): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(29): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(34): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(35): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(21): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(183): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(60): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(66): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/cuda/CUDAStream.h(171): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\THC/THCAllocator.h(14): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/typeid.h(453): warning: dllexport/dllimport conflict with "caffe2::TypeMeta::_typeMetaDataInstance [with T=caffe2::detail::_Uninitialized]"
+(449): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(564): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(565): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(566): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(567): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(568): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int64_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(569): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::Half]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(570): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=float]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(571): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=double]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(572): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::ComplexHalf]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(573): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(574): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(577): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::string]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(578): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(579): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(580): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(581): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::mutex, std::default_deletestd::mutex>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(582): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::atomic<__nv_bool>, std::default_delete<std::atomic<__nv_bool>>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(583): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int32_t, std::allocator<int32_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(584): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int64_t, std::allocator<int64_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(585): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<unsigned long, std::allocator>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(586): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(587): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(588): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(608): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(609): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique<std::vector<long, std::allocator>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(613): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::_CaffeHighestPreallocatedTypeId]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(58): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(59): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeId.h(38): warning: dllexport/dllimport conflict with "c10::toString"
+(35): here; dllimport/dllexport dropped
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(32): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(45): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(46): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Storage.h(180): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/logging_is_not_google_glog.h(47): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1369): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1375): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1376): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(742): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(770): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(146): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(147): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(148): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(152): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(153): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(154): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(144): error: variable in constexpr function does not have automatic storage duration
+detected during instantiation of "const T &c10::ArrayRef::front() const [with T=at::Tensor]"
+C:/Users/Debo/pytorch/aten/src\ATen/DeviceGuard.h(30): here
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(56): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(57): warning: field of class type without a DLL interface used in a class with a DLL interface
+1 error detected in the compilation of "C:/Users/Debo/AppData/Local/Temp/tmpxft_00003660_00000000-10_SpatialMaxUnpooling.cpp1.ii".
+SpatialMaxUnpooling.cu
+CMake Error at caffe2_gpu_generated_SpatialMaxUnpooling.cu.obj.Release.cmake:279 (message):
+Error generating file
+C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/./caffe2_gpu_generated_SpatialMaxUnpooling.cu.obj
+[5/858] Building NVCC (Device) object caffe2/CMakeFiles/c...src/THCUNN/caffe2_gpu_generated_SpatialSubSampling.cu.obj
+FAILED: caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/caffe2_gpu_generated_SpatialSubSampling.cu.obj
+cmd.exe /C "cd /D C:\Users\Debo\pytorch\build\caffe2\CMakeFiles\caffe2_gpu.dir__\aten\src\THCUNN && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -E make_directory C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/. && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -D verbose:BOOL=OFF -D build_configuration:STRING=Release -D generated_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialSubSampling.cu.obj -D generated_cubin_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialSubSampling.cu.obj.cubin.txt -P C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/caffe2_gpu_generated_SpatialSubSampling.cu.obj.Release.cmake"
+SpatialSubSampling.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialSubSampling.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialSubSampling.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialSubSampling.cu
+C:/Users/Debo/pytorch\c10/util/Exception.h(27): warning: base class dllexport/dllimport specification differs from that of the derived class
+C:/Users/Debo/pytorch\c10/util/Exception.h(28): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(29): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(34): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(35): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(21): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(183): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(60): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(66): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/cuda/CUDAStream.h(171): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\THC/THCAllocator.h(14): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/typeid.h(453): warning: dllexport/dllimport conflict with "caffe2::TypeMeta::_typeMetaDataInstance [with T=caffe2::detail::_Uninitialized]"
+(449): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(564): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(565): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(566): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(567): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(568): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int64_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(569): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::Half]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(570): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=float]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(571): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=double]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(572): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::ComplexHalf]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(573): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(574): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(577): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::string]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(578): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(579): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(580): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(581): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::mutex, std::default_deletestd::mutex>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(582): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::atomic<__nv_bool>, std::default_delete<std::atomic<__nv_bool>>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(583): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int32_t, std::allocator<int32_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(584): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int64_t, std::allocator<int64_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(585): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<unsigned long, std::allocator>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(586): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(587): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(588): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(608): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(609): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique<std::vector<long, std::allocator>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(613): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::_CaffeHighestPreallocatedTypeId]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(58): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(59): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeId.h(38): warning: dllexport/dllimport conflict with "c10::toString"
+(35): here; dllimport/dllexport dropped
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(32): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(45): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(46): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Storage.h(180): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/logging_is_not_google_glog.h(47): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1369): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1375): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1376): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(742): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(770): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(146): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(147): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(148): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(152): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(153): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(154): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(144): error: variable in constexpr function does not have automatic storage duration
+detected during instantiation of "const T &c10::ArrayRef::front() const [with T=at::Tensor]"
+C:/Users/Debo/pytorch/aten/src\ATen/DeviceGuard.h(30): here
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(56): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(57): warning: field of class type without a DLL interface used in a class with a DLL interface
+1 error detected in the compilation of "C:/Users/Debo/AppData/Local/Temp/tmpxft_000038a8_00000000-10_SpatialSubSampling.cpp1.ii".
+SpatialSubSampling.cu
+CMake Error at caffe2_gpu_generated_SpatialSubSampling.cu.obj.Release.cmake:279 (message):
+Error generating file
+C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/./caffe2_gpu_generated_SpatialSubSampling.cu.obj
+[6/858] Building NVCC (Device) object caffe2/CMakeFiles/c...CUNN/caffe2_gpu_generated_SpatialUpSamplingNearest.cu.obj
+FAILED: caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/caffe2_gpu_generated_SpatialUpSamplingNearest.cu.obj
+cmd.exe /C "cd /D C:\Users\Debo\pytorch\build\caffe2\CMakeFiles\caffe2_gpu.dir__\aten\src\THCUNN && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -E make_directory C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/. && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -D verbose:BOOL=OFF -D build_configuration:STRING=Release -D generated_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialUpSamplingNearest.cu.obj -D generated_cubin_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialUpSamplingNearest.cu.obj.cubin.txt -P C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/caffe2_gpu_generated_SpatialUpSamplingNearest.cu.obj.Release.cmake"
+SpatialUpSamplingNearest.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialUpSamplingNearest.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialUpSamplingNearest.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialUpSamplingNearest.cu
+C:/Users/Debo/pytorch\c10/util/Exception.h(27): warning: base class dllexport/dllimport specification differs from that of the derived class
+C:/Users/Debo/pytorch\c10/util/Exception.h(28): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(29): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(34): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(35): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(21): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(183): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(60): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(66): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/cuda/CUDAStream.h(171): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\THC/THCAllocator.h(14): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/typeid.h(453): warning: dllexport/dllimport conflict with "caffe2::TypeMeta::_typeMetaDataInstance [with T=caffe2::detail::_Uninitialized]"
+(449): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(564): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(565): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(566): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(567): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(568): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int64_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(569): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::Half]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(570): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=float]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(571): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=double]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(572): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::ComplexHalf]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(573): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(574): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(577): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::string]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(578): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(579): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(580): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(581): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::mutex, std::default_deletestd::mutex>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(582): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::atomic<__nv_bool>, std::default_delete<std::atomic<__nv_bool>>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(583): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int32_t, std::allocator<int32_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(584): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int64_t, std::allocator<int64_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(585): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<unsigned long, std::allocator>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(586): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(587): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(588): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(608): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(609): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique<std::vector<long, std::allocator>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(613): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::_CaffeHighestPreallocatedTypeId]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(58): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(59): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeId.h(38): warning: dllexport/dllimport conflict with "c10::toString"
+(35): here; dllimport/dllexport dropped
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(32): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(45): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(46): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Storage.h(180): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/logging_is_not_google_glog.h(47): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1369): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1375): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1376): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(742): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(770): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(146): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(147): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(148): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(152): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(153): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(154): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(144): error: variable in constexpr function does not have automatic storage duration
+detected during instantiation of "const T &c10::ArrayRef::front() const [with T=at::Tensor]"
+C:/Users/Debo/pytorch/aten/src\ATen/DeviceGuard.h(30): here
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(56): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(57): warning: field of class type without a DLL interface used in a class with a DLL interface
+1 error detected in the compilation of "C:/Users/Debo/AppData/Local/Temp/tmpxft_000017ac_00000000-10_SpatialUpSamplingNearest.cpp1.ii".
+SpatialUpSamplingNearest.cu
+CMake Error at caffe2_gpu_generated_SpatialUpSamplingNearest.cu.obj.Release.cmake:279 (message):
+Error generating file
+C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/./caffe2_gpu_generated_SpatialUpSamplingNearest.cu.obj
+[7/858] Building NVCC (Device) object caffe2/CMakeFiles/c...caffe2_gpu_generated_SpatialFullDilatedConvolution.cu.obj
+FAILED: caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/caffe2_gpu_generated_SpatialFullDilatedConvolution.cu.obj
+cmd.exe /C "cd /D C:\Users\Debo\pytorch\build\caffe2\CMakeFiles\caffe2_gpu.dir__\aten\src\THCUNN && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -E make_directory C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/. && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -D verbose:BOOL=OFF -D build_configuration:STRING=Release -D generated_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialFullDilatedConvolution.cu.obj -D generated_cubin_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialFullDilatedConvolution.cu.obj.cubin.txt -P C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/caffe2_gpu_generated_SpatialFullDilatedConvolution.cu.obj.Release.cmake"
+SpatialFullDilatedConvolution.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialFullDilatedConvolution.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialFullDilatedConvolution.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialFullDilatedConvolution.cu
+C:/Users/Debo/pytorch\c10/util/Exception.h(27): warning: base class dllexport/dllimport specification differs from that of the derived class
+C:/Users/Debo/pytorch\c10/util/Exception.h(28): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(29): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(34): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(35): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(21): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(183): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(60): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(66): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/cuda/CUDAStream.h(171): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\THC/THCAllocator.h(14): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/typeid.h(453): warning: dllexport/dllimport conflict with "caffe2::TypeMeta::_typeMetaDataInstance [with T=caffe2::detail::_Uninitialized]"
+(449): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(564): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(565): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(566): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(567): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(568): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int64_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(569): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::Half]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(570): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=float]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(571): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=double]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(572): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::ComplexHalf]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(573): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(574): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(577): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::string]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(578): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(579): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(580): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(581): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::mutex, std::default_deletestd::mutex>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(582): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::atomic<__nv_bool>, std::default_delete<std::atomic<__nv_bool>>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(583): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int32_t, std::allocator<int32_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(584): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int64_t, std::allocator<int64_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(585): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<unsigned long, std::allocator>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(586): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(587): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(588): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(608): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(609): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique<std::vector<long, std::allocator>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(613): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::_CaffeHighestPreallocatedTypeId]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(58): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(59): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeId.h(38): warning: dllexport/dllimport conflict with "c10::toString"
+(35): here; dllimport/dllexport dropped
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(32): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(45): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(46): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Storage.h(180): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/logging_is_not_google_glog.h(47): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1369): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1375): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1376): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(742): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(770): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(146): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(147): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(148): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(152): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(153): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(154): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(144): error: variable in constexpr function does not have automatic storage duration
+detected during instantiation of "const T &c10::ArrayRef::front() const [with T=at::Tensor]"
+C:/Users/Debo/pytorch/aten/src\ATen/DeviceGuard.h(30): here
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(56): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(57): warning: field of class type without a DLL interface used in a class with a DLL interface
+1 error detected in the compilation of "C:/Users/Debo/AppData/Local/Temp/tmpxft_00004674_00000000-10_SpatialFullDilatedConvolution.cpp1.ii".
+SpatialFullDilatedConvolution.cu
+CMake Error at caffe2_gpu_generated_SpatialFullDilatedConvolution.cu.obj.Release.cmake:279 (message):
+Error generating file
+C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/./caffe2_gpu_generated_SpatialFullDilatedConvolution.cu.obj
+[8/858] Building NVCC (Device) object caffe2/CMakeFiles/c...CUNN/caffe2_gpu_generated_SpatialUpSamplingBicubic.cu.obj
+FAILED: caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/caffe2_gpu_generated_SpatialUpSamplingBicubic.cu.obj
+cmd.exe /C "cd /D C:\Users\Debo\pytorch\build\caffe2\CMakeFiles\caffe2_gpu.dir__\aten\src\THCUNN && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -E make_directory C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/. && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -D verbose:BOOL=OFF -D build_configuration:STRING=Release -D generated_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialUpSamplingBicubic.cu.obj -D generated_cubin_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialUpSamplingBicubic.cu.obj.cubin.txt -P C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/caffe2_gpu_generated_SpatialUpSamplingBicubic.cu.obj.Release.cmake"
+SpatialUpSamplingBicubic.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialUpSamplingBicubic.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialUpSamplingBicubic.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialUpSamplingBicubic.cu
+C:/Users/Debo/pytorch\c10/util/Exception.h(27): warning: base class dllexport/dllimport specification differs from that of the derived class
+C:/Users/Debo/pytorch\c10/util/Exception.h(28): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(29): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(34): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(35): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(21): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(183): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(60): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(66): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/cuda/CUDAStream.h(171): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\THC/THCAllocator.h(14): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/typeid.h(453): warning: dllexport/dllimport conflict with "caffe2::TypeMeta::_typeMetaDataInstance [with T=caffe2::detail::_Uninitialized]"
+(449): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(564): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(565): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(566): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(567): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(568): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int64_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(569): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::Half]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(570): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=float]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(571): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=double]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(572): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::ComplexHalf]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(573): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(574): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(577): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::string]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(578): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(579): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(580): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(581): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::mutex, std::default_deletestd::mutex>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(582): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::atomic<__nv_bool>, std::default_delete<std::atomic<__nv_bool>>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(583): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int32_t, std::allocator<int32_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(584): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int64_t, std::allocator<int64_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(585): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<unsigned long, std::allocator>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(586): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(587): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(588): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(608): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(609): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique<std::vector<long, std::allocator>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(613): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::_CaffeHighestPreallocatedTypeId]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(58): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(59): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeId.h(38): warning: dllexport/dllimport conflict with "c10::toString"
+(35): here; dllimport/dllexport dropped
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(32): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(45): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(46): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Storage.h(180): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/logging_is_not_google_glog.h(47): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1369): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1375): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1376): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(742): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(770): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(146): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(147): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(148): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(152): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(153): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(154): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(144): error: variable in constexpr function does not have automatic storage duration
+detected during instantiation of "const T &c10::ArrayRef::front() const [with T=at::Tensor]"
+C:/Users/Debo/pytorch/aten/src\ATen/DeviceGuard.h(30): here
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(56): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(57): warning: field of class type without a DLL interface used in a class with a DLL interface
+1 error detected in the compilation of "C:/Users/Debo/AppData/Local/Temp/tmpxft_0000483c_00000000-10_SpatialUpSamplingBicubic.cpp1.ii".
+SpatialUpSamplingBicubic.cu
+CMake Error at caffe2_gpu_generated_SpatialUpSamplingBicubic.cu.obj.Release.cmake:279 (message):
+Error generating file
+C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/./caffe2_gpu_generated_SpatialUpSamplingBicubic.cu.obj
+[9/858] Building NVCC (Device) object caffe2/CMakeFiles/c...UNN/caffe2_gpu_generated_SpatialDilatedConvolution.cu.obj
+FAILED: caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/caffe2_gpu_generated_SpatialDilatedConvolution.cu.obj
+cmd.exe /C "cd /D C:\Users\Debo\pytorch\build\caffe2\CMakeFiles\caffe2_gpu.dir__\aten\src\THCUNN && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -E make_directory C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/. && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -D verbose:BOOL=OFF -D build_configuration:STRING=Release -D generated_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialDilatedConvolution.cu.obj -D generated_cubin_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialDilatedConvolution.cu.obj.cubin.txt -P C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/caffe2_gpu_generated_SpatialDilatedConvolution.cu.obj.Release.cmake"
+SpatialDilatedConvolution.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialDilatedConvolution.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialDilatedConvolution.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialDilatedConvolution.cu
+C:/Users/Debo/pytorch\c10/util/Exception.h(27): warning: base class dllexport/dllimport specification differs from that of the derived class
+C:/Users/Debo/pytorch\c10/util/Exception.h(28): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(29): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(34): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(35): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(21): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(183): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(60): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(66): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/cuda/CUDAStream.h(171): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\THC/THCAllocator.h(14): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/typeid.h(453): warning: dllexport/dllimport conflict with "caffe2::TypeMeta::_typeMetaDataInstance [with T=caffe2::detail::_Uninitialized]"
+(449): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(564): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(565): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(566): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(567): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(568): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int64_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(569): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::Half]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(570): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=float]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(571): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=double]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(572): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::ComplexHalf]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(573): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(574): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(577): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::string]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(578): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(579): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(580): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(581): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::mutex, std::default_deletestd::mutex>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(582): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::atomic<__nv_bool>, std::default_delete<std::atomic<__nv_bool>>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(583): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int32_t, std::allocator<int32_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(584): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int64_t, std::allocator<int64_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(585): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<unsigned long, std::allocator>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(586): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(587): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(588): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(608): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(609): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique<std::vector<long, std::allocator>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(613): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::_CaffeHighestPreallocatedTypeId]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(58): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(59): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeId.h(38): warning: dllexport/dllimport conflict with "c10::toString"
+(35): here; dllimport/dllexport dropped
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(32): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(45): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(46): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Storage.h(180): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/logging_is_not_google_glog.h(47): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1369): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1375): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1376): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(742): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(770): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(146): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(147): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(148): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(152): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(153): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(154): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(144): error: variable in constexpr function does not have automatic storage duration
+detected during instantiation of "const T &c10::ArrayRef::front() const [with T=at::Tensor]"
+C:/Users/Debo/pytorch/aten/src\ATen/DeviceGuard.h(30): here
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(56): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(57): warning: field of class type without a DLL interface used in a class with a DLL interface
+1 error detected in the compilation of "C:/Users/Debo/AppData/Local/Temp/tmpxft_00000f9c_00000000-10_SpatialDilatedConvolution.cpp1.ii".
+SpatialDilatedConvolution.cu
+CMake Error at caffe2_gpu_generated_SpatialDilatedConvolution.cu.obj.Release.cmake:279 (message):
+Error generating file
+C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/./caffe2_gpu_generated_SpatialDilatedConvolution.cu.obj
+[10/858] Building NVCC (Device) object caffe2/CMakeFiles/...CUNN/caffe2_gpu_generated_SpatialDilatedMaxPooling.cu.obj
+FAILED: caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/caffe2_gpu_generated_SpatialDilatedMaxPooling.cu.obj
+cmd.exe /C "cd /D C:\Users\Debo\pytorch\build\caffe2\CMakeFiles\caffe2_gpu.dir__\aten\src\THCUNN && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -E make_directory C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/. && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -D verbose:BOOL=OFF -D build_configuration:STRING=Release -D generated_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialDilatedMaxPooling.cu.obj -D generated_cubin_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialDilatedMaxPooling.cu.obj.cubin.txt -P C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/caffe2_gpu_generated_SpatialDilatedMaxPooling.cu.obj.Release.cmake"
+SpatialDilatedMaxPooling.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialDilatedMaxPooling.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialDilatedMaxPooling.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialDilatedMaxPooling.cu
+C:/Users/Debo/pytorch\c10/util/Exception.h(27): warning: base class dllexport/dllimport specification differs from that of the derived class
+C:/Users/Debo/pytorch\c10/util/Exception.h(28): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(29): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(34): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(35): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(21): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(183): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(60): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(66): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/cuda/CUDAStream.h(171): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\THC/THCAllocator.h(14): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/typeid.h(453): warning: dllexport/dllimport conflict with "caffe2::TypeMeta::_typeMetaDataInstance [with T=caffe2::detail::_Uninitialized]"
+(449): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(564): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(565): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(566): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(567): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(568): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int64_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(569): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::Half]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(570): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=float]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(571): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=double]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(572): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::ComplexHalf]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(573): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(574): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(577): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::string]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(578): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(579): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(580): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(581): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::mutex, std::default_deletestd::mutex>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(582): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::atomic<__nv_bool>, std::default_delete<std::atomic<__nv_bool>>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(583): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int32_t, std::allocator<int32_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(584): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int64_t, std::allocator<int64_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(585): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<unsigned long, std::allocator>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(586): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(587): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(588): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(608): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(609): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique<std::vector<long, std::allocator>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(613): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::_CaffeHighestPreallocatedTypeId]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(58): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(59): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeId.h(38): warning: dllexport/dllimport conflict with "c10::toString"
+(35): here; dllimport/dllexport dropped
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(32): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(45): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(46): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Storage.h(180): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/logging_is_not_google_glog.h(47): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1369): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1375): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1376): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(742): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(770): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(146): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(147): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(148): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(152): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(153): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(154): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(144): error: variable in constexpr function does not have automatic storage duration
+detected during instantiation of "const T &c10::ArrayRef::front() const [with T=at::Tensor]"
+C:/Users/Debo/pytorch/aten/src\ATen/DeviceGuard.h(30): here
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(56): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(57): warning: field of class type without a DLL interface used in a class with a DLL interface
+1 error detected in the compilation of "C:/Users/Debo/AppData/Local/Temp/tmpxft_00004918_00000000-10_SpatialDilatedMaxPooling.cpp1.ii".
+SpatialDilatedMaxPooling.cu
+CMake Error at caffe2_gpu_generated_SpatialDilatedMaxPooling.cu.obj.Release.cmake:279 (message):
+Error generating file
+C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/./caffe2_gpu_generated_SpatialDilatedMaxPooling.cu.obj
+[11/858] Building NVCC (Device) object caffe2/CMakeFiles/...UNN/caffe2_gpu_generated_SpatialUpSamplingBilinear.cu.obj
+FAILED: caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/caffe2_gpu_generated_SpatialUpSamplingBilinear.cu.obj
+cmd.exe /C "cd /D C:\Users\Debo\pytorch\build\caffe2\CMakeFiles\caffe2_gpu.dir__\aten\src\THCUNN && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -E make_directory C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/. && "C:\Program Files\Anaconda3\Library\bin\cmake.exe" -D verbose:BOOL=OFF -D build_configuration:STRING=Release -D generated_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialUpSamplingBilinear.cu.obj -D generated_cubin_file:STRING=C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir//aten/src/THCUNN/./caffe2_gpu_generated_SpatialUpSamplingBilinear.cu.obj.cubin.txt -P C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/caffe2_gpu_generated_SpatialUpSamplingBilinear.cu.obj.Release.cmake"
+SpatialUpSamplingBilinear.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialUpSamplingBilinear.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialUpSamplingBilinear.cu
+cl : Command line warning D9025 : overriding '/EHa' with '/EHs'
+SpatialUpSamplingBilinear.cu
+C:/Users/Debo/pytorch\c10/util/Exception.h(27): warning: base class dllexport/dllimport specification differs from that of the derived class
+C:/Users/Debo/pytorch\c10/util/Exception.h(28): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(29): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(34): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/Exception.h(35): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(21): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Allocator.h(183): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(60): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\TH/THAllocator.h(66): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/cuda/CUDAStream.h(171): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\THC/THCAllocator.h(14): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/typeid.h(453): warning: dllexport/dllimport conflict with "caffe2::TypeMeta::_typeMetaDataInstance [with T=caffe2::detail::_Uninitialized]"
+(449): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(564): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(565): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int8_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(566): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(567): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(568): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int64_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(569): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::Half]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(570): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=float]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(571): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=double]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(572): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=c10::ComplexHalf]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(573): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(574): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::complex]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(577): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::string]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(578): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(579): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=uint16_t]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(580): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(581): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::mutex, std::default_deletestd::mutex>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(582): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::unique_ptr<std::atomic<__nv_bool>, std::default_delete<std::atomic<__nv_bool>>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(583): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int32_t, std::allocator<int32_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(584): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<int64_t, std::allocator<int64_t>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(585): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=std::vector<unsigned long, std::allocator>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(586): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=__nv_bool *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(587): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=char *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(588): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=int *]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(608): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(609): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::detail::_guard_long_unique<std::vector<long, std::allocator>>]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/typeid.h(613): warning: dllexport/dllimport conflict with "caffe2::TypeIdentifier::Get [with T=caffe2::_CaffeHighestPreallocatedTypeId]"
+(83): here; dllexport assumed
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(58): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/intrusive_ptr.h(59): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeId.h(38): warning: dllexport/dllimport conflict with "c10::toString"
+(35): here; dllimport/dllexport dropped
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(32): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(45): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorTypeIdRegistration.h(46): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/Storage.h(180): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/logging_is_not_google_glog.h(47): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1369): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1375): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/core/TensorImpl.h(1376): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(742): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/core/Tensor.h(770): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(146): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(147): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(148): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(152): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(153): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/Context.h(154): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch\c10/util/ArrayRef.h(144): error: variable in constexpr function does not have automatic storage duration
+detected during instantiation of "const T &c10::ArrayRef::front() const [with T=at::Tensor]"
+C:/Users/Debo/pytorch/aten/src\ATen/DeviceGuard.h(30): here
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(56): warning: field of class type without a DLL interface used in a class with a DLL interface
+C:/Users/Debo/pytorch/aten/src\ATen/TensorGeometry.h(57): warning: field of class type without a DLL interface used in a class with a DLL interface
+1 error detected in the compilation of "C:/Users/Debo/AppData/Local/Temp/tmpxft_000010cc_00000000-10_SpatialUpSamplingBilinear.cpp1.ii".
+SpatialUpSamplingBilinear.cu
+CMake Error at caffe2_gpu_generated_SpatialUpSamplingBilinear.cu.obj.Release.cmake:279 (message):
+Error generating file
+C:/Users/Debo/pytorch/build/caffe2/CMakeFiles/caffe2_gpu.dir/__/aten/src/THCUNN/./caffe2_gpu_generated_SpatialUpSamplingBilinear.cu.obj
+ninja: build stopped: subcommand failed.
+Traceback (most recent call last):
+File "setup.py", line 710, in 
+build_deps()
+File "setup.py", line 282, in build_deps
+build_dir='build')
+File "C:\Users\Debo\pytorch\tools\build_pytorch_libs.py", line 247, in build_caffe2
+cwd=build_dir, env=my_env)
+File "C:\Program Files\Anaconda3\lib\subprocess.py", line 311, in check_call
+raise CalledProcessError(retcode, cmd)
+subprocess.CalledProcessError: Command '['cmake', '--build', '.', '--target', 'install', '--config', 'Release', '--', '-j', '11']' returned non-zero exit status 1.
+Please note that this issue tracker is not a help form and this issue will be closed.
+We have a set of listed resources available on the website. Our primary means of support is our discussion forum:
+
+Discussion Forum
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+I'm hacking away at Flair (https://github.com/zalandoresearch/flair) to create a minimal script that can be jit'd via TorchScript and can run predictions.
+I realise my work is not complete yet but I was iteratively working through the errors being reported until I received the following error:
+
+ASSERT FAILED at /Users/soumith/b101_2/2019_02_08/wheel_build_dirs/wheel_3.7/pytorch/torch/csrc/jit/ir.cpp:1387, please report a bug to PyTorch. (createList at /Users/soumith/b101_2/2019_02_08/wheel_build_dirs/wheel_3.7/pytorch/torch/csrc/jit/ir.cpp:1387)
+
+To Reproduce
+Steps to reproduce the behavior:
+
+Install Flair (pip install flair)
+Refer to the 2 files in the gist here: https://gist.github.com/e/3644b54326794068d0f43e1fce4c1308
+When trying to run try.py observe error that's thrown:
+
+
+Expected behavior
+If I made a mistake somewhere then a more descriptive error message that allows me to continue to resolve the issue.
+Environment
+PyTorch version: 1.0.1.post2
+Is debug build: No
+CUDA used to build PyTorch: None
+OS: Mac OSX 10.14.3
+GCC version: Could not collect
+CMake version: Could not collect
+Python version: 3.7
+Is CUDA available: No
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+Versions of relevant libraries:
+[pip] numpy==1.16.2
+[pip] pytorch-pretrained-bert==0.6.1
+[pip] torch==1.0.1.post2
+[conda] pytorch-pretrained-bert   0.6.1                    pypi_0    pypi
+[conda] torch                     1.0.1.post2              pypi_0    pypi
+Additional context
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Cannot export torch.stft() with ONNX, even with OperatorExportTypes.ONNX_ATEN and OperatorExportTypes.ONNX_ATEN_FALLBACK
+Seems that torch.stft produce non 2D tensor, and Caffe2 currently does not support padding for non 2D tensor
+Related issue:
+onnx/onnx-caffe2#293
+To Reproduce
+Steps to reproduce the behavior:
+
+error message if run # 0
+
+error message if run # 1
+
+error message if run # 2
+
+Expected behavior
+Environment
+Collecting environment information...
+PyTorch version: 1.0.0.dev20190326
+Is debug build: No
+CUDA used to build PyTorch: 9.0.176
+OS: Ubuntu 16.04.5 LTS
+GCC version: (Ubuntu 4.9.4-2ubuntu1~16.04) 4.9.4
+CMake version: version 3.12.1
+Python version: 3.7
+Is CUDA available: Yes
+CUDA runtime version: Could not collect
+GPU models and configuration:
+GPU 0: Tesla V100-SXM2-16GB
+Nvidia driver version: 384.145
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.7.1.3
+/usr/local/cuda-8.0/targets/x86_64-linux/lib/libcudnn.so.6
+Versions of relevant libraries:
+[pip3] numpy==1.15.4
+[conda] blas                      1.0                         mkl
+[conda] mkl                       2019.1                      144
+[conda] mkl-service               1.1.2            py37he904b0f_5
+[conda] mkl_fft                   1.0.6            py37hd81dba3_0
+[conda] mkl_random                1.0.2            py37hd81dba3_0
+[conda] pytorch-nightly           1.0.0.dev20190326 py3.7_cuda9.0.176_cudnn7.4.2_0    pytorch
+[conda] torch                     1.0.1.post2              pypi_0    pypi
+[conda] torchaudio                0.2                      pypi_0    pypi
+Additional context
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+when scripting a torch model with nn.Embedding layers, the scripted model will raise CUDA error: invalid device function at torch.embedding(weight, input, tensor_padding_idx, sclae_grad_by_freq, sparse) if running on GPU in Java. the scripted model can run without issue with CPU/GPU in Python, and CPU in Java.
+
+error message i got (running with GPU in Java):
+
+Versions
+Pytorch
+
+Other relevants
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🚀 Feature
+torch.jit.script may generate uninitialized operator which is unsupported during ONNX exportation. Currently only an exception with some simple error message is thrown, no detailed information about the source location of the generated uninitialized operator. Without the source location, it's difficult if not impossible to modify the source code accordingly.
+The error message is like:
+
+Pitch
+Show source file name and  line number of the generated uninitialized operator.
+Additional context
+I was trying to get a non-max-suppression algorithm compiled and exported to ONNX so I don't need to re-implement it in another language. The source code of the implementation is here. With some minor modification, the function non_max_suppression can be compiled with torch.jit.script, but cannot be exported to ONNX due to unsupported prim_Uninitialized operator.
+Here is the compiled code:
+
+cc @houseroad @spandantiwari @lara-hdr @BowenBao @neginraoof
+
+----------------------------------------Comment 1----------------------------------------
+
+I have OCR NN really...huge and
+cuz I want to use pytorch on android...
+I tried to convert pytorch model to pytorch mobile....
+(But... Can't we just uses pytorch library in JAVA??)
+Here is what I tried..
+
+The example is sample input(altough I don know why it is needed... Can't we just convert to the mobile without sample input? it is very anoying..)
+the error message is...
+
+
+RuntimeError                              Traceback (most recent call last)
+ in ()
+----> 1 result = convert_torch_mobile("drive/My Drive/colab/easy_ocr_test/Capture1.PNG")
+2 frames
+ in convert_torch_mobile(image, decoder, beamWidth, batch_size, workers, allowlist, blocklist, detail, paragraph, min_size, contrast_ths, adjust_contrast, filter_ths, text_threshold, low_text, link_threshold, canvas_size, mag_ratio, slope_ths, ycenter_ths, height_ths, width_ths, add_margin)
+15     detector2.eval()
+16     example = img_cv_grey, horizontal_list, free_list,                            decoder, beamWidth, batch_size,                            workers, allowlist, blocklist, detail,                            paragraph, contrast_ths, adjust_contrast,                            filter_ths, False
+---> 17     torch.jit.trace(recognizer2, example)
+18
+19
+/usr/local/lib/python3.6/dist-packages/torch/jit/init.py in trace(func, example_inputs, optimize, check_trace, check_inputs, check_tolerance, strict, _force_outplace, _module_class, _compilation_unit)
+953         return trace_module(func, {'forward': example_inputs}, None,
+954                             check_trace, wrap_check_inputs(check_inputs),
+--> 955                             check_tolerance, strict, _force_outplace, _module_class)
+956
+957     if (hasattr(func, 'self') and isinstance(func.self, torch.nn.Module) and
+/usr/local/lib/python3.6/dist-packages/torch/jit/init.py in trace_module(mod, inputs, optimize, check_trace, check_inputs, check_tolerance, strict, _force_outplace, _module_class, _compilation_unit)
+1107             func = mod if method_name == "forward" else getattr(mod, method_name)
+1108             example_inputs = make_tuple(example_inputs)
+-> 1109             module._c._create_method_from_trace(method_name, func, example_inputs, var_lookup_fn, strict, _force_outplace)
+1110             check_trace_method = module._c._get_method(method_name)
+1111
+RuntimeError: Tracer cannot infer type of (array([[255, 255, 255, ..., 255, 255, 255],
+[255, 255, 255, ..., 255, 255, 255],
+[255, 255, 255, ..., 255, 255, 255],
+...,
+[255, 255, 255, ..., 255, 255, 255],
+[255, 255, 255, ..., 255, 255, 255],
+[255, 255, 255, ..., 255, 255, 255]], dtype=uint8), [[59, 89, 15, 31], [97, 295, 11, 31], [58, 326, 32, 58], [332, 746, 34, 58], [61, 169, 59, 79], [197, 295, 59, 79], [318, 460, 56, 80], [481, 559, 59, 79], [581, 663, 59, 79], [99, 131, 83, 99], [145, 210, 77, 103], [231, 445, 83, 99], [58, 504, 128, 154], [11, 45, 143, 159], [58, 774, 152, 176], [58, 172, 174, 198], [197, 295, 177, 197], [318, 404, 174, 198], [411, 471, 177, 197], [494, 602, 174, 198], [625, 711, 177, 197], [65, 181, 199, 219], [199, 275, 199, 219], [297, 489, 203, 219], [58, 352, 244, 273], [59, 551, 273, 293], [59, 169, 295, 315], [197, 279, 295, 315], [305, 445, 295, 315], [469, 575, 295, 315], [599, 683, 295, 315], [67, 181, 317, 337], [197, 305, 317, 337], [327, 569, 321, 337], [60, 288, 366, 390], [58, 724, 390, 414], [59, 169, 413, 433], [197, 281, 413, 433], [305, 437, 413, 433], [461, 565, 413, 433], [591, 675, 413, 433], [96, 182, 434, 458], [199, 307, 437, 457], [327, 523, 439, 457], [58, 242, 484, 508], [58, 472, 508, 532], [58, 172, 530, 554], [197, 273, 533, 553], [297, 437, 533, 553], [461, 535, 533, 551], [561, 645, 533, 553], [97, 181, 555, 575], [199, 305, 555, 575], [362, 440, 552, 576], [456, 506, 552, 576], [532, 795, 555, 575], [635, 659, 613, 631], [696, 734, 610, 634], [335, 499, 605, 641], [539, 561, 615, 631]], [], 'greedy', 5, 1, 0, None, None, 1, False, 0.1, 0.5, 0.003, False)
+:Only tensors and (possibly nested) tuples of tensors, lists, or dictsare supported as inputs or outputs of traced functions, but instead got value of type ndarray.
+
+And my model is
+
+DataParallel(
+(module): Model(
+(FeatureExtraction): ResNet_FeatureExtractor(
+(ConvNet): ResNet(
+(conv0_1): Conv2d(1, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn0_1): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(conv0_2): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn0_2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(relu): ReLU(inplace=True)
+(maxpool1): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+(layer1): Sequential(
+(0): BasicBlock(
+(conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(relu): ReLU(inplace=True)
+(downsample): Sequential(
+(0): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+(1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+)
+)
+)
+(conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(maxpool2): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+(layer2): Sequential(
+(0): BasicBlock(
+(conv1): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(relu): ReLU(inplace=True)
+(downsample): Sequential(
+(0): Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+(1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+)
+)
+(1): BasicBlock(
+(conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(relu): ReLU(inplace=True)
+)
+)
+(conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(maxpool3): MaxPool2d(kernel_size=2, stride=(2, 1), padding=(0, 1), dilation=1, ceil_mode=False)
+(layer3): Sequential(
+(0): BasicBlock(
+(conv1): Conv2d(256, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn2): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(relu): ReLU(inplace=True)
+(downsample): Sequential(
+(0): Conv2d(256, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+(1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+)
+)
+(1): BasicBlock(
+(conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn2): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(relu): ReLU(inplace=True)
+)
+(2): BasicBlock(
+(conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn2): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(relu): ReLU(inplace=True)
+)
+(3): BasicBlock(
+(conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn2): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(relu): ReLU(inplace=True)
+)
+(4): BasicBlock(
+(conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn2): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(relu): ReLU(inplace=True)
+)
+)
+(conv3): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn3): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(layer4): Sequential(
+(0): BasicBlock(
+(conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn2): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(relu): ReLU(inplace=True)
+)
+(1): BasicBlock(
+(conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn2): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(relu): ReLU(inplace=True)
+)
+(2): BasicBlock(
+(conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+(bn2): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(relu): ReLU(inplace=True)
+)
+)
+(conv4_1): Conv2d(512, 512, kernel_size=(2, 2), stride=(2, 1), padding=(0, 1), bias=False)
+(bn4_1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+(conv4_2): Conv2d(512, 512, kernel_size=(2, 2), stride=(1, 1), bias=False)
+(bn4_2): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+)
+)
+(AdaptiveAvgPool): AdaptiveAvgPool2d(output_size=(None, 1))
+(SequenceModeling): Sequential(
+(0): BidirectionalLSTM(
+(rnn): LSTM(512, 512, batch_first=True, bidirectional=True)
+(linear): Linear(in_features=1024, out_features=512, bias=True)
+)
+(1): BidirectionalLSTM(
+(rnn): LSTM(512, 512, batch_first=True, bidirectional=True)
+(linear): Linear(in_features=1024, out_features=512, bias=True)
+)
+)
+(Prediction): Linear(in_features=512, out_features=1568, bias=True)
+)
+)
+
+Why it happens? What I want is just use pytorch in JAVA... any help please? Thanks...
+cc @gmagogsfm
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I was trying a mix precision model, and found that the Conv weight/bias become constant with autocast. So I made a liitle repro, finding that when torch.jit.trace is applied with autocast. Trace sanity check would fail.
+
+Error message
+
+Versions
+Pytorch nightly
+cc @mcarilli @ptrblck
+
+----------------------------------------Comment 1----------------------------------------
+
+Training abruptly and unpredictably stops after several iterations. There’s no error message. The process hangs.
+Environment
+PyTorch Version (e.g., 1.0): 0.3.1
+OS (e.g., Linux): RHEL7.6
+How you installed PyTorch (conda, pip, source): virtual environment, pip
+Build command you used (if compiling from source):
+Python version: 2.7.5
+CUDA/cuDNN version: 8.0.44, 6.0
+GPU models and configuration: 4 NVIDIA P6000s
+Any other relevant information: There were no issues with training the same model on single GPU
+Similar code with another slightly lighter model (with fewer outputs for loss computation) trains without any issues.
+Things I have tried to resolve the issue but didn’t work
+Reduce number of dataloader threads from 4 to 1
+Reducing batch size from 24 to 12
+Reducing model size using point-wise convolution
+Computing loss in forward function
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+I am experiencing the classic out of memory error where my GPU appears to have a lot of memory still available, however my scenario seems to be a little different to other, fragmentation related, issues I have seen. These other problems point to free memory being less than the reserved/cached memory quoted in the error message, but the reserved (or allocated + cached) is always close to the total capacity of the GPU.
+In my case the reserved total is only around ~50% of the total capacity of the GPU which seems like the caching allocator is unable to request any more, despite having plenty available and no other processes running on the card which is in exclusive mode.
+
+The other strange thing I have noticed is if I create/delete a (smaller) dummy tensor before creating the larger tensor (which causes the OOM) it results in the reserved memory total increasing, and I am then able to successfully create my larger tensor! I have tried running torch.cuda.empty_cache() prior to creating the large tensor and it does not fix this issue.
+To Reproduce
+This always occurs on the second iteration of my training loop. The memory pattern I see by recording torch.cuda.memory_allocated() and torch.cuda.memory_reserved() in GiB directly before and after the creation of the large (problem) tensor is:
+Failure case
+Step 0
+mem_allocated 0.651, mem_reserved 1.680
+z = torch.randn([320, 19, 935, 2, 256], device='cuda')
+mem_allocated 11.495, mem_reserved 12.523
+...
+Step 1
+mem_allocated 1.061, mem_reserved 12.529
+z = torch.randn([320, 19, 935, 2, 256], device='cuda')
+OOM 🧨
+Working case
+And in the second scenario where I create then delete a smaller tensor prior to creating the big tensor, in order to bump up the reserved memory and everything works
+Step 0
+dummy_z = torch.randn([1024, 1024, 2048], device='cuda')
+mem_allocated 8.651, mem_reserved 9.680
+del dummy_z
+gc.collect()
+mem_allocated 0.651, mem_reserved 9.680
+z = torch.randn([320, 19, 935, 2, 256], device='cuda')
+mem_allocated 11.495, mem_reserved 20.523
+...
+Step 1
+dummy_z = torch.randn([1024, 1024, 2048], device='cuda')
+mem_allocated 9.061, mem_reserved 20.529
+del dummy_z
+gc.collect()
+mem_allocated 1.061, mem_reserved 20.529
+z = torch.randn([320, 19, 935, 2, 256], device='cuda')
+mem_allocated 11.905, mem_reserved 20.529
+...
+Step 2...
+Expected behavior
+To reserve/utilize an amount of memory close to the total available, as I have shown in the working case without having to create/delete dummy tensors.
+Environment
+
+cc @ezyang @gchanan @zou3519 @ngimel
+

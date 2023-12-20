@@ -1,0 +1,172 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Repo:
+
+Error:
+
+Versions
+N/A
+cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @voznesenskym @penguinwu @EikanWang @jgong5 @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @Xia-Weiwen @wenzhe-nrv @jiayisunx @peterbell10 @ipiszy @ngimel @yf225 @bertmaher
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I found that transposing a sparse CSR tensor changes the CUDA index of the tensor to 0.
+
+The above code outputs the following:
+
+, which is not expected.
+I checked the github issues, but couldn't find the same bug report.
+Versions
+
+cc @nikitaved @pearu @cpuhrsch @amjames @bhosmer
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Originally reported by @vfdev-5  in pytorch/vision#2342 (comment)
+The behavior of round is not the same between torchscript and Python.
+
+There are two differences: the value is different, but the returned type as well (float instead of int).
+I'm using PyTorch version '1.6.0.dev20200617'
+cc @suo @gmagogsfm
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+First time contributors are welcome! 🙂
+Add support for aten::sort.values_stable (supported on MacOS 13.0 onwards) for MPS backend. Generic support for adding operations to MPS backend is captured here: https://github.com/pytorch/pytorch/wiki/MPS-Backend#adding-op-for-mps-backend
+Versions
+N/A
+cc @kulinseth @albanD @malfet @razarmehr @abhudev
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug ?
+Hello,
+I have very simple c++ function:
+
+which I use via JIT compiling extensions functionality:
+
+And here is the output:
+
+Is this expected behaviour? Why does passing tensor to the c++ function change its options (requires_grad in particular)?
+
+PyTorch Version is 1.0.1
+
+cc @yf225 @glaringlee @zou3519
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+The documentation for torch.autograd.set_multithreading_enabled says that "It can be used as a context-manager or as a function." but it doesn't work unless you store the result as it will act as a context manager and undo the value once the returned value gets destroyed.
+We should either document that fact of fix set_multithreading_enabled behavior.
+It's rather complicated to write a test for such trivial situation as there's no getter for that autograd property.
+Versions
+master
+cc @ezyang @albanD @zou3519 @gqchen @pearu @nikitaved @soulitzer @lezcano @Varal7
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+hf_Longformer & AllenaiLongformerBase failed tracked in #93531 (comment)
+
+
+
+
+SW
+Nightly commit
+Main commit
+
+
+
+
+Pytorch
+810edae
+992bffe
+
+
+Torchbench
+/
+987bbec3
+
+
+torchaudio
+894388d
+72d3fe0
+
+
+torchtext
+3cf1db6
+0dc07eb
+
+
+torchvision
+b52841b
+f36c5de
+
+
+torchdata
+a754743
+ba31745
+
+
+dynamo_benchmarks
+174d01b
+/
+
+
+
+Versions
+
+cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+A.unsqueeze(0) @ B.unsqueeze(0) can be about 70 times slower than A @ B depending on the dimensions of matrices A and B.
+Code for reproducing:
+
+This happens on a machine with NVIDIA GeForce RTX 2080 Ti and
+
+There is no difference in execution times (always 0.064 s) and (a == b).all().item() evaluates to True on a similar machine with
+
+Versions
+
+cc @csarofeen @ptrblck @xwang233
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+ExecutorchCallDelegateHigherOrderVariable will attempt to retrieve the real values as inputs to the executorch module, and then deep copy fake the result into new fake values. However, it is possible that the executorch_call_delegate function might perform in-place ops.
+The new FakeTensors would no longer share the same identity as the input fake tensors, violating our mechanism for Dynamo trace-time aliasing detection.
+No repro as of yet, this is just speculative
+Solution: manually dedup by matching the fake <-> real <-> fake relationship between inputs and outputs.
+Versions
+main
+cc @avikchaudhuri @gmagogsfm @zhxchen17 @tugsbayasgalan
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Hi,
+The enable_grad decorator is supposed to restore the previous grad mode when returning from the function.
+This doesn't happen when the function is calling itself recursively.
+To Reproduce
+Steps to reproduce the behavior:
+Run the following test
+
+Expected behavior
+The last is_grad_enabled() call should return False, the assertion should not fail.
+Instead, the last assertion fails:
+
+Environment
+Using pytorch-.
+
+PyTorch Version (e.g., 1.0): 1.5.0
+OS (e.g., Linux): Ubuntu 18.04
+Python version: 3.7.3
+
+cc @ezyang @gchanan @zou3519 @ssnl @albanD @gqchen @pearu
+

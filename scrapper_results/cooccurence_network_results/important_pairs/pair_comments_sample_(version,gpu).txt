@@ -1,0 +1,395 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+*NNPACK are optional when building libtorch, but are required when building Java bindings (which link libtorch).
+To Reproduce
+Steps to reproduce the behavior:
+
+git clone https://github.com/pytorch/pytorch
+cd pytorch
+USE_NNPACK=OFF USE_XNNPACK=OFF USE_PYTORCH_QNNPACK=OFF BUILD_JNI=ON python setup.py build
+Wait a very long time.
+Observe linker error because NNPACK and friends weren't built
+
+Expected behavior
+JNI should link *NNPACK only if they've been built.
+Environment
+
+PyTorch Version (e.g., 1.0): master
+OS (e.g., Linux): all
+How you installed PyTorch (conda, pip, source): source
+Build command you used (if compiling from source): pip install dataclasses; USE_NNPACK=OFF USE_XNNPACK=OFF USE_PYTORCH_QNNPACK=OFF BUILD_JNI=ON python setup.py build
+Python version: 3.6
+CUDA/cuDNN version: N/A
+GPU models and configuration: N/A
+Any other relevant information: pip install dataclasses
+
+Additional context
+Final blocker before Windows support for libpytorch_jni can be added.
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Structured kernels are an attempt to rationalize PyTorch kernels with common semantics by codegen-ing much of the intermediate wrapper code. This has, however, increased the overhead of these kernels as a result of some of the internals refactoring. This issue concerns the effect of structuring on our main mathematical helper class. (TensorIterator) This is a good bootcamp task if you're interested in C++ kernels and the machinery that we use to write them.
+To Reproduce
+This script will collect instruction counts and wall times; substitute the following to measure this regression:
+
+
+Environment
+
+PyTorch Version (e.g., 1.0): Nightly. (See commits above.)
+OS (e.g., Linux): CentOS 8
+How you installed PyTorch (conda, pip, source): Built from source
+Build command you used (if compiling from source): Script provided above
+Python version: 3.7
+CUDA/cuDNN version: N/A
+GPU models and configuration: N/A
+Any other relevant information: N/A
+
+Additional context
+This is a bootcamp task. If you have any questions, please reach out to @robieta or @orionr
+CC @bitfort, @xuzhao9, @ezyang, @bdhirsh
+cc @VitalyFedyunin @ngimel
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+The model graph and the onnx exported graph are different for Proxyless-NAS from torch hub. ProxylessNAS has batch norm layer, followed by ReLU and then Conv2d in PyTorch model but when it is exported to ONNX the computation graph becomes Conv2d followed by batch norm which is followed by ReLU.
+To Reproduce
+Steps to reproduce the behavior:
+
+print(net) produces following output
+
+print(onnx.helper.printable_graph(model.graph)) prints the following output
+
+Expected behaviour
+Both should have the same computation operations in the same order.
+Environment
+
+PyTorch Version (e.g., 1.0): 1.5.0
+OS (e.g., Linux): Ubuntu 16.04.4 LTS
+How you installed PyTorch (conda, pip, source): pip
+Build command you used (if compiling from source):
+Python version: 3.7
+CUDA/cuDNN version: 10.2
+GPU models and configuration:
+Any other relevant information: ONNX version: 1.7.0
+
+Additional context
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+The target name test_api is used by a test executable in mkldnn.
+
+To Reproduce
+Steps to reproduce the behavior:
+
+set BUILD_TEST=1
+python setup.py build
+
+Expected behavior
+CMake configure passes.
+Environment
+Please copy and paste the output from our
+environment collection script
+(or fill out the checklist below manually).
+You can get the script and run it with:
+
+
+PyTorch Version (e.g., 1.0): v1.5.0-rc2
+OS (e.g., Linux): Windows
+How you installed PyTorch (conda, pip, source): source
+Build command you used (if compiling from source): python setup.py build
+Python version: 3.x
+CUDA/cuDNN version: 9.2 / 10.1 / 10.2 / NA
+GPU models and configuration: Tesla M60
+Any other relevant information:
+
+Additional context
+We should not build tests for mkldnn.
+
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+on a multi GPU system, if a GPU != 0 is used, pytorch will still allocate some memory on the GPU 0 - see the nvidia-smi screenshot below.
+Code example
+
+tester@NEWTITAN:~$ nvidia-smi
+Sat Apr 28 23:45:03 2018
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 387.26                 Driver Version: 387.26                    |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|===============================+======================+======================|
+|   0  TITAN X (Pascal)    Off  | 00000000:05:00.0 Off |                  N/A |
+| 23%   33C    P2    57W / 250W |    401MiB / 12189MiB |      0%      Default |
++-------------------------------+----------------------+----------------------+
+|   1  GeForce GTX 108...  Off  | 00000000:06:00.0 Off |                  N/A |
+| 29%   33C    P2    58W / 250W |    549MiB / 11172MiB |      6%      Default |
++-------------------------------+----------------------+----------------------+
+|   2  GeForce GTX 108...  Off  | 00000000:09:00.0 Off |                  N/A |
+| 29%   36C    P8    10W / 250W |     10MiB / 11172MiB |      0%      Default |
++-------------------------------+----------------------+----------------------+
++-----------------------------------------------------------------------------+
+| Processes:                                                       GPU Memory |
+|  GPU       PID   Type   Process name                             Usage      |
+|=============================================================================|
+|    0      1262      C   python                                       391MiB |
+|    1      1262      C   python                                       539MiB |
++-----------------------------------------------------------------------------+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+I am trying to run the Captum CIFAR10 example link and I want to test it on GPU so I modified a line net = Net().cuda() to load the model into the GPU (I am having a single GPU RTX 2080TI). However I got this error:
+
+At the moment, I am using NVIDIA driver version 410. I have tried to upgrade NVIDIA GPU driver to version 435 and I don't see that error anymore but the code got stuck trying to load the model into the GPU.
+To Reproduce
+Steps to reproduce the behavior:
+
+I upgrade the lastest pytorch version using this command conda install pytorch torchvision cudatoolkit=10.1 -c pytorch
+Download the Captum CIFAR 10 example code and modify the line to load the network into GPU
+Run the code and receive the error.
+
+Environment
+Collecting environment information...
+PyTorch version: 1.3.0
+Is debug build: No
+CUDA used to build PyTorch: 10.1.243
+OS: Ubuntu 18.04.3 LTS
+GCC version: (Ubuntu 7.4.0-1ubuntu1~18.04.1) 7.4.0
+CMake version: version 3.10.2
+Python version: 3.7
+Is CUDA available: No
+CUDA runtime version: 10.0.130
+GPU models and configuration: GPU 0: GeForce RTX 2080 Ti
+Nvidia driver version: 410.104
+cuDNN version: Could not collect
+Versions of relevant libraries:
+[pip3] numpy==1.17.0
+[pip3] numpydoc==0.7.0
+[conda] _tflow_select             2.3.0                       mkl
+[conda] blas                      1.0                         mkl
+[conda] captum                    0.1.0                         0    pytorch
+[conda] mkl                       2019.4                      243
+[conda] mkl-service               2.3.0            py37he904b0f_0
+[conda] mkl_fft                   1.0.14           py37ha843d7b_0
+[conda] mkl_random                1.0.2            py37hd81dba3_0
+[conda] pytorch                   1.3.0           py3.7_cuda10.1.243_cudnn7.6.3_0    pytorch
+[conda] tensorflow                1.14.0          mkl_py37h45c423b_0
+[conda] tensorflow-base           1.14.0          mkl_py37h7ce6ba3_0
+[conda] torchtext                 0.4.0                    pypi_0    pypi
+[conda] torchvision               0.4.1                py37_cu101    pytorch
+cc @ezyang @gchanan @zou3519
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Setting default tensor type to torch.cuda.DoubleTensor results in undefined behavior (and wrong outputs) in case of shape mismatch.
+When passing a tensor of shape (1, 1) to a nn.Linear(2, 1), it gives unpredictable results when using torch.cuda.DoubleTenosr as default. However, if using CPU tensor, it will give a shape mismatch error (as expected)
+To Reproduce
+Steps to reproduce the behavior:
+Run the following code on a fresh Google Colab notebook (with GPU instance selected):
+
+Every time this cell is executed, the output of net(torch.zeros(1, 1)) will be different across the 3 print statements, indicating memory corruption and undefined behavior. One example output is:
+
+Expected behavior
+A shape mismatch error should be raised, as it does when using CPU tensors.
+Environment
+Collecting environment information...
+PyTorch version: 1.4.0
+Is debug build: False
+CUDA used to build PyTorch: 10.1
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.5 LTS (x86_64)
+GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+Clang version: 6.0.0-1ubuntu2 (tags/RELEASE_600/final)
+CMake version: version 3.12.0
+Libc version: glibc-2.15
+Python version: 2.7.17 (default, Feb 27 2021, 15:10:58)  [GCC 7.5.0] (64-bit runtime)
+Python platform: Linux-5.4.104+-x86_64-with-Ubuntu-18.04-bionic
+Is CUDA available: True
+CUDA runtime version: 11.0.221
+GPU models and configuration: GPU 0: Tesla P100-PCIE-16GB
+Nvidia driver version: 460.32.03
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.7.6.5
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.0.4
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.0.4
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.0.4
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.0.4
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.0.4
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.0.4
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.0.4
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.19.5
+[pip3] torch==1.9.0+cu102
+[pip3] torchsummary==1.5.1
+[pip3] torchtext==0.10.0
+[pip3] torchvision==0.10.0+cu102
+[conda] Could not collect
+Additional context
+If we remove the call to net.state_dict() and don't call anything else, the output will be consistent across 3 consecutive print() statements.
+Memory corruption is likely the culprit.
+cc @ezyang @gchanan @zou3519 @bdhirsh @jbschlosser @anjali411 @jianyuh @nikitaved @pearu @mruberry @heitorschueroff @walterddr @IvanYashchuk @xwang233 @lezcano
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+
+The error message is as follows:
+$ python test.py
+Traceback (most recent call last):
+File "test.py", line 15, in 
+test_model = torch.jit.script(Test())
+File "/home/yanggang/hd/anaconda3/envs/vector_net/lib/python3.8/site-packages/torch/jit/_script.py", line 1257, in script
+return torch.jit._recursive.create_script_module(
+File "/home/yanggang/hd/anaconda3/envs/vector_net/lib/python3.8/site-packages/torch/jit/_recursive.py", line 451, in create_script_module
+return create_script_module_impl(nn_module, concrete_type, stubs_fn)
+File "/home/yanggang/hd/anaconda3/envs/vector_net/lib/python3.8/site-packages/torch/jit/_recursive.py", line 517, in create_script_module_impl
+create_methods_and_properties_from_stubs(concrete_type, method_stubs, property_stubs)
+File "/home/yanggang/hd/anaconda3/envs/vector_net/lib/python3.8/site-packages/torch/jit/_recursive.py", line 368, in create_methods_and_properties_from_stubs
+concrete_type._create_methods_and_properties(property_defs, property_rcbs, method_defs, method_rcbs, method_defaults)
+RuntimeError:
+Return value was annotated as having type Tuple[Optional[Tensor]] but is actually of type Tuple[Tensor, Tensor, NoneType]:
+File "test.py", line 12
+def forward(self, a:Tensor) -> Tuple[Optional[Tensor]]:
+return (a,a,None)
+~~~~~~~~~~~~~~~~ <--- HERE
+Versions
+Collecting environment information...
+PyTorch version: 1.10.2
+Is debug build: False
+CUDA used to build PyTorch: 11.3
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.3 LTS (x86_64)
+GCC version: (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+Clang version: Could not collect
+CMake version: version 3.16.3
+Libc version: glibc-2.31
+Python version: 3.8.1 (default, Jan  8 2020, 22:29:32)  [GCC 7.3.0] (64-bit runtime)
+Python platform: Linux-5.13.0-28-generic-x86_64-with-glibc2.10
+Is CUDA available: True
+CUDA runtime version: 11.3.109
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 3060
+Nvidia driver version: 510.54
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.2.1
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.21.5
+[pip3] torch==1.10.2
+[pip3] torch-cluster==1.5.9
+[pip3] torch-geometric==1.7.2
+[pip3] torch-scatter==2.0.9
+[pip3] torch-sparse==0.6.12
+[pip3] torch-tb-profiler==0.4.0
+[pip3] torchaudio==0.10.2
+[pip3] torchvision==0.11.3
+[conda] blas                      1.0                         mkl    intel
+[conda] cudatoolkit               11.3.1               h2bc3f7f_2
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] mkl                       2022.0.2                 pypi_0    pypi
+[conda] mkl-fft                   1.3.1                    pypi_0    pypi
+[conda] mkl-random                1.2.2                    pypi_0    pypi
+[conda] mkl-service               2.4.0                    pypi_0    pypi
+[conda] mkl_fft                   1.0.15           py38ha843d7b_0
+[conda] mkl_random                1.1.0            py38h962f231_0
+[conda] numpy                     1.19.0                   pypi_0    pypi
+[conda] numpy-base                1.20.3           py38hf707ed8_2    intel
+[conda] pytorch                   1.10.2          py3.8_cuda11.3_cudnn8.2.0_0    pytorch
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torch                     1.4.0                    pypi_0    pypi
+[conda] torch-cluster             1.5.9                    pypi_0    pypi
+[conda] torch-geometric           1.7.2                    pypi_0    pypi
+[conda] torch-scatter             2.0.9                    pypi_0    pypi
+[conda] torch-sparse              0.6.12                   pypi_0    pypi
+[conda] torchaudio                0.10.2               py38_cu113    pytorch
+[conda] torchvision               0.11.3               py38_cu113    pytorch
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Hi, I'm running into a segmentation fault when building LibTorch 1.5.0 on macOS Catalina.
+
+Output: https://github.com/Homebrew/homebrew-core/pull/53497/checks?check_run_id=606872734 (easier to see if you click view raw logs, but can't post link since it's temporary)
+Ref: Homebrew/homebrew-core#53497
+To Reproduce
+Build on macOS Catalina with the following flags/commands: https://github.com/Homebrew/homebrew-core/blob/44c5fbfdaad0be44034609e0f4260765464c4039/Formula/libtorch.rb#L45-L60
+Expected behavior
+It builds successfully.
+Environment
+
+PyTorch Version (e.g., 1.0): 1.5.0
+OS (e.g., Linux): macOS
+How you installed PyTorch (conda, pip, source): source
+Build command you used (if compiling from source):
+
+
+
+Python version: N/A
+CUDA/cuDNN version: None
+GPU models and configuration: None
+Any other relevant information: None
+
+cc @malfet
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Hi, I'm running into a failed assertion with torch::pickle_load on PyTorch models.
+
+To Reproduce
+Steps to reproduce the behavior:
+
+Save a tensor and a model in PyTorch
+
+
+
+Create and compile a C++ application
+
+
+
+Run it
+
+The tensor loads as expected, but the model throws an exception.
+Stack Trace
+
+frame #0: c10::Error::Error(c10::SourceLocation, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&) + 135 (0x104aaaf47 in libc10.dylib)
+frame #1: c10::IValue::toGenericDict() const & + 280 (0x104b547b8 in libtorch_cpu.dylib)
+frame #2: torch::jit::Unpickler::readInstruction() + 5580 (0x10754cc1c in libtorch_cpu.dylib)
+frame #3: torch::jit::Unpickler::run() + 472 (0x10754b2d8 in libtorch_cpu.dylib)
+frame #4: torch::jit::Unpickler::parse_ivalue() + 34 (0x10754ae32 in libtorch_cpu.dylib)
+frame #5: torch::jit::readArchiveAndTensors(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&, c10::optional<std::__1::function<c10::StrongTypePtr (c10::QualifiedName const&)> >, c10::optional<std::__1::function<c10::intrusive_ptr<c10::ivalue::Object, c10::detail::intrusive_target_default_null_type<c10::ivalue::Object> > (c10::StrongTypePtr, c10::IValue)> >, c10::optional<c10::Device>, caffe2::serialize::PyTorchStreamReader&) + 838 (0x107580496 in libtorch_cpu.dylib)
+frame #6: torch::jit::pickle_load(std::__1::vector<char, std::__1::allocator<char> > const&) + 347 (0x10758539b in libtorch_cpu.dylib)
+frame #7: torch::pickle_load(std::__1::vector<char, std::__1::allocator<char> > const&) + 14 (0x1079944ee in libtorch_cpu.dylib)
+frame #8: main + 341 (0x104a70745 in example-app)
+frame #9: start + 1 (0x7fff79ac53d5 in libdyld.dylib)
+frame #10: 0x0 + 1 (0x1 in ???)
+Expected behavior
+No exception.
+Environment
+
+PyTorch Version (e.g., 1.0): 1.5.0
+OS (e.g., Linux): macOS 10.14
+How you installed PyTorch (conda, pip, source): pip
+Build command you used (if compiling from source):
+Python version: 3.7
+CUDA/cuDNN version: n/a
+GPU models and configuration: n/a
+
+cc @ezyang @gchanan @zou3519 @suo
+

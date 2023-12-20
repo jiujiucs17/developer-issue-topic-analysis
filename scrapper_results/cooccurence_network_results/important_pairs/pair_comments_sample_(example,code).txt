@@ -1,0 +1,288 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+TorchScript -> ONNX conversion of a simple module fails
+If one doesn’t jit-compile the model, everything works.
+To Reproduce
+
+Output
+
+Expected behavior
+I expected that a jit-compiled module consisting of just two nn.Linear children should export to ONNX without hassle.
+Environment
+Google Colab, I think at the moment it has PyTorch 1.2.0 and Python 3.6
+Additional context
+I played around with TorchScript tracing / ONNX export of modules that work with namedtuples, got some errors. Trying to get a minimal example has led me to this code with no namedtuples.
+cc @suo
+
+----------------------------------------Comment 1----------------------------------------
+
+I am attempting to save the gradient of a non-leaf node. I attempt to set requires_grad to be true, and receive the following error:
+
+RuntimeError: you can only change requires_grad flags of leaf variables.
+
+Attempting to call retain_grad returns an error because requires_grad is False:
+
+RuntimeError: can't retain_grad on Variable that has requires_grad=False
+
+This makes saving the gradient of an already existing Variable by way of retain_grad impossible. Here's example code that produces these errors:
+
+I am using Python 3.5.2 and PyTorch 0.2.0.post3
+
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+When I try to use weight_norm (dim=None) and DataParallel to use multiple gpus at the same time, there is an error:
+
+After digging into the code,  I found the reason is that the "weight_g" in weight_norm (dim=None) is a 0-dim tensor. This is due to the line 10 in torch/nn/utils/weight_norm.py: return p.norm().
+norm() returns a 0-dim tensor (scalar) in pytorch0.4.0, while in pytorch0.3.0, it returns a 1-dim tensor.
+The 0-dim "weight_g" somehow generates the above error when replicating across multiple gpus as in the line 12 of torch/nn/parallel/replicate.py: "param_copies = Broadcast.apply(devices, *params)"
+for now, my solution is to reshape the "weight_g" into a 1-dim tensor by changing return p.norm() in the line 10 of torch/nn/utils/weight_norm.py into return p.norm().view(-1). It solves the error.
+Code example
+
+System Info
+
+PyTorch or Caffe2: PyTorch
+How you installed PyTorch (conda, pip, source): pip
+Build command you used (if compiling from source):
+OS: Ubuntu 16.04
+PyTorch version: 0.4.0
+Python version: 2.7
+CUDA/cuDNN version: 8.0
+GPU models and configuration:
+GCC version (if compiling from source):
+CMake version:
+Versions of any other relevant libraries:
+
+
+----------------------------------------Comment 1----------------------------------------
+
+If you have a question or would like help and support, please ask at our
+forums.
+If you are submitting a feature request, please preface the title with [feature request].
+If you are submitting a bug report, please fill in the following details.
+Issue description
+I need to simulate a script that is using math functions that are complex ( complex64 or cfloat type matrix).
+Code example
+myMatrix = torch.tensor(4000, 4000, dtype=torch.cfloat, device='mps')
+System Info
+Python version: 3.9.6 (default, Sep 26 2022, 11:37:49)  [Clang 14.0.0 (clang-1400.0.29.202)] (64-bit runtime)
+Python platform: macOS-13.0.1-arm64-arm-64bit
+Is CUDA available: N/A
+CUDA runtime version: Could not collect
+CUDA_MODULE_LOADING set to: N/A
+GPU models and configuration: Could not collect
+Nvidia driver version: Could not collect
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: N/A
+
+
+PyTorch or Caffe2: PyTorch
+
+
+How you installed PyTorch (conda, pip, source): conda
+
+
+Build command you used (if compiling from source): pip3 install torch torchvision torchaudio
+
+
+OS: Ventura 13.0.1
+
+
+PyTorch version: 1.13.0
+Is MPS (Metal Performance Shader) built? True
+Is MPS available? True
+
+
+Python version: Python 3.9.6
+
+
+CUDA/cuDNN version: N/A
+
+
+GPU models and configuration: Apple GPU 10 Core (MacBook Air M2)
+
+
+GCC version (if compiling from source): Apple clang version 14.0.0 (clang-1400.0.29.202)
+
+
+CMake version: GNU Make 3.81
+
+
+Versions of any other relevant libraries:
+
+
+cc @kulinseth @albanD @malfet @DenisVieriu97 @razarmehr @abhudev
+
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+This is blocking Pyro from updating from Pytorch 0.4.0 to 0.4.1. (along with #9521)
+Code examples
+
+
+System info
+
+
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+The dim of empty tensor was 0 in version 0.3.0, but I got 1 in version 0.4.0
+Code example
+
+
+PyTorch or Caffe2: PyTorch
+How you installed PyTorch (conda, pip, source): pip install torch
+Build command you used (if compiling from source):
+OS: Mac OS 10.12.6
+PyTorch version: 0.4.0
+Python version: 3.6.1
+
+
+----------------------------------------Comment 1----------------------------------------
+
+❓ "self.graph.owning_module not set for purity check" error when trying to remove nodes from torch.fx.graph
+I have tried to remove nodes from torch.fx.graph but it does not work properly.
+Here is the code example. This example uses a small model of 2 conv layers and finally sum outputs of these two layers. I changed conv2 and add layers into rogue nodes, and then let the output node connect directly to conv1.
+The purity check error stops the program when I try to cleanup rogue nodes using eliminate_dead_code().
+
+
+You can see from the log that conv2 and add are successfully changed into rogue nodes (no parents, no children), but graph.eliminate_dead_code() fails to run properly due to assertion of self.graph.owning_module.
+I am wondering, why do we need this kind of assertion? And how can I make sure that owning_module is not none.
+
+
+cc @ezyang
+
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+torch.utils.checkpoint (with use_reentrant=False) returns silently incorrect results with some PyTorch features that set TLS. This includes: functorch (see pytorch/functorch#993), torch_dispatch Mode, and possibly also more.
+The root of the issue is that:
+
+checkpoint needs to re-run the function passed to it to compute intermediates
+This function must be re-run with the same global state as the original function was run
+checkpoint hard-codes some the state it needs:(
+
+
+pytorch/torch/utils/checkpoint.py
+
+
+        Lines 398 to 408
+      in
+      2698f99
+
+
+
+
+
+
+ with torch.random.fork_rng(devices=rng_devices, enabled=preserve_rng_state): 
+
+
+
+ if preserve_rng_state: 
+
+
+
+ torch.set_rng_state(fwd_cpu_state) 
+
+
+
+ if had_cuda_in_fwd: 
+
+
+
+ set_device_states(fwd_gpu_devices, fwd_gpu_states) 
+
+
+
+ 
+
+
+
+ with torch.enable_grad(), \ 
+
+
+
+ torch.cuda.amp.autocast(**gpu_autocast_kwargs), \ 
+
+
+
+ torch.cpu.amp.autocast(**cpu_autocast_kwargs), \ 
+
+
+
+ torch.autograd.graph.saved_tensors_hooks(inner_pack, inner_unpack): 
+
+
+
+ _unused = function(*args, **kwargs) 
+
+
+
+
+)
+
+Code example
+Repro for torch_dispatch Mode:
+
+Resolution
+The implication for torch_dispatch mode is that checkpointing needs to somehow save the mode stack at the time of the forward pass and then restore it when it re-runs the forward pass.
+Robustness: this problem sounds similar to Aten/ThreadLocalState.h -- in ATen, there is one place that encapsulates all TLS. If we had something like that for Python, then if anyone comes along to add some TLS in the future, checkpoint would automatically work with it.
+cc @Chillee @ezyang @albanD @samdow
+
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+Passing non-cuda tensors for initial state drives to CuDNN error
+Provide a short description.
+Code example
+
+System Info
+
+PyTorch or Caffe2: pytorch
+How you installed PyTorch (conda, pip, source): pip
+Build command you used (if compiling from source): NA
+OS: ubuntu16
+PyTorch version: 0.4.1
+Python version: 3.6
+CUDA/cuDNN version: 9.0
+GPU models and configuration: 1070
+
+
+----------------------------------------Comment 1----------------------------------------
+
+📚 The doc issue
+When I was going through the TorchDynamo Overview, I found the following content confusing.
+As in the simple example below,
+
+and the documentation right following the above code:
+
+This example will not actually run faster. Its purpose is to demonstrate the torch.cos() and torch.sin() features which are examples of pointwise ops as in they operate element by element on a vector.
+
+The contents are talking about the example code, which is correct. However, when it comes to the paragraph below:
+
+TorchDynamo supports many different backends but inductor specifically works by generating Triton kernels and we can inspect them by running TORCH_COMPILE_DEBUG=1 python trig.py with the actual generated kernel being
+
+
+The content is quite confusing to me:
+
+There has never been a trig.py;
+If I assume the content of trig.py is the code in the first block, the generated code should be tmp1 = tl.cos(tmp0) not tmp1 = tl.sin(tmp0).
+
+I did some search to figure out what was going on. Then I find that this get-started page might be migrated from this official blog. In the blog, the toy example is
+
+So I realize that the developer who wrote the documentation for TorchDynamo might write the wrong example code for the docs of Dynamo by mistake.
+By the way, in the official blog, the explanation of the code is also incorrect, in the blog, the code is two torch.sin(x) but in the following contents, the author says there are torch.cos() and torch.sin()
+Suggest a potential alternative/fix
+A simple fix could just fix the given code example to
+
+which will make the code and the generated contents consistent. And change the following content
+
+This example will not actually run faster. Its purpose is to demonstrate the torch.sin() and torch.sin() features which are examples of pointwise ops as in they operate element by element on a vector.
+
+Otherwise, if we want to demonstrate the torch.cos() and torch.sin() features, we then will need to change the generated code. Please correct me if I get something wrong.
+cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305
+

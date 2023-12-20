@@ -1,0 +1,1282 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Transformers: 4.29.0
+Repro:
+
+Error log:
+
+Versions
+PyTorch version: 2.1.0a0+gitb536c40
+Is debug build: False
+CUDA used to build PyTorch: None
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.6 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+Clang version: Could not collect
+CMake version: version 3.25.2
+Libc version: glibc-2.31
+Python version: 3.8.16 (default, Mar  2 2023, 03:21:46)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-71-generic-x86_64-with-glibc2.17
+Is CUDA available: False
+CUDA runtime version: No CUDA
+CUDA_MODULE_LOADING set to: N/A
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   52 bits physical, 57 bits virtual
+CPU(s):                          128
+On-line CPU(s) list:             0-127
+Thread(s) per core:              2
+Core(s) per socket:              32
+Socket(s):                       2
+NUMA node(s):                    2
+Vendor ID:                       GenuineIntel
+CPU family:                      6
+Model:                           106
+Model name:                      Intel(R) Xeon(R) Platinum 8358 CPU @ 2.60GHz
+Stepping:                        6
+CPU MHz:                         2600.000
+CPU max MHz:                     3400.0000
+CPU min MHz:                     800.0000
+BogoMIPS:                        5200.00
+L1d cache:                       3 MiB
+L1i cache:                       2 MiB
+L2 cache:                        80 MiB
+L3 cache:                        96 MiB
+NUMA node0 CPU(s):               0-31,64-95
+NUMA node1 CPU(s):               32-63,96-127
+Vulnerability Itlb multihit:     Not affected
+Vulnerability L1tf:              Not affected
+Vulnerability Mds:               Not affected
+Vulnerability Meltdown:          Not affected
+Vulnerability Mmio stale data:   Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Retbleed:          Not affected
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Enhanced IBRS, IBPB conditional, RSB filling, PBRSB-eIBRS SW sequence
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 invpcid_single ssbd mba ibrs ibpb stibp ibrs_enhanced fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local split_lock_detect wbnoinvd dtherm ida arat pln pts hwp hwp_act_window hwp_epp hwp_pkg_req avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg tme avx512_vpopcntdq la57 rdpid fsrm md_clear pconfig flush_l1d arch_capabilities
+Versions of relevant libraries:
+[pip3] flake8==6.0.0
+[pip3] flake8-bugbear==23.3.23
+[pip3] flake8-comprehensions==3.12.0
+[pip3] flake8-executable==2.1.3
+[pip3] flake8-logging-format==0.9.0
+[pip3] flake8-pyi==23.3.1
+[pip3] flake8-simplify==0.19.3
+[pip3] intel-extension-for-pytorch==2.1.0+git3642f0c
+[pip3] mypy==0.960
+[pip3] mypy-extensions==1.0.0
+[pip3] numpy==1.23.1
+[pip3] torch==2.1.0a0+gitd1f0c8e
+[conda] intel-extension-for-pytorch 2.1.0+git3642f0c           dev_0    
+[conda] mkl                       2023.0.0                 pypi_0    pypi
+[conda] mkl-devel                 2023.0.0                 pypi_0    pypi
+[conda] mkl-include               2023.0.0                 pypi_0    pypi
+[conda] mkl-static                2023.0.0                 pypi_0    pypi
+[conda] numpy                     1.23.1                   pypi_0    pypi
+[conda] torch                     2.1.0a0+gitd1f0c8e           dev_0    
+cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh @anijain2305
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Hi! I found that the following snippet will trigger an InternalTorchDynamoError.
+Some subtle modifications (as mentioned in the comments) might impede reproduction.
+
+Error logs
+
+Minified repro
+No response
+Versions
+PyTorch version: 2.1.0a0+gitfe05266
+Is debug build: False
+CUDA used to build PyTorch: 11.6
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.4 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+Clang version: 10.0.0-4ubuntu1
+CMake version: version 3.25.2
+Libc version: glibc-2.31
+Python version: 3.9.5 (default, Nov 23 2021, 15:27:38)  [GCC 9.3.0] (64-bit runtime)
+Python platform: Linux-5.15.0-67-generic-x86_64-with-glibc2.31
+Is CUDA available: True
+CUDA runtime version: 11.6.112
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 2070
+Nvidia driver version: 510.108.03
+cuDNN version: Probably one of the following:
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn.so.8.2.4
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.2.4
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.2.4
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.2.4
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.2.4
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.2.4
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.2.4
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn.so.8.6.0
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.6.0
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.6.0
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.6.0
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.6.0
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.6.0
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.6.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.7.0
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   43 bits physical, 48 bits virtual
+CPU(s):                          32
+On-line CPU(s) list:             0-31
+Thread(s) per core:              2
+Core(s) per socket:              16
+Socket(s):                       1
+NUMA node(s):                    1
+Vendor ID:                       AuthenticAMD
+CPU family:                      23
+Model:                           1
+Model name:                      AMD Ryzen Threadripper 1950X 16-Core Processor
+Stepping:                        1
+Frequency boost:                 enabled
+CPU MHz:                         2200.000
+CPU max MHz:                     3400.0000
+CPU min MHz:                     2200.0000
+BogoMIPS:                        6786.49
+Virtualization:                  AMD-V
+L1d cache:                       512 KiB
+L1i cache:                       1 MiB
+L2 cache:                        8 MiB
+L3 cache:                        32 MiB
+NUMA node0 CPU(s):               0-31
+Vulnerability Itlb multihit:     Not affected
+Vulnerability L1tf:              Not affected
+Vulnerability Mds:               Not affected
+Vulnerability Meltdown:          Not affected
+Vulnerability Mmio stale data:   Not affected
+Vulnerability Retbleed:          Mitigation; untrained return thunk; SMT vulnerable
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Retpolines, IBPB conditional, STIBP disabled, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid amd_dcm aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb hw_pstate ssbd ibpb vmmcall fsgsbase bmi1 avx2 smep bmi2 rdseed adx smap clflushopt sha_ni xsaveopt xsavec xgetbv1 xsaves clzero irperf xsaveerptr arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif overflow_recov succor smca sme sev
+Versions of relevant libraries:
+[pip3] numpy==1.24.2
+[pip3] torch==2.1.0a0+git4805441
+[pip3] triton==2.0.0
+cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh @voznesenskym @penguinwu @anijain2305 @EikanWang @jgong5 @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @Xia-Weiwen @wenzhe-nrv @jiayisunx @desertfire
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I have more details in this colab notebook, but the issue has to do with a specific sequence of operations that are not equivalent between the regular and traced models when running on a Tesla T4 GPU. The colab notebook was run with a T4 GPU runtime and torch.__version__=="2.2.0.dev20230920+cu118".
+Here is the code that fails. This does not fail on cpu, or if the operations in CoordTransform are simplified.
+
+Output:
+
+Versions
+Collecting environment information...
+PyTorch version: 2.2.0.dev20230920+cu118
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 22.04.2 LTS (x86_64)
+GCC version: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
+Clang version: 14.0.0-1ubuntu1.1
+CMake version: version 3.27.4
+Libc version: glibc-2.35
+Python version: 3.10.12 (main, Jun 11 2023, 05:26:28) [GCC 11.4.0] (64-bit runtime)
+Python platform: Linux-5.15.120+-x86_64-with-glibc2.35
+Is CUDA available: True
+CUDA runtime version: 11.8.89
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: Tesla T4
+Nvidia driver version: 525.105.17
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.9.0
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Address sizes:                   46 bits physical, 48 bits virtual
+Byte Order:                      Little Endian
+CPU(s):                          2
+On-line CPU(s) list:             0,1
+Vendor ID:                       GenuineIntel
+Model name:                      Intel(R) Xeon(R) CPU @ 2.00GHz
+CPU family:                      6
+Model:                           85
+Thread(s) per core:              2
+Core(s) per socket:              1
+Socket(s):                       1
+Stepping:                        3
+BogoMIPS:                        4000.33
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch invpcid_single ssbd ibrs ibpb stibp fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm mpx avx512f avx512dq rdseed adx smap clflushopt clwb avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves arat md_clear arch_capabilities
+Hypervisor vendor:               KVM
+Virtualization type:             full
+L1d cache:                       32 KiB (1 instance)
+L1i cache:                       32 KiB (1 instance)
+L2 cache:                        1 MiB (1 instance)
+L3 cache:                        38.5 MiB (1 instance)
+NUMA node(s):                    1
+NUMA node0 CPU(s):               0,1
+Vulnerability Itlb multihit:     Not affected
+Vulnerability L1tf:              Mitigation; PTE Inversion
+Vulnerability Mds:               Vulnerable; SMT Host state unknown
+Vulnerability Meltdown:          Vulnerable
+Vulnerability Mmio stale data:   Vulnerable
+Vulnerability Retbleed:          Vulnerable
+Vulnerability Spec store bypass: Vulnerable
+Vulnerability Spectre v1:        Vulnerable: __user pointer sanitization and usercopy barriers only; no swapgs barriers
+Vulnerability Spectre v2:        Vulnerable, IBPB: disabled, STIBP: disabled, PBRSB-eIBRS: Not affected
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Vulnerable
+Versions of relevant libraries:
+[pip3] numpy==1.23.5
+[pip3] pytorch-triton==2.1.0+6e4932cda8
+[pip3] torch==2.2.0.dev20230920+cu118
+[pip3] torchaudio==2.2.0.dev20230920+cu118
+[pip3] torchdata==0.6.1
+[pip3] torchsummary==1.5.1
+[pip3] torchtext==0.15.2
+[pip3] torchvision==0.17.0.dev20230920+cu118
+[pip3] triton==2.0.0
+[conda] Could not collect
+cc @EikanWang @jgong5 @wenzhe-nrv @sanchitintel
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+The build fails after #109986 was merged.
+Repro command on AWS hpcaas:
+python setup.py clean && time CCACHE_DIR=/scratch/mlazos/.ccache_dir CXX=g++ CC=gcc USE_CUDA=1 USE_FBGEMM=0 BUILD_NVFUSER=0 USE_MKLDNN=0 python setup.py develop
+Adding BUILD_TEST=0 fixes the issue as a workaround, but this looks like it should be addressed.
+Versions
+PyTorch version: 2.2.0a0+gitef5ff79
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.6 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0
+Clang version: Could not collect
+CMake version: version 3.24.1
+Libc version: glibc-2.31
+Python version: 3.9.16 (main, Jan 11 2023, 16:05:54)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-1041-aws-x86_64-with-glibc2.31
+Is CUDA available: True
+CUDA runtime version: 11.8.89
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration:
+GPU 0: NVIDIA A100-SXM4-40GB
+GPU 1: NVIDIA A100-SXM4-40GB
+GPU 2: NVIDIA A100-SXM4-40GB
+GPU 3: NVIDIA A100-SXM4-40GB
+GPU 4: NVIDIA A100-SXM4-40GB
+GPU 5: NVIDIA A100-SXM4-40GB
+GPU 6: NVIDIA A100-SXM4-40GB
+GPU 7: NVIDIA A100-SXM4-40GB
+Nvidia driver version: 535.54.03
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   46 bits physical, 48 bits virtual
+CPU(s):                          96
+On-line CPU(s) list:             0-95
+Thread(s) per core:              2
+Core(s) per socket:              24
+Socket(s):                       2
+NUMA node(s):                    2
+Vendor ID:                       GenuineIntel
+CPU family:                      6
+Model:                           85
+Model name:                      Intel(R) Xeon(R) Platinum 8275CL CPU @ 3.00GHz
+Stepping:                        7
+CPU MHz:                         2999.998
+BogoMIPS:                        5999.99
+Hypervisor vendor:               KVM
+Virtualization type:             full
+L1d cache:                       1.5 MiB
+L1i cache:                       1.5 MiB
+L2 cache:                        48 MiB
+L3 cache:                        71.5 MiB
+NUMA node0 CPU(s):               0-23,48-71
+NUMA node1 CPU(s):               24-47,72-95
+Vulnerability Itlb multihit:     KVM: Mitigation: VMX unsupported
+Vulnerability L1tf:              Mitigation; PTE Inversion
+Vulnerability Mds:               Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state unknown
+Vulnerability Meltdown:          Mitigation; PTI
+Vulnerability Mmio stale data:   Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state unknown
+Vulnerability Retbleed:          Vulnerable
+Vulnerability Spec store bypass: Vulnerable
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Retpolines, STIBP disabled, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq monitor ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch invpcid_single pti fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx avx512f avx512dq rdseed adx smap clflushopt clwb avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves ida arat pku ospke
+Versions of relevant libraries:
+[pip3] clip-anytorch==2.5.2
+[pip3] CoCa-pytorch==0.0.6
+[pip3] dalle2-pytorch==1.14.2
+[pip3] ema-pytorch==0.0.10
+[pip3] flake8==6.0.0
+[pip3] flake8-bugbear==23.3.23
+[pip3] flake8-comprehensions==3.12.0
+[pip3] flake8-executable==2.1.3
+[pip3] flake8-logging-format==0.9.0
+[pip3] flake8-pyi==23.3.1
+[pip3] flake8-simplify==0.19.3
+[pip3] functorch==1.14.0a0+b71aa0b
+[pip3] mypy==1.4.1
+[pip3] mypy-extensions==1.0.0
+[pip3] numpy==1.24.3
+[pip3] open-clip-torch==2.20.0
+[pip3] pytorch-ranger==0.1.1
+[pip3] pytorch-transformers==1.2.0
+[pip3] pytorch-warmup==0.1.0
+[pip3] rotary-embedding-torch==0.1.5
+[pip3] torch==2.2.0a0+gitef5ff79
+[pip3] torch-fidelity==0.3.0
+[pip3] torch_geometric==2.4.0
+[pip3] torch-optimizer==0.1.0
+[pip3] torch-struct==0.5
+[pip3] torchfile==0.1.0
+[pip3] torchmetrics==0.10.0
+[pip3] torchrec-nightly==2022.8.18
+[pip3] torchx-nightly==2022.8.18
+[pip3] triton==2.1.0
+[pip3] vector-quantize-pytorch==0.9.2
+[conda] blas                      1.0                         mkl
+[conda] clip-anytorch             2.5.2                    pypi_0    pypi
+[conda] coca-pytorch              0.0.6                    pypi_0    pypi
+[conda] dalle2-pytorch            1.14.2                   pypi_0    pypi
+[conda] ema-pytorch               0.0.10                   pypi_0    pypi
+[conda] functorch                 1.14.0a0+b71aa0b          pypi_0    pypi
+[conda] magma-cuda116             2.6.1                         1    pytorch
+[conda] mkl                       2021.4.0           h06a4308_640
+[conda] mkl-include               2022.1.0           h06a4308_224
+[conda] mkl-service               2.4.0            py39h7f8727e_0
+[conda] mkl_fft                   1.3.1            py39hd3c417c_0
+[conda] mkl_random                1.2.2            py39h51133e4_0
+[conda] numpy                     1.24.3                   pypi_0    pypi
+[conda] open-clip-torch           2.20.0                   pypi_0    pypi
+[conda] pytorch-ranger            0.1.1                    pypi_0    pypi
+[conda] pytorch-transformers      1.2.0                    pypi_0    pypi
+[conda] pytorch-warmup            0.1.0                    pypi_0    pypi
+[conda] rotary-embedding-torch    0.1.5                    pypi_0    pypi
+[conda] torch                     2.2.0a0+gitef5ff79           dev_0    
+[conda] torch-fidelity            0.3.0                    pypi_0    pypi
+[conda] torch-geometric           2.4.0                    pypi_0    pypi
+[conda] torch-optimizer           0.1.0                    pypi_0    pypi
+[conda] torch-struct              0.5                      pypi_0    pypi
+[conda] torchaudio                2.1.0a0+406e9c8           dev_0    
+[conda] torchdata                 0.7.0a0+901b483           dev_0    
+[conda] torchfile                 0.1.0                    pypi_0    pypi
+[conda] torchmetrics              0.10.0                   pypi_0    pypi
+[conda] torchrec-nightly          2022.8.18                pypi_0    pypi
+[conda] torchtext                 0.14.0a0+e1b6984          pypi_0    pypi
+[conda] torchvision               0.16.0a0+498b9c8           dev_0    
+[conda] torchx-nightly            2022.8.18                pypi_0    pypi
+[conda] triton                    2.1.0                     dev_0    
+[conda] vector-quantize-pytorch   0.9.2                    pypi_0    pypi
+cc @malfet @seemethere
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Hi,
+The output of a Conv3d layer contains NaN values.
+The input has no NaN values nor do the weights of the layer. No bias is used.
+This happens rarely, but consistently: given the same input and  weights, there are NaN values in the output every time.
+I can provide the input and weights if needed.
+Thanks!
+Versions
+Collecting environment information...
+PyTorch version: 2.1.0.dev20230720+cu121
+Is debug build: False
+CUDA used to build PyTorch: 12.1
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 22.04.2 LTS (x86_64)
+GCC version: (Ubuntu 11.3.0-1ubuntu1~22.04.1) 11.3.0
+Clang version: 14.0.0-1ubuntu1.1
+CMake version: version 3.22.1
+Libc version: glibc-2.35
+Python version: 3.10.6 | packaged by conda-forge | (main, Aug 22 2022, 20:36:39) [GCC 10.4.0] (64-bit runtime)
+Python platform: Linux-5.19.0-50-generic-x86_64-with-glibc2.35
+Is CUDA available: True
+CUDA runtime version: 12.1.105
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 4090
+Nvidia driver version: 535.54.03
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Address sizes:                   39 bits physical, 48 bits virtual
+Byte Order:                      Little Endian
+CPU(s):                          12
+On-line CPU(s) list:             0-11
+Vendor ID:                       GenuineIntel
+Model name:                      Intel(R) Core(TM) i7-8700 CPU @ 3.20GHz
+CPU family:                      6
+Model:                           158
+Thread(s) per core:              2
+Core(s) per socket:              6
+Socket(s):                       1
+Stepping:                        10
+CPU max MHz:                     4600.0000
+CPU min MHz:                     800.0000
+BogoMIPS:                        6399.96
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault invpcid_single pti ssbd ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp md_clear flush_l1d arch_capabilities
+Virtualization:                  VT-x
+L1d cache:                       192 KiB (6 instances)
+L1i cache:                       192 KiB (6 instances)
+L2 cache:                        1.5 MiB (6 instances)
+L3 cache:                        12 MiB (1 instance)
+NUMA node(s):                    1
+NUMA node0 CPU(s):               0-11
+Vulnerability Itlb multihit:     KVM: Mitigation: VMX disabled
+Vulnerability L1tf:              Mitigation; PTE Inversion; VMX conditional cache flushes, SMT vulnerable
+Vulnerability Mds:               Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Meltdown:          Mitigation; PTI
+Vulnerability Mmio stale data:   Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Retbleed:          Mitigation; IBRS
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; IBRS, IBPB conditional, STIBP conditional, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds:             Mitigation; Microcode
+Vulnerability Tsx async abort:   Mitigation; TSX disabled
+Versions of relevant libraries:
+[pip3] flake8==6.0.0
+[pip3] flake8-bugbear==23.7.10
+[pip3] flake8-comprehensions==3.14.0
+[pip3] mypy==1.4.1
+[pip3] mypy-extensions==1.0.0
+[pip3] numpy==1.25.1
+[pip3] pytorch-ignite==0.4.11
+[pip3] pytorch-triton==2.1.0+9e3e10c5ed
+[pip3] torch==2.1.0.dev20230720+cu121
+[pip3] torchaudio==2.1.0.dev20230720+cu121
+[pip3] torchvision==0.16.0.dev20230720+cu121
+[conda] numpy                     1.25.1                   pypi_0    pypi
+[conda] pytorch-ignite            0.4.11                   pypi_0    pypi
+[conda] pytorch-triton            2.1.0+9e3e10c5ed          pypi_0    pypi
+[conda] torch                     2.1.0.dev20230720+cu121          pypi_0    pypi
+[conda] torchaudio                2.1.0.dev20230720+cu121          pypi_0    pypi
+[conda] torchvision               0.16.0.dev20230720+cu121          pypi_0    pypi
+cc @albanD @mruberry @jbschlosser @walterddr @mikaylagawarecki
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I still have the same problem with this (#98763)
+
+It stuck at barrier. It doesn't print "after barrier".
+Versions
+Collecting environment information...
+PyTorch version: 2.0.1+cu117
+Is debug build: False
+CUDA used to build PyTorch: 11.7
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.6 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0
+Clang version: Could not collect
+CMake version: version 3.27.7
+Libc version: glibc-2.31
+Python version: 3.10.13 (main, Sep 11 2023, 13:44:35) [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-86-generic-x86_64-with-glibc2.31
+Is CUDA available: True
+CUDA runtime version: 11.7.99
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration:
+GPU 0: NVIDIA RTX A6000
+GPU 1: NVIDIA RTX A6000
+GPU 2: NVIDIA RTX A6000
+GPU 3: NVIDIA RTX A6000
+GPU 4: NVIDIA RTX A6000
+GPU 5: NVIDIA RTX A6000
+Nvidia driver version: 535.113.01
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                       x86_64
+CPU op-mode(s):                     32-bit, 64-bit
+Byte Order:                         Little Endian
+Address sizes:                      46 bits physical, 48 bits virtual
+CPU(s):                             40
+On-line CPU(s) list:                0-39
+Thread(s) per core:                 2
+Core(s) per socket:                 10
+Socket(s):                          2
+NUMA node(s):                       2
+Vendor ID:                          GenuineIntel
+CPU family:                         6
+Model:                              85
+Model name:                         Intel(R) Xeon(R) Silver 4114 CPU @ 2.20GHz
+Stepping:                           4
+CPU MHz:                            800.000
+CPU max MHz:                        3000.0000
+CPU min MHz:                        800.0000
+BogoMIPS:                           4400.00
+Virtualization:                     VT-x
+L1d cache:                          640 KiB
+L1i cache:                          640 KiB
+L2 cache:                           20 MiB
+L3 cache:                           27.5 MiB
+NUMA node0 CPU(s):                  0-9,20-29
+NUMA node1 CPU(s):                  10-19,30-39
+Vulnerability Gather data sampling: Mitigation; Microcode
+Vulnerability Itlb multihit:        KVM: Mitigation: VMX disabled
+Vulnerability L1tf:                 Mitigation; PTE Inversion; VMX conditional cache flushes, SMT vulnerable
+Vulnerability Mds:                  Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Meltdown:             Mitigation; PTI
+Vulnerability Mmio stale data:      Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Retbleed:             Mitigation; IBRS
+Vulnerability Spec rstack overflow: Not affected
+Vulnerability Spec store bypass:    Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1:           Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:           Mitigation; IBRS, IBPB conditional, STIBP conditional, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds:                Not affected
+Vulnerability Tsx async abort:      Mitigation; Clear CPU buffers; SMT vulnerable
+Flags:                              fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 cdp_l3 invpcid_single pti intel_ppin ssbd mba ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm cqm mpx rdt_a avx512f avx512dq rdseed adx smap clflushopt clwb intel_pt avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local dtherm ida arat pln pts pku ospke md_clear flush_l1d arch_capabilities
+Versions of relevant libraries:
+[pip3] numpy==1.26.1
+[pip3] open-clip-torch==2.22.0
+[pip3] torch==2.0.1+cu117
+[pip3] torchaudio==2.0.2+cu117
+[pip3] torchvision==0.15.2+cu117
+[pip3] triton==2.0.0
+[conda] numpy                     1.26.1                   pypi_0    pypi
+[conda] open-clip-torch           2.22.0                   pypi_0    pypi
+[conda] torch                     2.0.1+cu117              pypi_0    pypi
+[conda] torchaudio                2.0.2+cu117              pypi_0    pypi
+[conda] torchvision               0.15.2+cu117             pypi_0    pypi
+[conda] triton                    2.0.0                    pypi_0    pypi
+
+
+
+
+
+
+
+
+
+
+The content you are editing has changed. Please copy your edits and refresh the page.
+
+
+
+
+
+
+
+
+
+Tasks
+
+
+Beta
+Give feedback
+ 
+
+No tasks being tracked yet.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+ 
+
+
+Options
+
+
+ 
+
+
+
+
+
+Convert to issue
+
+
+
+
+
+
+
+Toggle completion
+
+
+
+
+
+
+
+Rename
+
+
+
+
+
+
+
+Remove
+
+
+
+
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+There are constraints in the torch.distributions.constraints module that are not exposed as a public API since they are not included in the __all__ variable. This causes a downstream bug in Pyro where I cannot import certain base PyTorch constraints, as it wraps Pytorch's constraints by importing the __all__ variable.
+The fix should be straightforward, all constraints declared here: 
+
+
+pytorch/torch/distributions/constraints.py
+
+
+        Lines 626 to 654
+      in
+      e35950c
+
+
+
+
+
+
+ dependent = _Dependent() 
+
+
+
+ dependent_property = _DependentProperty 
+
+
+
+ independent = _IndependentConstraint 
+
+
+
+ boolean = _Boolean() 
+
+
+
+ one_hot = _OneHot() 
+
+
+
+ nonnegative_integer = _IntegerGreaterThan(0) 
+
+
+
+ positive_integer = _IntegerGreaterThan(1) 
+
+
+
+ integer_interval = _IntegerInterval 
+
+
+
+ real = _Real() 
+
+
+
+ real_vector = independent(real, 1) 
+
+
+
+ positive = _GreaterThan(0.0) 
+
+
+
+ nonnegative = _GreaterThanEq(0.0) 
+
+
+
+ greater_than = _GreaterThan 
+
+
+
+ greater_than_eq = _GreaterThanEq 
+
+
+
+ less_than = _LessThan 
+
+
+
+ multinomial = _Multinomial 
+
+
+
+ unit_interval = _Interval(0.0, 1.0) 
+
+
+
+ interval = _Interval 
+
+
+
+ half_open_interval = _HalfOpenInterval 
+
+
+
+ simplex = _Simplex() 
+
+
+
+ lower_triangular = _LowerTriangular() 
+
+
+
+ lower_cholesky = _LowerCholesky() 
+
+
+
+ corr_cholesky = _CorrCholesky() 
+
+
+
+ square = _Square() 
+
+
+
+ symmetric = _Symmetric() 
+
+
+
+ positive_semidefinite = _PositiveSemidefinite() 
+
+
+
+ positive_definite = _PositiveDefinite() 
+
+
+
+ cat = _Cat 
+
+
+
+ stack = _Stack 
+
+
+
+
+
+Should be matched to the __all__ declaration here: 
+
+
+pytorch/torch/distributions/constraints.py
+
+
+        Lines 35 to 65
+      in
+      e35950c
+
+
+
+
+
+
+ __all__ = [ 
+
+
+
+ "Constraint", 
+
+
+
+ "boolean", 
+
+
+
+ "cat", 
+
+
+
+ "corr_cholesky", 
+
+
+
+ "dependent", 
+
+
+
+ "dependent_property", 
+
+
+
+ "greater_than", 
+
+
+
+ "greater_than_eq", 
+
+
+
+ "independent", 
+
+
+
+ "integer_interval", 
+
+
+
+ "interval", 
+
+
+
+ "half_open_interval", 
+
+
+
+ "is_dependent", 
+
+
+
+ "less_than", 
+
+
+
+ "lower_cholesky", 
+
+
+
+ "lower_triangular", 
+
+
+
+ "multinomial", 
+
+
+
+ "nonnegative_integer", 
+
+
+
+ "positive", 
+
+
+
+ "positive_semidefinite", 
+
+
+
+ "positive_definite", 
+
+
+
+ "positive_integer", 
+
+
+
+ "real", 
+
+
+
+ "real_vector", 
+
+
+
+ "simplex", 
+
+
+
+ "square", 
+
+
+
+ "stack", 
+
+
+
+ "symmetric", 
+
+
+
+ "unit_interval", 
+
+
+
+ ] 
+
+
+
+
+
+The main concern is that the nonnegative constraint is missing, despite bein commonly used.
+Versions
+Collecting environment information...
+PyTorch version: 2.0.1
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.6 LTS (x86_64)
+GCC version: (conda-forge gcc 13.1.0-0) 13.1.0
+Clang version: Could not collect
+CMake version: version 3.26.4
+Libc version: glibc-2.31
+Python version: 3.10.12 | packaged by conda-forge | (main, Jun 23 2023, 22:40:32) [GCC 12.3.0] (64-bit runtime)
+Python platform: Linux-5.14.0-70.13.1.el9_0.x86_64-x86_64-with-glibc2.31
+Is CUDA available: False
+CUDA runtime version: No CUDA
+CUDA_MODULE_LOADING set to: N/A
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   46 bits physical, 48 bits virtual
+CPU(s):                          80
+On-line CPU(s) list:             0-79
+Thread(s) per core:              2
+Core(s) per socket:              20
+Socket(s):                       2
+NUMA node(s):                    2
+Vendor ID:                       GenuineIntel
+CPU family:                      6
+Model:                           85
+Model name:                      Intel(R) Xeon(R) Gold 6230 CPU @ 2.10GHz
+Stepping:                        7
+CPU MHz:                         2100.000
+CPU max MHz:                     3900.0000
+CPU min MHz:                     800.0000
+BogoMIPS:                        4200.00
+Virtualization:                  VT-x
+L1d cache:                       1.3 MiB
+L1i cache:                       1.3 MiB
+L2 cache:                        40 MiB
+L3 cache:                        55 MiB
+NUMA node0 CPU(s):               0-19,40-59
+NUMA node1 CPU(s):               20-39,60-79
+Vulnerability Itlb multihit:     KVM: Mitigation: VMX disabled
+Vulnerability L1tf:              Not affected
+Vulnerability Mds:               Not affected
+Vulnerability Meltdown:          Not affected
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Enhanced IBRS, IBPB conditional, RSB filling
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Mitigation; TSX disabled
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 cdp_l3 invpcid_single intel_ppin ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm mpx rdt_a avx512f avx512dq rdseed adx smap clflushopt clwb intel_pt avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local dtherm ida arat pln pts hwp hwp_act_window hwp_epp hwp_pkg_req pku ospke avx512_vnni md_clear flush_l1d arch_capabilities
+Versions of relevant libraries:
+[pip3] numpy==1.24.4
+[pip3] numpyro==0.12.1
+[pip3] pytorch-lightning==2.0.6
+[pip3] torch==2.0.1
+[pip3] torchaudio==2.0.2
+[pip3] torchmetrics==0.11.4
+[pip3] torchvision==0.15.2
+[pip3] triton==2.0.0
+[conda] blas                      1.0                         mkl    conda-forge
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] libjpeg-turbo             2.0.0                h9bf148f_0    pytorch
+[conda] mkl                       2023.1.0         h6d00ec8_46342
+[conda] numpy                     1.24.4          py310ha4c1d20_0    conda-forge
+[conda] numpyro                   0.12.1             pyhd8ed1ab_0    conda-forge
+[conda] pytorch                   2.0.1           py3.10_cuda11.8_cudnn8.7.0_0    pytorch
+[conda] pytorch-cuda              11.8                 h7e8668a_5    pytorch
+[conda] pytorch-lightning         2.0.6              pyhd8ed1ab_0    conda-forge
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torchaudio                2.0.2               py310_cu118    pytorch
+[conda] torchmetrics              0.11.4             pyhd8ed1ab_0    conda-forge
+[conda] torchtriton               2.0.0                     py310    pytorch
+[conda] torchvision               0.15.2              py310_cu118    pytorch
+cc @fritzo @neerajprad @alicanb @nikitaved
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I've encountered a potential issue regarding the error messaging of the torch.nn.AdaptiveAvgPool3d method. When providing inputs with incompatible dimensions, the raised error message doesn't seem to correctly reflect the actual problem.
+
+When the output_size is increased incrementally, the error messages raised are:
+With output_size = [1,2,3,4], the error is: "ValueError: Input dimension should be at least 5".
+With output_size = [1,2,3,4,5], the error is: "ValueError: Input dimension should be at least 6".
+With output_size = [1,2,3,4,5,6], the error is: "ValueError: Input dimension should be at least 7".
+Additionally, when the output_size is less than 3, the error message raised is: "RuntimeError: adaptive_avg_pool3d: output_size must be 3". this error message should be raised too when the output_size is bigger than 3?
+Versions
+PyTorch version: 2.1.0.dev20230622+cu118
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.6 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu120.04.1) 9.4.0
+Clang version: 12.0.0-3ubuntu120.04.5
+CMake version: version 3.26.1
+Libc version: glibc-2.31
+Python version: 3.9.16 (main, Mar  8 2023, 14:00:05)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.4.0-152-generic-x86_64-with-glibc2.31
+Is CUDA available: True
+CUDA runtime version: 12.1.105
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration:
+GPU 0: NVIDIA GeForce RTX 2070
+GPU 1: NVIDIA GeForce RTX 2070
+GPU 2: NVIDIA GeForce RTX 2070
+GPU 3: NVIDIA GeForce RTX 2070
+Nvidia driver version: 530.30.02
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.9.2
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.9.2
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.9.2
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.9.2
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.9.2
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.9.2
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.9.2
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   46 bits physical, 48 bits virtual
+CPU(s):                          32
+On-line CPU(s) list:             0-31
+Thread(s) per core:              2
+Core(s) per socket:              8
+Socket(s):                       2
+NUMA node(s):                    2
+Vendor ID:                       GenuineIntel
+CPU family:                      6
+Model:                           63
+Model name:                      Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz
+Stepping:                        2
+CPU MHz:                         1224.656
+CPU max MHz:                     3200.0000
+CPU min MHz:                     1200.0000
+BogoMIPS:                        4794.39
+Virtualization:                  VT-x
+L1d cache:                       512 KiB
+L1i cache:                       512 KiB
+L2 cache:                        4 MiB
+L3 cache:                        40 MiB
+NUMA node0 CPU(s):               0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30
+NUMA node1 CPU(s):               1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31
+Vulnerability Itlb multihit:     KVM: Mitigation: Split huge pages
+Vulnerability L1tf:              Mitigation; PTE Inversion; VMX conditional cache flushes, SMT vulnerable
+Vulnerability Mds:               Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Meltdown:          Mitigation; PTI
+Vulnerability Mmio stale data:   Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Retbleed:          Not affected
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP conditional, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm cpuid_fault epb invpcid_single pti ssbd ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm xsaveopt cqm_llc cqm_occup_llc dtherm ida arat pln pts md_clear flush_l1d
+Versions of relevant libraries:
+[pip3] numpy==1.24.1
+[pip3] pytorch-triton==2.1.0+440fd1bf20
+[pip3] torch==2.1.0.dev20230622+cu118
+[pip3] torchaudio==2.1.0.dev20230622+cu118
+[pip3] torchvision==0.16.0.dev20230622+cu118
+[conda] blas                      1.0                         mkl
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] mkl                       2023.1.0         h6d00ec8_46342
+[conda] mkl-service               2.4.0            py39h5eee18b_1
+[conda] mkl_fft                   1.3.6            py39h417a72b_1
+[conda] mkl_random                1.2.2            py39h417a72b_1
+[conda] numpy                     1.24.1                   pypi_0    pypi
+[conda] pytorch-mutex             1.0                         cpu    pytorch
+[conda] pytorch-triton            2.1.0+440fd1bf20          pypi_0    pypi
+[conda] torch                     2.1.0.dev20230622+cu118          pypi_0    pypi
+[conda] torchaudio                2.1.0.dev20230622+cu118          pypi_0    pypi
+[conda] torchvision               0.16.0.dev20230622+cu118          pypi_0    pypi
+cc @albanD @mruberry @jbschlosser @walterddr @mikaylagawarecki
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+This is a follow-up to issue #95785. I have compared the results between fake (produced by torch.quantization.prepare_qat) and real (produced by torch.quantization.convert) quantized toy models, and I find that results are not completely the same.
+Here is the code to reproduce the issue:
+
+We can see that the two results are quite close to the diagonal line, but they are not perfectly equal to each other. For regression tasks, the small error may be a problem. I hope to know what is the source of the error, and is it possible to eliminate it?
+
+Versions
+PyTorch version: 2.0.1
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 22.04.3 LTS (x86_64)
+GCC version: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
+Clang version: Could not collect
+CMake version: Could not collect
+Libc version: glibc-2.35
+Python version: 3.11.4 (main, Jul  5 2023, 14:15:25) [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-6.2.0-31-generic-x86_64-with-glibc2.35
+Is CUDA available: True
+CUDA runtime version: 12.2.140
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 4090
+Nvidia driver version: 535.104.05
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.9.4
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.9.4
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.9.4
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.9.4
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.9.4
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.9.4
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.9.4
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                       x86_64
+CPU op-mode(s):                     32-bit, 64-bit
+Address sizes:                      48 bits physical, 48 bits virtual
+Byte Order:                         Little Endian
+CPU(s):                             32
+On-line CPU(s) list:                0-31
+Vendor ID:                          AuthenticAMD
+Model name:                         AMD Ryzen 9 7950X 16-Core Processor
+CPU family:                         25
+Model:                              97
+Thread(s) per core:                 2
+Core(s) per socket:                 16
+Socket(s):                          1
+Stepping:                           2
+Frequency boost:                    enabled
+CPU max MHz:                        5879.8818
+CPU min MHz:                        3000.0000
+BogoMIPS:                           9000.11
+Flags:                              fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good amd_lbr_v2 nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba perfmon_v2 ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local avx512_bf16 clzero irperf xsaveerptr rdpru wbnoinvd cppc arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif x2avic v_spec_ctrl avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid overflow_recov succor smca fsrm flush_l1d
+Virtualization:                     AMD-V
+L1d cache:                          512 KiB (16 instances)
+L1i cache:                          512 KiB (16 instances)
+L2 cache:                           16 MiB (16 instances)
+L3 cache:                           64 MiB (2 instances)
+NUMA node(s):                       1
+NUMA node0 CPU(s):                  0-31
+Vulnerability Gather data sampling: Not affected
+Vulnerability Itlb multihit:        Not affected
+Vulnerability L1tf:                 Not affected
+Vulnerability Mds:                  Not affected
+Vulnerability Meltdown:             Not affected
+Vulnerability Mmio stale data:      Not affected
+Vulnerability Retbleed:             Not affected
+Vulnerability Spec store bypass:    Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:           Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:           Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP always-on, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds:                Not affected
+Vulnerability Tsx async abort:      Not affected
+Versions of relevant libraries:
+[pip3] flake8==6.0.0
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.25.0
+[pip3] numpydoc==1.5.0
+[pip3] torch==2.0.1
+[pip3] torchaudio==2.0.2
+[pip3] torchvision==0.15.2
+[pip3] triton==2.0.0
+[conda] blas                      1.0                         mkl
+[conda] cudatoolkit               11.8.0              h37601d7_11    conda-forge
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] mkl                       2023.1.0         h6d00ec8_46342
+[conda] mkl-service               2.4.0           py311h5eee18b_1
+[conda] mkl_fft                   1.3.6           py311ha02d727_1
+[conda] mkl_random                1.2.2           py311ha02d727_1
+[conda] numpy                     1.25.0          py311h08b1b3b_0
+[conda] numpy-base                1.25.0          py311hf175353_0
+[conda] numpydoc                  1.5.0           py311h06a4308_0
+[conda] pytorch                   2.0.1           py3.11_cuda11.8_cudnn8.7.0_0    pytorch
+[conda] pytorch-cuda              11.8                 h7e8668a_5    pytorch
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torchaudio                2.0.2               py311_cu118    pytorch
+[conda] torchtriton               2.0.0                     py311    pytorch
+[conda] torchvision               0.15.2              py311_cu118    pytorch
+cc @jerryzh168 @jianyuh @raghuramank100 @jamesr66a @vkuzo @jgong5 @Xia-Weiwen @leslie-fang-intel
+
+----------------------------------------Comment 1----------------------------------------
+
+🚀 The feature, motivation and pitch
+It seems that FX isn't playing nice with any instance methods except forward: pytorch/vision#5197 (comment). It prevented factoring out initialization into a separate method, and it also seems to trigger consideration of review / retiring existing reset_parameters methods for torchvision models as they don't play nice with FX.
+This also seems to prevent reset_parameters being supported, as additional instance methods will not work after FX (?)
+Methods of this kind exist in practically all models, but have different names: reset_parameters, _reset_parameters, _init_parameters etc
+Related issues: pytorch/vision#3410, #66335
+Periodically reinitializing parts of model is useful in some training scenarios, as it can prevent overfitting (e.g. used in http://cvlab.postech.ac.kr/~jeany/ACCV2018_forget_and_diversify.pdf) and being able to do it inplace is nice as it saves memory and potentially heavy constructor calls. It's also nice for having this init code in separate methods for preventing time-consuming code navigation and copy-pasting of it (in majority of scenarios when FX isn't used)
+Another times, this is useful to do as workaround for bugs like this: #72253
+Alternatives
+No response
+Additional context
+cc @albanD @mruberry @jbschlosser @walterddr @kshitij12345 @saketh-are @ezyang
+

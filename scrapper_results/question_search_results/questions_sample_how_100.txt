@@ -1,0 +1,380 @@
+
+ --------- the first label)
+
+i make sure that i have followed the official docs, and the model can work normally for anthor task using cross entropy loss。
+maybe someone knows what the problem is, and how to fix it?
+
+ --------- is this a known issue?
+how can i fix it?
+
+ --------- so my question is how to replace the -f site part to speed it up using mirror sites?
+
+ --------- after i install pytorch from source，i use import torchvision and i met error：no module named torchvision, how to solve it?
+
+ --------- exists(cached_file): 
+
+
+
+
+
+there should be a recommendation how to cache / download   files and checkpoints correctly betwen multiple workers or at least warn of these problems
+same might happen if all of workers are using torchvision pretrained models?
+
+ --------- can somebody tell what & how to do?
+
+ --------- what is the equivalent function in caffe2? i want to check some gradients in the backward pass, how to do that?
+
+ --------- how do i fix this?
+
+ --------- how is it bad?
+
+ --------- 10
+how to fix this? is it ok if i install the normal version of torchaudio? will it work with the cuda-enabled version of pytorch?
+
+ --------- i'd like to ask few questions regarding this:
+
+do you know if anyone is already working on this feature?
+if not, could anyone please advice me how i could best approach this problem, given i have some prior experience working with python c-api?
+if i were allowed to submit it, would you be interested in a pr implementing this feature?
+
+ --------- how does caffe2 call these functions to do gradient aggregation among multi workers?
+just call one of them?
+
+ --------- how can i access to the class reduceop used in pytorch?
+
+ --------- 0 when i use gpu to run some codes , i saw the following error , how can i handle it ?
+
+ --------- so, the question is - how can we support set_rng_state?
+
+ --------- py
+
+
+how can i fix this error?
+
+ --------- ¿how can i solve this?
+
+ --------- how can i manually set the number of cores cmake uses to build pytorch?
+
+ --------- cu) together? or the cuda file should be built separately? how to built the cuda file in windows 10?
+another question is: is there any proper methods to co-debug c and cuda extensions in windows 10? can ides such as visual studio do this job?
+
+ --------- how to retrieve hidden states for all time steps in lstm or bilstm?
+
+ --------- here's a minimal repro:
+
+the print is needed to trigger the error message, because of #29003
+how is magma built and linked into pytorch binaries?
+
+ --------- how would one debug it?
+
+ --------- does anyone know how to fix it?
+
+ --------- sir please help me how to resolve?
+
+ --------- 2/17 7:40am new sccache introduced
+2/17 8:17am incident began
+2/17 10:00am detected by failures on hd
+2/17 10:05am sccache rolled back to may 7th version, but problem not resolved
+2/17 11:15am root caused as the sccache file not being public 🤦
+2/17 11:15am mitigated by making the file readable by public
+2/17 11:15am closed by making the file readable by public
+
+user impact
+how does this affect users of pytorch ci?
+ci broken when it's not their fault
+root cause
+what was the root cause of this issue?
+the sccache file not being public 🤦
+mitigation
+how did we mitigate the issue?
+making the file readable by public
+prevention/followups
+how do we prevent issues like this in the future?
+
+ --------- how to solve this problem?
+
+ --------- 10/30 7:27a incident began
+10/30 8:30a detected by 
+10/30 9:00 pm root caused as…
+10/30 9:10 pm mitigated by…
+10/31 10: am closed by…
+
+
+user impact
+how does this affect users of pytorch ci?
+
+ --------- how to reduce redundant time?
+
+ --------- hi , say i have two image dataset , they are paired, when i prepare data feed to network, i  want to flip the paired data synchronous , both flip or non-flip  , how can i do this?
+
+ --------- our primary means of support is our discussion forum:
+
+discussion forum
+
+can anybody let me know how to install after build from source?
+
+ --------- how to solve it?
+
+ --------- how can i convert prroi pooling to onnx?
+
+ --------- how large the capacity of memory is needed when compiling pytorch from source ?
+
+ --------- how can i debug such things?
+
+ --------- prevention/followups
+how do we prevent issues like this in the future?
+
+ --------- do you have some good suggestions how to export a lstm model around pack and pad to onnx ?
+
+ --------- prevention/followups
+how do we prevent issues like this in the future?
+
+ --------- i meet build issue also, how is pytorch daily build can works?
+
+ --------- gz
+load image done!
+input size: 128, 128, 128
+convert itk to array done!
+convert array to tensor done!
+inference done!
+tensor dtype = unsigned char
+tensor size = [1, 1, 96, 96, 96]
+start!
+segmentation fault (core dumped)
+
+why and how to convert?
+
+ --------- but  problem is how to use it?
+
+ --------- how can i get around this?
+
+ --------- torch7 has opencl support via @hughperkins' work - if pytorch is based on the same backends as lua torch, how hard would it be to port opencl over and get this working on virtually all modern gpus and integrated graphics?
+
+ --------- )
+(ditto, seems to use attributes)
+
+
+
+experiment:
+
+how much is the decorator overhead?
+
+ --------- when i try pytorch qat demo github file webpage, i want to know how to find the scale and zero_point of the activations?
+
+ --------- py install
+but that also fails complaining following
+
+how do i get those libraries shm and torch_python? should those be built when i did make -j4 to build from source? is there some path issue?
+
+ --------- but how could i get the shape of a blob in the forward code?
+
+ --------- so in this case, how can i solve the problem?
+
+ --------- choleski:
+
+how should we go about this?
+
+ --------- 1 lts
+how you installed pytorch (conda, pip, source): linux cpu-only binary
+build command you used (if compiling from source): n/a
+python version: n/a
+cuda/cudnn version: n/a
+gpu models and configuration: n/a
+any other relevant information: using gcc 7 via bazel (see trace above for full compile flags)
+
+additional context
+also, is there way to initialize an empty modulelist an do operations on it?
+
+ --------- how to make the data of each batch have different sizes?
+
+ --------- ❓ how and where  pytorch source calculates the size of memory? does it allocates whole memory of the graph at a time or is it layer wise ?
+
+ --------- how should we modify the api to accommodate this?
+what should happen if a user passes a module into ignored_modules that contains a submodule that is an fsdp instance?
+
+ --------- 17, how i can use it on cent os 7?
+
+ --------- @zou3519 do you have any suggestions on how this could be fix?
+
+ --------- 10/30 7:27a incident began
+10/30 8:30a detected by 
+10/30 9:00 pm root caused as…
+10/30 9:10 pm mitigated by…
+10/31 10: am closed by…
+
+
+user impact
+how does this affect users of pytorch ci?
+
+ --------- it seems that this error is caused by batchnorm, how to fix this issue ?
+
+ --------- how can i use the ctc loss function from warp-ctc in pytorch?
+
+ --------- how is it compiled?
+
+ --------- start()
+does anyone have an idea of what is happening and how to fix it?
+
+ --------- the tentative list includes:
+
+individual test case retry (flaky bot)
+retry test file
+retry on workflow steps (using gha)
+retry the job itself (retry bot)
+
+in addition, we also want to gather data points to answer the following questions
+
+how much resource do we spend on retrying these cases?
+
+ --------- how i get to know what are the onednn ops supported in pytorch?
+what aten functions are going to ideep and further to onednn?
+
+ --------- so i guess maybe it's caused by too many concurrent processes?
+how to solve this problem?
+
+ --------- but the difficulty lies in the problem that how we tell whether a string is encoded by utf-8, ascii or anything else? (or maybe we just claim that we only accepts utf-8 strings?
+
+ --------- cpp for avx2
+
+
+how could i test my implementation? there is remap function in opencv to test the forward correctness, but how about the backward?
+
+ --------- why does this happen? how should i solve this problem?
+
+ --------- i'm not sure how to fix this without a significant rework of the whole opcheck logic, but perhaps @zou3519 has an idea?
+
+ --------- any thoughts on how to do so?
+
+ --------- hello, i want to optimise a model but i meet the error:
+
+and this is my code:
+
+and how to solve this problem?
+
+ --------- how do i derive crossentropyloss weights for my dataset?
+
+ --------- the packages that could not be installed using conda were opencv, json-tricks, yacs, tensorboardx
+how can i fix this? what is causing the error?
+
+ --------- ipynb :
+
+also, while we're at it, could someone be so kind and explain to me how the sharing of memory actually happens in pytorch?
+
+ --------- ❓ questions and help
+hi all, anyone knows how to define my dataset, as i want to train models on c++ platform, and the example gave an "mnist" dataset class, but how can i define a dataset base on my input and target folder?
+
+ --------- how do i define how to create such a tensor?
+
+ --------- broadcast([tensor], opts)
+runtimeerror: connection reset by peer
+####################################
+this error won't occur when i set nccl_ib_disable=1;
+how can i solve this problem with ib enabled?
+
+ --------- how to get it?
+
+ --------- environ["test_config"] not in test_file_times: 
+
+
+
+
+
+thus keyerror is raised
+
+are those environment variables necessary for open source build to run pytorch unit tests? how should i setup those variables?
+
+ --------- how can we expose this control through graph mode?
+
+ --------- how can we solve it?
+
+ --------- )
+
+additional context
+i have a lot more testing to do before i can confidently say that global tf32 is an issue and that something like this would solve it, but i wanted to post now already to get a sense of how plausible a feature request like this would be— impossible? fairly trivial?
+
+ --------- how can i multiply the two matrics with batch multiply and get the result matrix with size (10, 3,4,6,7)?
+
+ --------- name)
+['add', 'class', 'contains', 'delattr', 'dir', 'doc', 'eq', 'format', 'ge', 'getattribute', 'getitem', 'getnewargs', 'gt', 'hash', 'init', 'init_subclass', 'iter', 'le', 'len', 'lt', 'mod', 'mul', 'ne', 'new', 'reduce', 'reduce_ex', 'repr', 'rmod', 'rmul', 'setattr', 'sizeof', 'str', 'subclasshook', 'capitalize', 'casefold', 'center', 'count', 'encode', 'endswith', 'expandtabs', 'find', 'format', 'format_map', 'index', 'isalnum', 'isalpha', 'isascii', 'isdecimal', 'isdigit', 'isidentifier', 'islower', 'isnumeric', 'isprintable', 'isspace', 'istitle', 'isupper', 'join', 'ljust', 'lower', 'lstrip', 'maketrans', 'partition', 'replace', 'rfind', 'rindex', 'rjust', 'rpartition', 'rsplit', 'rstrip', 'split', 'splitlines', 'startswith', 'strip', 'swapcase', 'title', 'translate', 'upper', 'zfill']
+
+
+
+<-------------------------------------------------------------------->
+it seems indeed roi_align_op is not linked in, and _caffe2 doesn't see to have any useful functions!
+but why, and how can we compile the _caffe2 functions into the lib/dll ?
+
+ --------- how can i do following element-wise multiplication in pytorch without out of memory?
+
+ --------- cpp](url)
+how to integrate these changes in pytorch geometric?
+
+ --------- hi guys, i just installed pytorch
+conda install pytorch torchvision cuda90 -c pytorch
+and when i import torch i get the following error:
+
+if i check ldconfig -v | grep libcublas* i get the following results
+
+any ideas on how to resolve this?
+
+ --------- statically check for shape mismatches through symbolic shapes
+pytorch developers without compiler experience to easily be able to add shape information to a new operator, and have the same easy experience extend to custom operators
+take inputs and generate what weight sizes should be, and take weights and generate what the input sizes should be
+a recognizable representation of shape functions for users of our ir that will cover the next set of requirements we don’t know today
+a way to debug shape functions without too much hassle
+
+how are we going to get there ?
+
+ --------- 3
+how can i fix this problem?
+
+ --------- how can i make low-precision inference using qnnpack?
+maybe there are some tutorials about it?
+
+ --------- 10/30 7:27a incident began
+10/30 8:30a detected by 
+10/30 9:00 pm root caused as…
+10/30 9:10 pm mitigated by…
+10/31 10: am closed by…
+
+
+user impact
+how does this affect users of pytorch ci?
+root cause
+what was the root cause of this issue?
+
+ --------- how i can know these parameters' name?  i don't know whether "parameter indices" help me or not?
+
+ --------- how can i fix this?
+
+ --------- torch::jit::script::module module = torch::jit::load(model_path);
+how to print out the name and value of parameters in module?
+
+ --------- 7:
+
+pip install error:
+
+how to pass this errors?
+
+ --------- however, when we try it on more complex network structures, such as stylegan, it will throw errors, saying the quantized_data_ is not live (we suspect one node is backward twice but how can that happen??
+
+ --------- why it occurs and how to solve this problem?
+
+ --------- how can i change the learning rate ?
+
+ --------- how to deploy the pytorch trained model to production ?
+
+ --------- when tracing a model like this:
+
+i got error:
+
+why does above net can not trace? in order to trace how should we write model ?
+
+ --------- run?
+if i try to switch from launch to run a very basic program fails, as it no longer sets --local_rank like it did with launch, where is the updated code on how one needs to write their dist programs?
+
+ --------- 0
+and the error occurs:
+
+so how can i tackle this problem?
+
+ --------- does anyone have any idea how i could resolve this?

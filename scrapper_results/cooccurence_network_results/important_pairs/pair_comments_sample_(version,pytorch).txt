@@ -1,0 +1,445 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+When we have optimizers for multiple parts of the networks and one such part has the amp context disabled through     @torch.cuda.amp.autocast(enabled=False) the optimizer for that part will error out with AssertionError: No inf checks were recorded for this optimizer.
+To Reproduce
+Create a VAE and have the code processor (where we split into mean and logvar, do the reparameterization trick, generate the z) set to @torch.cuda.amp.autocast(enabled=False) and dedicate an optimizer to it. If you follow the multi optimizer example the code will error out.
+Expected behavior
+Allow the scaler to check if amp is active for those variables and if not, to not error out in regards to the inf checks.
+Environment
+
+PyTorch Version (e.g., 1.0): 1.6
+OS (e.g., Linux): Ubuntu 18.04
+How you installed PyTorch (conda, pip, source): pip
+Build command you used (if compiling from source): N/A
+Python version: 3.6
+CUDA/cuDNN version: 11/7.6
+GPU models and configuration: Titan V
+
+cc @mcarilli
+
+----------------------------------------Comment 1----------------------------------------
+
+If you have a question or would like help and support, please ask at our
+forums.
+If you are submitting a feature request, please preface the title with [feature request].
+If you are submitting a bug report, please fill in the following details.
+Issue description
+I want to training LeNet on two GPU cards, but I have always got error ("proc_group_name != group_name") when I ran my code. I only modified dist.init_process_group() in https://github.com/seba-1511/dist_tuto.pth/blob/gh-pages/train_dist.py.
+Code example
+def mpi_get_rank():
+if 'OMPI_COMM_WORLD_RANK' in os.environ:
+return int(os.environ['OMPI_COMM_WORLD_RANK'])
+else:
+return None
+def mpi_get_world_size():
+if 'OMPI_COMM_WORLD_SIZE' in os.environ:
+return int(os.environ['OMPI_COMM_WORLD_SIZE'])
+else:
+return None
+def init_processes(rank, size, fn, backend='gloo'):
+if mpi_get_rank() != None:
+time.sleep(mpi_get_rank())
+else:
+time.sleep(random.randint(0, 4 * size))
+""" Initialize the distributed environment. """
+print('*'10)
+print('Before Initialize:')
+print(''10)
+dist.init_process_group(backend=backend, init_method="file:///hdfs/pnrsy/v-yalu2/shared/{}".format('shared_file_common'), world_size=size)
+print(''10)
+print('Finished Initialization!!!')
+print(''*10)
+fn(rank, size)
+System Info
+Please copy and paste the output from our
+environment collection script
+(or fill out the checklist below manually).
+You can get the script and run it with:
+
+
+PyTorch or Caffe2: PyTorch
+How you installed PyTorch (conda, pip, source): conda
+Build command you used (if compiling from source):
+OS: Linux Ubuntu 16.04
+PyTorch version: 0.3.1
+Python version: 3.6.1
+CUDA/cuDNN version: 9.0
+GPU models and configuration: Tesla P100
+GCC version (if compiling from source):
+CMake version:
+Versions of any other relevant libraries:
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Dear contributor
+While training my CNN for muscle segmentation, I'm running into an error message that affects the stability and predictability of CNN learning.
+Description:
+While training my CNN for muscle segmentation, after k of iterations (the amount of iterations is variable per case) I will get the following error message:
+'out_ptr == out_accessor[thread_count_nonzero[tid + 1]].data()INTERNAL ASSERT FAILED at ..\aten\src\ATen\native\TensorAdvancedIndexing.cpp:1723, please report a bug to PyTorch.'
+Could you help me with this issue?
+Kind regards,
+Eddo Wesselink
+Versions
+PyTorch version: 1.10.2+cu113
+Is debug build: False
+CUDA used to build PyTorch: 11.3
+ROCM used to build PyTorch: N/A
+OS: Microsoft Windows 10 Pro
+GCC version: Could not collect
+Clang version: Could not collect
+CMake version: Could not collect
+Libc version: N/A
+Python version: 3.8.12 (default, Oct 12 2021, 03:01:40) [MSC v.1916 64 bit (AMD64)] (64-bit runtime)
+Python platform: Windows-10-10.0.19041-SP0
+Is CUDA available: True
+CUDA runtime version: 10.0.130
+GPU models and configuration: GPU 0: GeForce RTX 3090
+Nvidia driver version: 460.89
+cuDNN version: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.0\bin\cudnn64_8.dll
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.22.2
+[pip3] numpydoc==1.2
+[pip3] pytorch-ignite==0.4.8
+[pip3] torch==1.10.2+cu113
+[pip3] torchvision==0.11.3
+[conda] mypy_extensions           0.4.3            py38haa95532_1
+[conda] numpy                     1.22.2                   pypi_0    pypi
+[conda] numpydoc                  1.2                pyhd3eb1b0_0
+[conda] pytorch-ignite            0.4.8                    pypi_0    pypi
+[conda] torch                     1.10.2+cu113             pypi_0    pypi
+[conda] torchvision               0.11.3                   pypi_0    pypi
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+To Reproduce
+Steps to reproduce the behavior:
+
+clone the pytorch git repo
+install dependencies
+run setup.py
+
+Expected behavior
+Environment
+PyTorch version: N/A
+Is debug build: N/A
+CUDA used to build PyTorch: N/A
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.10 (x86_64)
+GCC version: (Ubuntu 10.2.0-13ubuntu1) 10.2.0
+Clang version: Could not collect
+CMake version: version 3.18.4
+Python version: 3.8 (64-bit runtime)
+Is CUDA available: N/A
+CUDA runtime version: Could not collect
+GPU models and configuration: GPU 0: GeForce GTX 660M
+Nvidia driver version: 455.32.00
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.19.4
+[conda] # packages in environment at /home/ur/anaconda3/envs/Pytorch_env:
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+kthvalue triggers segmentation fault with some specific value
+
+Versions
+pytorch: 1.10.1
+cc @ezyang @gchanan @zou3519
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+I'm not totally certain if this is a bug or just an oddity I don't understand, but calling Python's print function on a GPU tensor uses a lot of GPU memory.
+That's probably a reasonably low priority bug by itself, but it's also kind of a strange one, so I thought I'd raise it in case it's indicative of something else going wrong somewhere.
+To Reproduce
+Consider the following three code snippets.
+
+
+
+On my machine the first two both print out 40448, but the third prints out 173568. Several times as much, just to print out a few numbers!
+Expected behavior
+It's not clear to me why this should use so much memory. The second example demonstrates that this information can clearly be printed out without incurring any extra memory cost.
+Environment
+
+PyTorch Version (e.g., 1.0): tested with both 1.2.0 and 1.3.0
+OS (e.g., Linux): Linux
+How you installed PyTorch (conda, pip, source): conda
+Build command you used (if compiling from source): N?A
+Python version: 3.7.5
+CUDA/cuDNN version: 10.1
+GPU models and configuration: GeForce RTX 2080 Ti
+Any other relevant information: -
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+The minimal code to reproduce the error:
+
+which throws the following error:
+
+However, casting params to cfloat before hand works:
+
+and torch.cat but without casting also works:
+
+Versions
+PyTorch version: 1.10.1
+Is debug build: False
+CUDA used to build PyTorch: 11.3
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.2 LTS (x86_64)
+GCC version: (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+Clang version: Could not collect
+CMake version: version 3.10.2
+Libc version: glibc-2.31
+Python version: 3.9.10 | packaged by conda-forge | (main, Jan 28 2022, 19:23:19)  [GCC 9.4.0] (64-bit runtime)
+Python platform: Linux-5.4.0-66-generic-x86_64-with-glibc2.31
+Is CUDA available: False
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.22.1
+[pip3] torch==1.10.1
+[pip3] torch-tb-profiler==0.3.1
+[pip3] torchfile==0.1.0
+[pip3] torchnet==0.0.5.1
+[pip3] torchvision==0.11.2
+[conda] blas                      1.0                         mkl
+[conda] cudatoolkit               11.3.1               h2bc3f7f_2
+[conda] libblas                   3.9.0            12_linux64_mkl    conda-forge
+[conda] libcblas                  3.9.0            12_linux64_mkl    conda-forge
+[conda] liblapack                 3.9.0            12_linux64_mkl    conda-forge
+[conda] liblapacke                3.9.0            12_linux64_mkl    conda-forge
+[conda] mkl                       2021.4.0           h06a4308_640
+[conda] mkl-service               2.4.0            py39h7f8727e_0
+[conda] mkl_fft                   1.3.1            py39hd3c417c_0
+[conda] mkl_random                1.2.2            py39h51133e4_0
+[conda] numpy                     1.22.1                   pypi_0    pypi
+[conda] numpy-base                1.21.2           py39h79a1101_0
+[conda] pytorch                   1.10.1          py3.9_cuda11.3_cudnn8.2.0_0    pytorch
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torch-tb-profiler         0.3.1                    pypi_0    pypi
+[conda] torchfile                 0.1.0                    pypi_0    pypi
+[conda] torchnet                  0.0.5.1                  pypi_0    pypi
+[conda] torchvision               0.11.2               py39_cu113    pytorch
+cc @ezyang @gchanan @zou3519 @albanD @gqchen @pearu @nikitaved @soulitzer @lezcano @Varal7 @anjali411 @dylanbespalko @mruberry
+
+----------------------------------------Comment 1----------------------------------------
+
+We are working on a feature that will enable us to offload model parameters to SSD similar to CPU offload. To support this in a way that will require rewriting optimizers and minimize the surface area of user changes when using this feature, we want to create a Parameter that is backed by SSD storage.
+The approach taken has been to subclass both torch.nn.Parameter and SsdTensorHandle (which is a subclass of torch.Tensor) and create a new Parameter type called SsdParameter. SsdTensorHandle is what provides the interface for storing an underlying tensor on SSD and moving it back and forth to CPU as needed using the torch_dispatch mechanism. We create a property in the SsdParameter that points to the SSD tensor.
+The issue we are running into is the following: when calling optimizer.step() we don't see the SsdParameters being updated i.e the tensor SsdTensorHandle remains the same. However the .data property of the parameter seems to be updated. It turns out there are two versions of the underlying tensor. How do we implement tracking current grad changes while also supporting property changes on the Parameter object itself.
+SsdParameter
+SsdTensorHandle and SsdBuffer
+Test to repro the issue
+Reference issues that are tackling the same or similar problems and code samples that helped me:
+#65018
+https://github.com/pytorch/pytorch/pull/62965/files
+#62787
+I've tried a second approach (using one of the implementations above) that I also wanted to mention where instead of subclassing, the SsdTensorHandle is a property of the SsdParameter object. I wasn't able to get that work since I hit the following error AttributeError: 'SsdParameter' object has no attribute 'wrapped'. Wasn't able to dig into why wrapped is not recognized.
+cc @albanD @mruberry @jbschlosser @walterddr @ezyang who has been helping us through this process! Thank you!
+To Reproduce
+Steps to reproduce the behavior:
+
+git clone --branch ssd_offload_train https://github.com/facebookresearch/fairscale.git
+pytest -rxP tests/nn/data_parallel/test_fsdp_offload.py::TestSsdLoading::test_ssd_offloading_param
+
+Expected behavior
+SsdParameters should be updated post optimizer.step()
+Environment
+PyTorch version: 1.9.0+cu102
+Is debug build: False
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.1 LTS (x86_64)
+GCC version: (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+Clang version: Could not collect
+CMake version: version 3.16.3
+Libc version: glibc-2.31
+Python version: 3.9.2 (default, Mar  3 2021, 20:02:32)  [GCC 7.3.0] (64-bit runtime)
+Python platform: Linux-5.4.0-52-generic-x86_64-with-glibc2.31
+Is CUDA available: True
+CUDA runtime version: 11.0.221
+GPU models and configuration:
+GPU 0: Quadro GP100
+GPU 1: Quadro GP100
+Nvidia driver version: 450.80.02
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] mypy==0.790
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.21.0
+[pip3] pytorch-sphinx-theme==0.0.24
+[pip3] torch==1.9.0
+[pip3] torchaudio==0.9.0
+[pip3] torchtext==0.10.0
+[pip3] torchvision==0.10.0+cu111
+[conda] blas                      1.0                         mkl
+[conda] cudatoolkit               11.0.221             h6bb024c_0
+[conda] mkl                       2020.2                      256
+[conda] mkl-service               2.3.0            py39he8ac12f_0
+[conda] mkl_fft                   1.3.0            py39h54f3939_0
+[conda] mkl_random                1.0.2            py39h63df603_0
+[conda] mypy                      0.790                     
+[conda] mypy-extensions           0.4.3                     
+[conda] numpy                     1.21.0                    
+[conda] numpy                     1.19.2           py39h89c1606_0
+[conda] numpy-base                1.19.2           py39h2ae0177_0
+[conda] pytorch                   1.7.1           py3.9_cuda11.0.221_cudnn8.0.5_0    pytorch
+[conda] pytorch-sphinx-theme      0.0.24                    
+[conda] torch                     1.9.0                     
+[conda] torchaudio                0.7.2                      py39    pytorch
+[conda] torchaudio                0.9.0                     
+[conda] torchtext                 0.10.0                    
+[conda] torchvision               0.8.2                py39_cu110    pytorch
+[conda] torchvision               0.10.0+cu111              
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+A Floating Point Exception can be trigerred in torch._C._nn.slow_conv3d with the following code:
+
+Output:
+
+Versions
+Collecting environment information...
+PyTorch version: 1.13.1+cu117
+Is debug build: False
+CUDA used to build PyTorch: 11.7
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.5 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu120.04.1) 9.4.0
+Clang version: 11.0.0-2ubuntu20.04.1
+CMake version: version 3.16.3
+Libc version: glibc-2.31
+Python version: 3.10.6 (main, Oct 24 2022, 16:07:47) [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-57-generic-x86_64-with-glibc2.31
+Is CUDA available: True
+CUDA runtime version: 11.8.89
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: Tesla V100-PCIE-16GB
+Nvidia driver version: 520.61.05
+cuDNN version: Probably one of the following:
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn.so.8.1.1
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.1.1
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.1.1
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.1.1
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.1.1
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.1.1
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.1.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn.so.8.2.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.2.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.2.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.2.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.2.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.2.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.2.1
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   46 bits physical, 48 bits virtual
+CPU(s):                          48
+On-line CPU(s) list:             0-47
+Thread(s) per core:              2
+Core(s) per socket:              12
+Socket(s):                       2
+NUMA node(s):                    2
+Vendor ID:                       GenuineIntel
+CPU family:                      6
+Model:                           85
+Model name:                      Intel(R) Xeon(R) Silver 4214 CPU @ 2.20GHz
+Stepping:                        7
+CPU MHz:                         2200.000
+BogoMIPS:                        4400.00
+Virtualization:                  VT-x
+L1d cache:                       768 KiB
+L1i cache:                       768 KiB
+L2 cache:                        24 MiB
+L3 cache:                        33 MiB
+NUMA node0 CPU(s):               0-11,24-35
+NUMA node1 CPU(s):               12-23,36-47
+Vulnerability Itlb multihit:     KVM: Mitigation: VMX disabled
+Vulnerability L1tf:              Not affected
+Vulnerability Mds:               Not affected
+Vulnerability Meltdown:          Not affected
+Vulnerability Mmio stale data:   Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Retbleed:          Mitigation; Enhanced IBRS
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Enhanced IBRS, IBPB conditional, RSB filling, PBRSB-eIBRS SW sequence
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Mitigation; TSX disabled
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 cdp_l3 invpcid_single intel_ppin ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm mpx rdt_a avx512f avx512dq rdseed adx smap clflushopt clwb intel_pt avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local dtherm ida arat pln pts hwp_epp pku ospke avx512_vnni md_clear flush_l1d arch_capabilities
+Versions of relevant libraries:
+[pip3] numpy==1.23.4
+[pip3] torch==1.13.1
+[conda] numpy                     1.23.4                   pypi_0    pypi
+[conda] torch                     1.13.1                   pypi_0    pypi
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+I am using cusolverDn in c++ and import it to python with pybind11.
+Segment Fault after use cusolverDnCreate() and cusolverDnDestroy() with torch.
+NOTE:
+###1: When the demo run with Torch1.2,it run success, the SegFault disappear, does it mean Torch 1.5 has some bug?
+###2: This SegFault only appear with "thread_local", Does it provide some information for this bug?
+###3: Please see test.py below, if we "import torch" after "import example", SegFault disappear.
+###4: Torch have not link libcusolver.so, so we just link it once.
+@ezyang say that upgarde cuda may fix this, but after i upgrade cuda to 10.2, SegFault as usual.
+cc please @ezyang @gchanan @zou3519 @yf225 @glaringlee @ngimel @mcarilli
+To Reproduce
+Steps to reproduce the behavior:
+1.paste the c++ code, name bind_cudevice.cc
+2.compile bind_cudevice.cc with my g++ compile code
+3.paste my python code named test.py
+4. just run test.py and see
+bind_cudevice.cc
+
+g++ compile code
+
+test.py
+
+Core Dump Info
+
+Expected behavior
+No error happen
+Environment
+
+PyTorch Version (e.g., 1.5):1.5
+OS (e.g., Linux):Centos7
+How you installed PyTorch (conda, pip, source):source
+Build command you used (if compiling from source):
+Python version:3.6.8
+CUDA/cuDNN version:10.0
+GPU models and configuration:K40
+Any other relevant information:
+
+Additional context
+cuSolver is base cublas and cusparse, reference about cuSolver：
+https://docs.nvidia.com/cuda/archive/10.0/cusolver/index.html#cuSolverDNhandle
+cc @ngimel
+

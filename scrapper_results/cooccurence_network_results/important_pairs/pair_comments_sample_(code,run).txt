@@ -1,0 +1,308 @@
+----------------------------------------Comment 1----------------------------------------
+
+If you have a question or would like help and support, please ask at our
+I am using pytorch 0.4 installed from conda. I got an error when using the below code
+
+When I downgrade pytorch to 0.3.1, this error disappears and the code run well. What should I change to run with the new version of pytorch?
+
+How you installed PyTorch (conda, pip, source): conda
+OS: Ubuntu 16.04
+PyTorch version: 0.4
+Python version: 3.6
+CUDA/cuDNN version: 9.1
+GPU models and configuration: TitanX
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+
+Code
+
+
+
+Run
+
+
+
+Expected Result (Run Module Without Exporting ONNX)
+
+
+Versions
+PyTorch version: 1.8.2+cu111
+Is debug build: False
+CUDA used to build PyTorch: 11.1
+ROCM used to build PyTorch: N/A
+OS: Microsoft Windows 10 家庭中文版
+GCC version: (x86_64-posix-seh-rev0, Built by MinGW-W64 project) 8.1.0
+Clang version: Could not collect
+CMake version: version 3.23.2
+Libc version: N/A
+Python version: 3.9.13 | packaged by conda-forge | (main, May 27 2022, 16:51:29) [MSC v.1929 64 bit (AMD64)] (64-bit runtime)
+Python platform: Windows-10-10.0.19044-SP0
+Is CUDA available: True
+CUDA runtime version: 11.5.119
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 2070
+Nvidia driver version: 512.78
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.22.4
+[pip3] pytorch-lightning==0.7.1
+[pip3] torch==1.8.2+cu111
+[pip3] torchaudio==0.8.2
+[pip3] torchvision==0.9.2+cu111
+[conda] numpy                     1.22.4                   pypi_0    pypi
+[conda] pytorch-lightning         0.7.1                    pypi_0    pypi
+[conda] torch                     1.8.2+cu111              pypi_0    pypi
+[conda] torchaudio                0.8.2                    pypi_0    pypi
+[conda] torchvision               0.9.2+cu111              pypi_0    pypi
+
+----------------------------------------Comment 1----------------------------------------
+
+❓ Questions and Help
+I am trying to use the DistributedDataParallel class for distributed training. I tried to run the code from here:
+https://github.com/pytorch/examples/blob/master/imagenet/main.py
+by the command:
+python main.py '/mnt/home/Data/' --dataset MNIST  --epoch 5 --multiprocessing-distributed --dist-url 'tcp://127.0.0.1:23456' --world-size 1 --rank 0
+which supposed to use all GPUs on one machine.
+But I got the following error:
+File "/mnt/home/examples-master/imagenet/main.py", line 190, in main_worker
+model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])   #commented
+File "/mnt/home/virtualenvs/wave/lib/python3.6/site-packages/torch/nn/parallel/distributed.py", line 291, in init
+self._ddp_init_helper()
+File "/mnt/home/virtualenvs/wave/lib/python3.6/site-packages/torch/nn/parallel/distributed.py", line 331, in _ddp_init_helper
+bucket_indices = dist._compute_bucket_assignment_by_size(
+AttributeError: module 'torch.distributed' has no attribute '_compute_bucket_assignment_by_size'
+To summarize, it is mainly:
+module 'torch.distributed' has no attribute '_compute_bucket_assignment_by_size'
+I am using the PyTorch installed by pip and the version is "1.0.1.post2".
+I check the attributes of torch.distributed and it shows:
+dir(torch.distributed)
+['AllgatherOptions', 'AllreduceOptions', 'Backend', 'BarrierOptions', 'BroadcastOptions', 'FileStore', 'GatherOptions', 'GroupMember', 'PrefixStore', 'ProcessGroup', 'ProcessGroupGloo', 'ProcessGroupNCCL', 'ReduceOp', 'ReduceOptions', 'ScatterOptions', 'Store', 'TCPStore', 'Work', 'builtins', 'cached', 'doc', 'file', 'loader', 'name', 'package', 'path', 'spec', '_backend', '_dist_broadcast_coalesced', '_dist_bucket_tensors', '_queue_reduction', '_sync_params', '_sync_reduction', 'all_gather', 'all_gather_multigpu', 'all_reduce', 'all_reduce_multigpu', 'barrier', 'broadcast', 'broadcast_multigpu', 'deprecated', 'destroy_process_group', 'dist_backend', 'distributed_c10d', 'gather', 'get_backend', 'get_rank', 'get_world_size', 'group', 'init_process_group', 'irecv', 'is_available', 'is_initialized', 'is_mpi_available', 'is_nccl_available', 'isend', 'new_group', 'recv', 'reduce', 'reduce_multigpu', 'reduce_op', 'register_rendezvous_handler', 'rendezvous', 'scatter', 'send', 'string_classes', 'timedelta', 'torch', 'warnings']
+There is no attributes "_compute_bucket_assignment_by_size" at all. It seems that this distribute missing.
+Anyone has the same problem with class DistributedDataParallel? Thanks.
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Description
+I have a lot of images with .gif and .oct-stream extension. Since the ImageFolder will ignore those files, I use the DatasetFolder and provide my img_extension and loader as suggested by other forks on this forum. I create a dataloader and try to iterate through it. Unfortunately, it got stuck somewhere forever. The deadloop occurs when the dataloader iterator calls next().
+To Reproduce
+The folder structure is the following. I have attached all images except '01.octet-stream' as this forum does not support it.
+
+Here is my code, you can run them directly on notebook.
+
+
+
+
+Everything works fine so far. However, when I try to iterate through the dataloader and run the following code, the program got stuck forever! It seems the code runs into dead loop somewhere even before loading images as I do not see any print information during loading images. What's wrong with implementation?
+If I replace the DatasetFolder with 'ImageFolder' and get rid of the customized loader and extension, everything works fine. Very wired....
+
+ 
+Expected behavior
+Program got stuck when running the following code snippet
+
+However, the datasetsfolder object works
+image_datasets[0]
+
+After some debugging, it seems the dead loop occurs when the following is called
+
+It seems the dead loop starts when the following function is called
+dataloader_iter.data_queue.get()
+Environment
+Please copy and paste the output from our
+environment collection script
+(or fill out the checklist below manually).
+You can get the script and run it with:
+
+
+PyTorch Version:0.4.1
+OS :Windows
+How you installed PyTorch:`conda
+Build command you used (if compiling from source):
+Python version: 3.6.5
+CUDA/cuDNN version: NA
+GPU models and configuration:NA
+Any other relevant information:
+
+Additional context
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Using a combination of BatchNorm1d and relu in a traced module causes the "bad dtype in CompareSelect" when executed in fp16 mode.
+To Reproduce
+Steps to reproduce the behavior:
+
+run the PyTorch code:
+
+
+Output:
+
+Expected behavior
+I expect to successfully run the code without any error.
+Environment
+PyTorch version: 1.9.0a0+c3d40fd
+Is debug build: False
+CUDA used to build PyTorch: 11.3
+OS: Ubuntu 20.04.2 LTS (x86_64)
+Docker container: nvcr.io/nvidia/pytorch:21.06-py3
+cc @albanD @mruberry @jbschlosser @gmagogsfm
+
+----------------------------------------Comment 1----------------------------------------
+
+Current Status
+rootcaused.
+Error looks like
+Tests like TensorPipeRpcTest.test_rref_proxy_tensor_self or TensorPipeDistAutogradTest.test_backward_different_dtypes fail but succeed on re-runs
+Incident timeline (all times pacific)
+According to https://hud.pytorch.org/ci/pytorch/pytorch/master?name_filter=macos-11-py3-x86-64
+failure started to happen around Nov 30 8AM PST after 251686f , but change is unrelated, it's just an artifacts of re-sharding the jobs. Re-running the test or using previous instance works just fine
+Root cause
+Race in concurrent  access and modification of std::map containing custom class types.
+Mitigation
+None
+Prevention/followups
+Need to run code with tsan?
+cc @ezyang @gchanan @zou3519 @bdhirsh @jbschlosser @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @SciPioneer @H-Huang @malfet @albanD @lw @beauby @jjlilley
+
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+When I compile external C++ app with CMake using Caffe2 dependency, ATen header is missing.
+
+fatal error: ATen/core/Macros.h: No such file or directory
+
+Seems like ATen headers are not properly copied to /usr/local/include while other headers are well installed.
+Reproduced with Caffe2 with Ubuntu 16.04/CUDA 8/CuDNN 7 Dockerfile here.
+I was able to resolve the issue by adding the following line to the Dockerfile.
+
+RUN cp -RL /usr/pytorch/aten/src/ATen /usr/local/include/
+
+Code example
+I used /usr/local/include as my Caffe2 include directory in my FindCaffe2.cmake as below.
+
+find_path(Caffe2_INCLUDE_DIR NAMES caffe2 onnx google eigen3 ATen HINTS /usr/local/include)
+
+I include four header files in my app, and it makes compile error.
+
+#include <caffe2/core/init.h>
+#include <caffe2/core/net.h>
+#include <caffe2/core/context_gpu.h>
+#include <caffe2/utils/proto_utils.h>
+
+System Info
+Ubuntu 16.04 / CUDA 8.0 / CuDNN 7.1 on Docker.
+
+PyTorch or Caffe2: Caffe2
+How you installed PyTorch (conda, pip, source): source
+Build command you used (if compiling from source): built Dockerfile.
+OS: Ubuntu 16.04
+PyTorch version: master
+Python version: 2
+CUDA/cuDNN version: 8.0/7.1
+GPU models and configuration: GTX 1080 Ti
+GCC version (if compiling from source): 5.4
+CMake version: 3.5.1
+Versions of any other relevant libraries:
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Matrix dot product returns wrong value on some random elements.
+To Reproduce
+Steps to reproduce the behavior:
+
+Download 2 attached tensors tensors.zip
+Run this code with those tensors
+
+
+
+This is the result I got:
+
+
+Expected behavior
+result[6, 0] should returns tensor(-0.00154018541797995567) like result[4, 0]
+Environment
+Collecting environment information...
+PyTorch version: 1.4.0
+Is debug build: No
+CUDA used to build PyTorch: None
+OS: Microsoft Windows 10 Pro
+GCC version: Could not collect
+CMake version: Could not collect
+Python version: 3.7
+Is CUDA available: No
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+Versions of relevant libraries:
+[pip] numpy==1.18.1
+[pip] torch==1.4.0
+[pip] torchvision==0.5.0
+[conda] blas                      1.0                         mkl
+[conda] cpuonly                   1.0                           0    pytorch
+[conda] mkl                       2019.4                      245
+[conda] mkl-service               2.3.0            py37hb782905_0
+[conda] mkl_fft                   1.0.15           py37h14836fe_0
+[conda] mkl_random                1.1.0            py37h675688f_0
+[conda] pytorch                   1.4.0               py3.7_cpu_0  [cpuonly]  pytorch
+[conda] torchvision               0.5.0                  py37_cpu  [cpuonly]  pytorch
+Additional context
+This bug doesn't occur on google colab, I tried create new conda environment or used a difference laptop but the bug still happened.
+
+----------------------------------------Comment 1----------------------------------------
+
+hello every one ,recently i have a bug ,when i train a resnet18 ,after 9000 iterator times ,some problem occured.could you help me ?
+
+[ Expected behavior ]:
+my network is a multi-classification work. after this bug occured，i try to run my code again。now，my code is running correctly，but this prollem not be dealed。
+[ environment ]
+pytorch 0.4.1
+torchvision 0.2.2.post3
+python 2.7
+cuda 8.0
+Ubuntu 16.04
+GPU Tesla k80
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+When using torch.cdist in matrix multiplication mode (either by using the flag compute_mode='use_mm_for_euclid_dist', or by using the flag compute_mode='use_mm_for_euclid_dist_if_necessary' with enough inputs) results are sometimes completely wrong depending on the input values.
+To Reproduce
+Steps to reproduce the behavior:
+Just run this code in Pytorch >= 1.4.0
+
+Expected behavior
+Current output I get is the following:
+
+Expected output is the following:
+
+Environment
+PyTorch version: 1.6.0
+Is debug build: No
+CUDA used to build PyTorch: None
+OS: Mac OSX 10.14.6
+GCC version: Could not collect
+CMake version: Could not collect
+Python version: 3.7
+Is CUDA available: No
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+Versions of relevant libraries:
+[pip3] numpy==1.14.5
+[pip3] pytorch-ignite==0.2.0
+[pip3] torch==1.6.0
+[pip3] torchvision==0.7.0
+[conda] numpy                     1.14.5                   pypi_0    pypi
+[conda] pytorch-ignite            0.2.0                    pypi_0    pypi
+[conda] torch                     1.6.0                    pypi_0    pypi
+[conda] torchvision               0.7.0                    pypi_0    pypi
+

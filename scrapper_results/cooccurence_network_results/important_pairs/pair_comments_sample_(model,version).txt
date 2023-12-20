@@ -1,0 +1,350 @@
+----------------------------------------Comment 1----------------------------------------
+
+I'm trying to install pytorch from source but I'm getting below errors, please help!
+
+OS: macOS 10.13.3
+PyTorch version: Latest
+How you installed PyTorch (conda, pip, source): Source
+Python version: 2.7
+CUDA/cuDNN version: 9.1 / 7.0.5
+GPU models and configuration: NVIDIA GeForce GT 650M 1 GB
+GCC version (if compiling from source):
+gcc -v output :
+
+
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+import torch
+class Model(nn.Module):
+def forward(self, **kwargs):
+# kwargs contains more than dozens of tensors
+pass
+model = Model()
+trace_model = torch.jit.trace(model, example_inputs=??)
+Versions
+PyTorch version: 1.6.0+cu101
+Is debug build: False
+CUDA used to build PyTorch: 10.1
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.3 LTS (x86_64)
+GCC version: (Ubuntu 7.4.0-1ubuntu1~18.04.1) 7.4.0
+Clang version: Could not collect
+CMake version: version 3.10.2
+Libc version: glibc-2.26
+Python version: 3.7.5 (default, Nov  7 2019, 10:50:52)  [GCC 8.3.0] (64-bit runtime)
+Python platform: Linux-3.10.0-1.3.2.el7.x86_64-x86_64-with-Ubuntu-18.04-bionic
+Is CUDA available: True
+CUDA runtime version: 10.1.243
+GPU models and configuration:
+GPU 0: GeForce RTX 2080 Ti
+GPU 1: GeForce RTX 2080 Ti
+Nvidia driver version: 440.44
+cuDNN version: /usr/lib/x86_64-linux-gnu/libcudnn.so.7.6.5
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.18.5
+[pip3] torch==1.6.0+cu101
+[pip3] torchvision==0.7.0+cu101
+[conda] blas                      1.0                         mkl
+[conda] mkl                       2021.2.0           h06a4308_296
+[conda] mkl-service               2.3.0            py38h27cfd23_1
+[conda] mkl_fft                   1.3.0            py38h42c9631_2
+[conda] mkl_random                1.2.1            py38ha9443f7_2
+[conda] numpy                     1.20.1           py38h93e21f0_0
+[conda] numpy-base                1.20.1           py38h7d8b39e_0
+[conda] numpydoc                  1.1.0              pyhd3eb1b0_1
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I am using torchaudio to extract Kaldi-like MFCC features for audio. I found torchaudio.compliance.kaldi.mfcc function which is exactly what I need. The code runs smoothly, but when I inspect the values, I found the energy produced by this function seems incorrect and very different to the results by Kaldi compute-mfcc-feats command.
+Here is an example audio (LJ001-0110.wav): https://drive.google.com/file/d/1p6go649Li7tyCcwJN-d0Xy0uUvvfNCg2/view?usp=sharing
+
+And this generates this figure:
+
+As we can see, the first dimension, which is the log-energy, seems to be 0 most of the time, which some steep peaks. I don't think this are the expected values, as this natural speech should have a complex energy trajectory. I also plot the Kaldi MFCC output as follows, under the same configuration:
+
+Clearly this looks more reasonable than torchaudio output. Also, the other dimensions of torchaudio output (except the 0-th) fit well to the Kaldi output. It is only the 0-th dimension that looks strange.
+Versions
+Collecting environment information...
+PyTorch version: 1.11.0+cu102
+Is debug build: False
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: CentOS Linux 7 (Core) (x86_64)
+GCC version: (GCC) 8.4.0
+Clang version: Could not collect
+CMake version: Could not collect
+Libc version: glibc-2.17
+Python version: 3.9.6 (default, Aug 18 2021, 19:38:01)  [GCC 7.5.0] (64-bit runtime)
+Python platform: Linux-3.10.0-693.el7.x86_64-x86_64-with-glibc2.17
+Is CUDA available: True
+CUDA runtime version: 10.1.105
+GPU models and configuration:
+GPU 0: GeForce RTX 2080 Ti
+GPU 1: GeForce RTX 2080 Ti
+Nvidia driver version: 460.73.01
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.21.2
+[pip3] torch==1.11.0
+[pip3] torchaudio==0.11.0
+[pip3] torchtyping==0.1.4
+[pip3] torchvision==0.12.0
+[conda] numpy                     1.21.2                   pypi_0    pypi
+[conda] torch                     1.11.0                   pypi_0    pypi
+[conda] torchaudio                0.11.0                   pypi_0    pypi
+[conda] torchtyping               0.1.4                    pypi_0    pypi
+[conda] torchvision               0.12.0                   pypi_0    pypi
+
+----------------------------------------Comment 1----------------------------------------
+
+If you have a question or would like help and support, please ask at our
+forums.
+If you are submitting a feature request, please preface the title with [feature request].
+If you are submitting a bug report, please fill in the following details.
+Issue description
+i am having a dataset with two ouput classes. i am using pretrained resnet50 network .
+i added one more layer at last so that i can make network as binary classifier with below code         resnet = models.resnet50(pretrained=True)
+freeze all model parameters
+for param in resnet.parameters():
+param.requires_grad = False
+new final layer with 2 classes
+num_ftrs = resnet.fc.in_features
+resnet.fc = torch.nn.Linear(num_ftrs, 2)
+labels:
+inputs, labels = next(iter(dataloader))
+print (labels)
+1
+2
+2
+1
+1
+2
+1
+1
+2
+1
+2
+1
+1
+1
+1
+1
+1
+2
+1
+1
+[torch.LongTensor of size 20]
+batch size =20
+RuntimeError: Assertion `cur_target >= 0 && cur_target < n_classes' failed.  at c:\miniconda2\conda-bld\pytorch-cpu_1519449358620\work\torch\lib\thnn\generic/ClassNLLCriterion.c:87
+Provide a short description.
+Code example
+Please try to provide a minimal example to repro the bug.
+Error messages and stack traces are also helpful.
+System Info
+Please copy and paste the output from our
+environment collection script
+(or fill out the checklist below manually).
+You can get the script and run it with:
+
+
+PyTorch or Caffe2:
+How you installed PyTorch (conda, pip, source):
+Build command you used (if compiling from source):
+OS:
+PyTorch version:
+Python version:
+CUDA/cuDNN version:
+GPU models and configuration:
+GCC version (if compiling from source):
+CMake version:
+Versions of any other relevant libraries:
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+To Reproduce
+Steps to reproduce the behavior:
+
+create a dataset with large len
+use DistributedSampler as its sampler
+it could be find that .tolist() operation would cause many times of memory than original torch.Tensor object
+
+Expected behavior
+We can delete to_list operation and write a simply iterator to prevent huge memory consumption:
+Environment
+Please copy and paste the output from our
+environment collection script
+(or fill out the checklist below manually).
+You can get the script and run it with:
+
+
+PyTorch Version (e.g., 1.0):
+OS (e.g., Linux):
+How you installed PyTorch (conda, pip, source):
+Build command you used (if compiling from source):
+Python version:
+CUDA/cuDNN version:
+GPU models and configuration:
+Any other relevant information:
+
+Additional context
+cc @ssnl @VitalyFedyunin
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+
+Code above will crash if torch version > 1.8, but for torch <= 1.8, it works well.
+It seems that CUDA env is initialized after 1.8, and it's unexpected for users like me.
+Is there anyway for users to lazy load cuda env ? (For some reasons, I must use fork as startmethod)
+Versions
+Collecting environment information...
+PyTorch version: 1.12.0
+Is debug build: False
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.4 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+Clang version: Could not collect
+CMake version: version 3.16.3
+Libc version: glibc-2.31
+Python version: 3.8.10 (default, Mar 15 2022, 12:22:08)  [GCC 9.4.0] (64-bit runtime)
+Python platform: Linux-5.4.15-1.el7.elrepo.x86_64-x86_64-with-glibc2.29
+Is CUDA available: True
+CUDA runtime version: 10.2.89
+GPU models and configuration:
+GPU 0: GeForce RTX 2080 Ti
+GPU 1: GeForce RTX 2080 Ti
+GPU 2: GeForce RTX 2080 Ti
+GPU 3: GeForce RTX 2080 Ti
+Nvidia driver version: 460.32.03
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.22.2
+[pip3] torch==1.8.0
+[conda] Could not collect
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+To Reproduce
+Steps to reproduce the behavior:
+
+Expected behavior
+Successful installation of torch
+Environment
+
+PyTorch Version (e.g., 1.0): 1.7
+OS (e.g., Linux): CentOS 7.8
+How you installed PyTorch (conda, pip, source): pip
+Build command you used (if compiling from source):
+Python version: 3.9
+CUDA/cuDNN version:
+GPU models and configuration:
+Any other relevant information: I had built Python3.9 from source.
+
+Additional context
+I had built Python 3.9 this way:
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+I noticed a high performance difference when repeating a variable that requires grad. If I repeat the variable with torch.repeat, the backward pass will take 10x more time than when using torch.repeat_interleave. Below you find a minimal example for reproduction, however here i found only a ~2x difference.
+To Reproduce
+Code Snippet:
+https://gist.github.com/tobiasfshr/c4e3473caf9a758312a16a6b5301f456
+repeat_interleave:
+iter time:  0.0019862818717956542
+repeat:
+iter time:  0.004346790313720703
+Expected behavior
+As far as i understand the doc, both methods should behave the same w.r.t. gradient computation, although they have slightly different interfaces.
+Environment
+
+PyTorch Version (e.g., 1.0): 1.6.0
+OS (e.g., Linux): Ubuntu 18.04
+How you installed PyTorch (conda, pip, source): pip
+Build command you used (if compiling from source): -
+Python version: 3.6
+CUDA/cuDNN version: 10.1 / 7.6.5
+GPU models and configuration: Problem appears on both GTX 1660 (CUDA 10.1) and Tesla V100 (CUDA 10.0)
+Any other relevant information:
+
+cc @ezyang @ssnl @albanD @zou3519 @gqchen @VitalyFedyunin @ngimel
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+When using a loaded model that I trained, prediction fails with 
+
+Versions
+PyTorch version: 1.12.0+cu113
+Is debug build: False
+CUDA used to build PyTorch: 11.3
+ROCM used to build PyTorch: N/A
+OS: Microsoft Windows 11 Home
+GCC version: Could not collect
+Clang version: Could not collect
+CMake version: Could not collect
+Libc version: N/A
+Python version: 3.8.13 | packaged by conda-forge | (default, Mar 25 2022, 05:59:00) [MSC v.1929 64 bit (AMD64)] (64-bit runtime)
+Python platform: Windows-10-10.0.22000-SP0
+Is CUDA available: True
+CUDA runtime version: 11.5.50
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 3070 Laptop GPU
+Nvidia driver version: 511.79
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.23.0
+[pip3] torch==1.12.0+cu113
+[pip3] torchaudio==0.12.0+cu113
+[pip3] torchvision==0.13.0+cu113
+[conda] libblas                   3.9.0              15_win64_mkl    conda-forge
+[conda] libcblas                  3.9.0              15_win64_mkl    conda-forge
+[conda] liblapack                 3.9.0              15_win64_mkl    conda-forge
+[conda] mkl                       2022.1.0           h6a75c08_874    conda-forge
+[conda] numpy                     1.23.0           py38h223ccf5_0    conda-forge
+[conda] torch                     1.12.0+cu113             pypi_0    pypi
+[conda] torchaudio                0.12.0+cu113             pypi_0    pypi
+[conda] torchvision               0.13.0+cu113             pypi_0    pypi
+
+----------------------------------------Comment 1----------------------------------------
+
+I installed pytorch in a virtual environment with conda (conda install pytorch torchvision -c pytorch).
+When I execute e.g. the following code:
+
+I get the following error:
+Intel MKL ERROR: Parameter 10 was incorrect on entry to DSYRK 
+When I remove the import torch statement, the code executes without errors.
+When I downgrade to pytorch 0.2.0 (conda install pytorch torchvision -c soumith), the code also executes without errors.
+I am not sure how to find out the version of the Intel MKL on the system.
+
+
+OS: CentOS Linux release 7.2.1511 (Core)
+PyTorch version: 0.3.0
+How you installed PyTorch (conda, pip, source): conda install pytorch torchvision -c pytorch
+Python version: Python 3.6.3
+CUDA/cuDNN version:
+GPU models and configuration:
+GCC version (if compiling from source): -
+
+

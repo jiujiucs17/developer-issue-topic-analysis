@@ -1,0 +1,387 @@
+
+ --------- what is the proper way to get the float out of the tensor (and back into main memory)?
+
+ --------- hi, when i want to use mutiple gpus to train a model, distributed data parallel tells me that i should set master_addr and master_port, but i don't konw what they are and what value i should set ?
+
+ --------- the question is what is mean doing internally, haven't check the code to see how is implemented but my guess is that it first checks the type of tensor x and if not in float or complex reject doing any operation, that's my best guess so far?
+
+ --------- 📚 what we can do to substitute the assert no grad function?
+
+ --------- generalizing on above - are you planning to support whole-function graph optimization? ideally, i'd like to see whole function as a single merged graph at some point in the backend to get maximum optimization opportunities (with some exceptions, but this is what partitioners are for, right?
+
+ --------- pt format to onnx but after i execute the script the program output bunch of logging stuff like in the pic below and the converted onnx format seems not appear in my local disk i don’t know what i got wrong here?
+
+ --------- py#l193
+
+what is the best way to workaround these?
+
+ --------- i'm not sure what's the problem?
+
+ --------- what is likely the cause of this issue? is there any way to fix it?
+
+ --------- are any developers familiar with what this indicates?
+
+ --------- so, what's the goal here?
+
+ --------- what's exactly way to set cmake flags?
+
+ --------- so what's the problem? could someone help me?
+is the version of gcc incorrect?
+
+ --------- py
+what do you mean by this ?
+
+ --------- so what should i do to solve this problem?
+
+ --------- what might be the problem with this issue?
+
+ --------- pt
+this code is the linux version, what should i do with the windows version?
+
+ --------- this setup works fine with cmake, but attempting to port that over to bazel, i think i might be missing some step?
+
+the bazel workspace:
+
+the bazel build file
+
+and the toy example in pybind
+
+built as
+
+what might be the issue here?
+
+ --------- - 10/30 7:27a incident began
+- 10/30 8:30a detected by 
+- 10/30 9:00 pm root caused as…
+- 10/30 9:10 pm mitigated by…
+- 10/31 10: am closed by…
+
+
+11/01 09:45a incident identified
+11/01 10:23a seemethere/terraform-aws-github-runner@842aa3b pushed to canary to reduce the amount of ssm calls we need to make
+11/01 10:29a seemethere/terraform-aws-github-runner@842aa3b pushed to prod after verification of fix on canary
+
+user impact
+how does this affect users of pytorch ci?
+all gha workflows will not be run
+root cause
+what was the root cause of this issue?
+mitigation
+how did we mitigate the issue?
+prevention/followups
+how do we prevent issues like this in the future?
+
+ --------- should there be at least an assert in debug builds?
+in context of what thread callbacks should be invoked: one that calls markcompleted() or one that calls wait()?
+
+ --------- what's going on?
+
+ --------- what am i doing wrong? did i use a wrong version of magma perhaps? if so, it seems to work in python but not in c++?
+
+ --------- could someone please point out what should be the c++ equivalent of the above code?
+
+ --------- the documentation doesn't illustrate this point either way:
+
+what was the rationale behind the intended change in behavior, anyway?
+
+ --------- what is the specific function of this interface?
+
+ --------- what can we do to solve this problem?
+
+ --------- what data type is the gradient transfer between the processes when use amp, float32 or float16 or same data type as the parameter tensor?
+
+ --------- logical layouts in other contexts
+
+
+could it include a visual explanation of what dimensions are aggregated over?
+
+ --------- so what is it doing when batch size is 1?
+
+ --------- the following is the definition of the model (i know there are many better ways of achieving what i'm trying to do here; this is just a contrived example to demonstrate the problem):
+
+and then the model is parallelized with:
+
+could someone indicate what i'm missing here?
+
+ --------- @apaszke @soumith  any pointers about what i'd need to change or thoughts in general?
+
+ --------- trackback information is attached below:
+
+my implementation of batch renormalization is shown below:
+
+what should i do to solve this problem?
+
+ --------- is there anyone who can tell me about what i'm missing?
+
+ --------- cuh:317
+any idea what's wrong?
+
+ --------- what should we do?
+
+ --------- any tips what to do?
+
+ --------- i would like to help on the implementation if needed, could anyone give me a brief guideline that what have be done and what still need to be do?
+
+ --------- root cause
+what was the root cause of this issue?
+
+ --------- generates the following output
+tensor([140263153322976, 140263153322976,          0,          0, 1095518586898], device='cuda:0')
+which is not deterministic, as if i run the code block again i might get something like this
+tensor([13002568209, 4457420148379391, 3435973871943, 4479410455445504, 4294998028], device='cuda:0')
+what is going wrong?
+
+ --------- what is this invariant?
+
+ --------- what are your views on it?
+
+ --------- i couldn't understand what went wrong i tried installing multiple times (each time in a new conda env), could someone help me figure out the issue?
+
+ --------- h
+static_assert(std::is_pod<argumentinfo>::value, "argumentinfo is to be a pod struct");
+so we wonder is check pod necessary ？ what is the significance of doing this?
+
+ --------- i got all kinds of errors like:
+
+and i have tried in 3 machines,and they all give similar cmake errors,what did i wrong?
+
+ --------- i want to know what causes it?
+
+ --------- 🚀 the feature, motivation and pitch
+what should the result of
+
+be?
+
+ --------- i wonder that what is this trivial case for? consider that if the size of a tensor is 0 on dim=-1, it will be an empty tensor and will never be a matrix?
+
+ --------- what am i missing here?
+
+ --------- the error shows:
+
+what can i do to make the concat op support quant?
+
+ --------- why is the deprecated launch utility doc hasn't been updated with what is supposed to be used now? this is the main dist doc - seriously?
+
+ --------- 10/30 7:27a incident began
+10/30 8:30a detected by 
+10/30 9:00 pm root caused as…
+10/30 9:10 pm mitigated by…
+10/31 10: am closed by…
+
+
+user impact
+how does this affect users of pytorch ci?
+root cause
+what was the root cause of this issue?
+mitigation
+how did we mitigate the issue?
+prevention/followups
+how do we prevent issues like this in the future?
+
+ --------- after compiling pytorch on tx2 and run the model, i meet the following error:
+
+the model is running on cpu only
+what is the problem?
+
+ --------- hi,dear
+just want to install the great pytorch, but when i use pip ,ups the error
+
+ubuntu1804,
+python37
+so what should i do ?
+
+ --------- cpp:733
+i somewhat understand where this might come from, but i expected when the underlying arrays and tensors are the same dimensions, that broadcasting behavior would be the same? can someone help me understand what's going on here?
+
+ --------- the above code throws an exception:
+
+what is the difference between them?
+
+ --------- ❓ questions and help
+hi, i want to ask about the difference between the following two pieces of code:
+
+i passed vgg to model in  modeloutputs()
+and
+
+i'm just curious about what  the difference between the two pieces of code above for backward and forward is? when the loss backward, will the gradients be different?
+could someone help me?
+
+ --------- what should i do?
+
+ --------- what can i do?
+
+ --------- here is how weight drop class looks like:
+
+what model's init looks like:
+
+what should i do to update my code?
+
+ --------- any clue on what could be the problem?
+
+ --------- in my project, if i do
+
+it all links and works great!
+but, if i do the following manually,
+
+it fails when i try to load the library with:
+
+what is find_package(torch) adding that i am missing?
+
+ --------- h that say
+
+what is the plan to decouple these things to not use tsnode (and its related functions)?
+
+ --------- what is the problem?
+
+ --------- now what is next?
+
+ --------- what would we like to do?
+
+ --------- is this change intentional? what is the recommended way to run mypy only on locally-changed files?
+
+ --------- can someone help me or tell what's the issue?
+
+ --------- i compiled and installed pytorch from source on win10,  then compared the speed of resnet50 running on caffe and libtorch, both the speed of loading model and evaluating data, caffe is 2~3 times faster than libtorch!
+why libtorch is so  slow? what can i do to accelerate libtorch's model loading and predicting speed?
+
+ --------- you might ask "what should we do with the existing serialization logic in the serialize function, and would the change break backward compatibility of the user's existing serialized optimizers?
+
+ --------- ], device='cuda:0')
+
+
+
+there is no problem with the above operation，but there is a problem when running the following demo, what's going on?
+
+ --------- typeerror: only integer tensors of a single element can be converted to an index
+
+what index is referred to?
+
+ --------- what is the exact meaning of this? does it include operations like initial socket connection establishment?
+
+ --------- pytorch devs, would you be interested in having this functionality added to the code base?  what constraints would it need to satisfy?
+
+ --------- 10/30 7:27a incident began
+10/30 8:30a detected by 
+10/30 9:00 pm root caused as…
+10/30 9:10 pm mitigated by…
+10/31 10: am closed by…
+
+
+user impact
+how does this affect users of pytorch ci?
+root cause
+what was the root cause of this issue?
+mitigation
+how did we mitigate the issue?
+prevention/followups
+how do we prevent issues like this in the future?
+
+ --------- is there any log file can help troubleshoot what's the root cause behind this?
+
+ --------- floattensor"):
+
+what to do for workaround?
+
+ --------- shape[0]/batch_size)
+train_dataset = tensordataset(x_train,y_train)
+sampler= mysamplerforbalancedbatches(train_dataset, n_classes, batch_size,steps)
+train_loader = dataloader(train_dataset, shuffle=false, sampler=sampler)
+"
+i am not sure it is working as i expect, when i try to check what the function dataloader gives me back by using:
+"for sample in train_loader:
+print(sample[0])
+break"
+i have this error:
+<indexerror: tensors used as indices must be long, byte or bool tensors>
+does anyone know how to solve this problem?
+
+ --------- here is our current proposal, on which we welcome any kind of feedback!
+
+
+the main point is: when do we mark such futures as complete? what are the requirements for that to happen?
+
+ --------- i'm adding an attention mechanism on yolov5 to train my model, i  added c3cbam ,& im getting this issue, what should i need to do to solve this issue?
+
+ --------- what problems is it trying to solve?
+
+ --------- py
+but when traininf fow a while ,raise errors: what did it  means?
+
+ --------- i got
+
+then i try to make a cast
+
+it returns most of the time
+
+the peculiar thing is for only once,  it didnt throw any exception but gave me a warning
+
+so, i wonder what's wrong here and how can i fix it?
+
+ --------- 10/30 7:27a incident began
+10/30 8:30a detected by 
+10/30 9:00 pm root caused as…
+10/30 9:10 pm mitigated by…
+10/31 10: am closed by…
+
+
+user impact
+how does this affect users of pytorch ci?
+root cause
+what was the root cause of this issue?
+mitigation
+how did we mitigate the issue?
+prevention/followups
+how do we prevent issues like this in the future?
+
+ --------- html
+
+what am i doing wrong?
+or does pytorch have too much overhead for simple scenarios, and only really shines for larger or gpu accelerated cases?
+
+ --------- what happens when requires_grad is false?
+
+ --------- what causes this large difference?
+
+ --------- please tell me what the problem is, is it because pytorch does not support multi process? how can i solve this problem?
+
+ --------- 3960]]]],
+why output_padding not padding 0 to out?what number is pad?
+
+ --------- what's the difference between the old and new clas?
+
+ --------- any suggestions/ideas on what i am doing wrong or if there is a simpler way to achieve this without playing with hooks?
+
+ --------- any idea what might cause this ?
+
+ --------- so, what should i do to run successfully in xp 32bit?
+
+ --------- what is way to get the correct version using the conda command ?
+
+ --------- from what i've read i assume i need to add some library links to the compiler?
+
+ --------- i know pytorch support a variety of python version, but i wonder what version is suggested?
+
+ --------- hello sir,
+in my project i'm trying to use 3d convloutional networks
+on some video frames, but when i perform a forward propagation, the program
+shows this error:
+
+i don't know exactly what is the origin of this error,
+and what it means ?
+
+ --------- py to load onnx model, i get this error
+"exception: don't know how to translate op max_pool2d"
+
+
+what should i do?
+
+ --------- for meta tensors
+what happens when one accesses the data_ptr for a meta tensor? meta tensors currently don't work with linalg_cholesky, but is the data_ptr read going to be problematic?
+
+ --------- when pytorch does batch normalization, what batch size it use, 32 or 32 x 8?
+
+ --------- it's a bit annoying, but i created a mini partitioner that partitions the user graph in two, and calls aot autograd on each subgraph (similar to what the ddp optimizer does)
+
+running the above gives:
+
+why?

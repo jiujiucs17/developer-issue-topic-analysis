@@ -1,0 +1,3801 @@
+----------------------------------------Comment 1----------------------------------------
+
+i wrote a custom op using the process described here, giving me a torch.autograd.function called myop.
+but when i run torch.jit.trace() on a module using it, and try to save the result, i get an error runtimeerror: couldn't export python operator <myop>.
+is there a way to do this? i noticed this but i couldn't figure out how to get it to work.
+thanks!
+ 
+----------------------------------------Comment 2----------------------------------------
+
+🐛 describe the bug
+i'm working on a simple model where the parameters are sparse and the inputs are dense. let's take a simple regression network, if we define the parameters as sparse tensors as follows:
+
+if we instantiate a network with a single input layer (90), a single hidden layer (100 features), an output layer of size (1) (yearpredictionmsd dataset is used here)
+
+using nn.mse() as the loss, an exception occurs at the backward pass
+exception has occurred: runtimeerror sparse division requires a scalar or zero-dim dense tensor divisor (got shape [1, 1] for divisor)
+not really sure what this is referring to. there was an issue submitted where the target tensor is sparse (in my case, inputs and targets are dense, weights are sparse), where the nll loss was used in that case, and a suggestion was made to re-write the loss with its backward pass to avoid a division by 0.
+however, in my case with the mse loss, this is not an issue (also i've tested it with a custom loss and extended the torch.autograd.function with the backward pass, but the same error occurs still.
+any possibility of a work around to have the loss propagated through sparse weights? should i be using hooks?
+also any suggestions on how to trace where the error is occurring as the only message i get is at the loss.backward() pass without any trace to where within the backward pass is the error occurring.
+any suggestion would be helpful!
+update: when removing the l2 regularization, this issue is no longer encountered. possibly w.norm backward does not support sparse parameters. however a new error is encountered:
+
+ class sparselinear(nn.module):
+  def __init__(self, in_features, out_features, rand=true, rate=0.1):
+    super().__init__()
+
+    w = torch.floattensor(in_features, out_features)
+    b = torch.zeros(out_features)
+    if rand:
+        w = torch.empty(in_features, out_features)
+        nn.init.sparse_(w, sparsity=rate, std=0.01)
+        w = w.to_sparse()
+
+    self.weight = nn.parameter(data=w, requires_grad=true)
+    self.bias = nn.parameter(data=b, requires_grad=true)
+
+  def forward(self, x):
+    return torch.sparse.addmm(self.bias, self.weight.t, x.t)
+
+
+class regression(nn.module):
+    def __init__(self, input_features:int, hidden_features:int, sparse:dict, output_features=1):
+        super().__init__() 
+        self.nonlinearity = lambda x: f.relu(x, inplace=true)
+ 
+        self.fc1 = sparselinear(input_features, hidden_features, rate=sparse['rate'], rand=sparse['random'])
+        self.fc2 = sparselinear(hidden_features, output_features, rate=sparse['rate'], rand=sparse['random'])
+
+    def forward(self, x):
+        x = self.nonlinearity(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+
+could not run 'aten::_foreach_mul_.scalar' with arguments from the 'sparsecuda' backend. this could be because the 
+operator doesn't exist for this backend, or was omitted during the selective/custom build process (if using custom build). 
+if you are a facebook employee using pytorch on mobile, please visit https://fburl.com/ptmfixes for possible resolutions. 
+'aten::_foreach_mul_.scalar' is only available for these backends: [cpu, cuda, backendselect, python, 
+functorchdynamiclayerbackmode, functionalize, named, conjugate, negative, zerotensor, adinplaceorview, autogradother, autogradcpu, 
+autogradcuda, autogradhip, autogradxla, autogradmps, autogradipu, autogradxpu, autogradhpu, autogradve, 
+autogradlazy, autogradmeta, autogradmtia, autogradprivateuse1, autogradprivateuse2, autogradprivateuse3, 
+autogradnestedtensor, tracer, autocastcpu, autocastcuda, functorchbatched, functorchvmapmode, batched, vmapmode, 
+functorchgradwrapper, pythontlssnapshot, functorchdynamiclayerfrontmode, pythondispatcher].
+
+cpu: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/build/aten/src/aten/registercpu.cpp:31034 [kernel]
+cuda: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/build/aten/src/aten/registercuda.cpp:43986 [kernel]
+backendselect: fallthrough registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/core/backendselectfallbackkernel.cpp:3 [backend fallback]
+python: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/core/pythonfallbackkernel.cpp:144 [backend fallback]
+functorchdynamiclayerbackmode: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/functorch/dynamiclayer.cpp:491 [backend fallback]
+functionalize: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/build/aten/src/aten/registerfunctionalization_1.cpp:23013 [kernel]
+named: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/core/namedregistrations.cpp:7 [backend fallback]
+conjugate: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/conjugatefallback.cpp:17 [backend fallback]
+negative: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/native/negatefallback.cpp:19 [backend fallback]
+zerotensor: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/zerotensorfallback.cpp:86 [backend fallback]
+adinplaceorview: fallthrough registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/core/variablefallbackkernel.cpp:63 [backend fallback]
+autogradother: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradcpu: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradcuda: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradhip: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradxla: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradmps: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradipu: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradxpu: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradhpu: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradve: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradlazy: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradmeta: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradmtia: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradprivateuse1: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradprivateuse2: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradprivateuse3: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradnestedtensor: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+tracer: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/tracetype_3.cpp:14198 [kernel]
+autocastcpu: fallthrough registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/autocast_mode.cpp:487 [backend fallback]
+autocastcuda: fallthrough registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/autocast_mode.cpp:354 [backend fallback]
+functorchbatched: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/functorch/legacybatchingregistrations.cpp:815 [backend fallback]
+functorchvmapmode: fallthrough registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/functorch/vmapmoderegistrations.cpp:28 [backend fallback]
+batched: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/legacybatchingregistrations.cpp:1073 [backend fallback]
+vmapmode: fallthrough registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/vmapmoderegistrations.cpp:33 [backend fallback]
+functorchgradwrapper: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/functorch/tensorwrapper.cpp:210 [backend fallback]
+pythontlssnapshot: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/core/pythonfallbackkernel.cpp:152 [backend fallback]
+functorchdynamiclayerfrontmode: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/functorch/dynamiclayer.cpp:487 [backend fallback]
+pythondispatcher: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/core/pythonfallbackkernel.cpp:148 [backend fallback]
+  file "/home/zeinab/scripts/regression/train.py", line 192, in train_single_fold
+    optimizer.step()
+  file "/home/zeinab/scripts/regression/train.py", line 312, in <module>
+    train_single_fold(network, data_loader, test_loader, optimizers=optimizers, full_log=full_log,
+notimplementederror: could not run 'aten::_foreach_mul_.scalar' with arguments from the 'sparsecuda' backend. this could be because the operator doesn't exist for this backend, or was omitted during the selective/custom build process (if using custom build). if you are a facebook employee using pytorch on mobile, please visit https://fburl.com/ptmfixes for possible resolutions. 'aten::_foreach_mul_.scalar' is only available for these backends: [cpu, cuda, backendselect, python, functorchdynamiclayerbackmode, functionalize, named, conjugate, negative, zerotensor, adinplaceorview, autogradother, autogradcpu, autogradcuda, autogradhip, autogradxla, autogradmps, autogradipu, autogradxpu, autogradhpu, autogradve, autogradlazy, autogradmeta, autogradmtia, autogradprivateuse1, autogradprivateuse2, autogradprivateuse3, autogradnestedtensor, tracer, autocastcpu, autocastcuda, functorchbatched, functorchvmapmode, batched, vmapmode, functorchgradwrapper, pythontlssnapshot, functorchdynamiclayerfrontmode, pythondispatcher].
+
+cpu: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/build/aten/src/aten/registercpu.cpp:31034 [kernel]
+cuda: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/build/aten/src/aten/registercuda.cpp:43986 [kernel]
+backendselect: fallthrough registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/core/backendselectfallbackkernel.cpp:3 [backend fallback]
+python: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/core/pythonfallbackkernel.cpp:144 [backend fallback]
+functorchdynamiclayerbackmode: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/functorch/dynamiclayer.cpp:491 [backend fallback]
+functionalize: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/build/aten/src/aten/registerfunctionalization_1.cpp:23013 [kernel]
+named: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/core/namedregistrations.cpp:7 [backend fallback]
+conjugate: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/conjugatefallback.cpp:17 [backend fallback]
+negative: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/native/negatefallback.cpp:19 [backend fallback]
+zerotensor: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/zerotensorfallback.cpp:86 [backend fallback]
+adinplaceorview: fallthrough registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/core/variablefallbackkernel.cpp:63 [backend fallback]
+autogradother: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradcpu: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradcuda: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradhip: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradxla: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradmps: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradipu: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradxpu: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradhpu: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradve: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradlazy: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradmeta: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradmtia: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradprivateuse1: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradprivateuse2: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradprivateuse3: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+autogradnestedtensor: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/variabletype_3.cpp:16043 [autograd kernel]
+tracer: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/torch/csrc/autograd/generated/tracetype_3.cpp:14198 [kernel]
+autocastcpu: fallthrough registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/autocast_mode.cpp:487 [backend fallback]
+autocastcuda: fallthrough registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/autocast_mode.cpp:354 [backend fallback]
+functorchbatched: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/functorch/legacybatchingregistrations.cpp:815 [backend fallback]
+functorchvmapmode: fallthrough registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/functorch/vmapmoderegistrations.cpp:28 [backend fallback]
+batched: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/legacybatchingregistrations.cpp:1073 [backend fallback]
+vmapmode: fallthrough registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/vmapmoderegistrations.cpp:33 [backend fallback]
+functorchgradwrapper: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/functorch/tensorwrapper.cpp:210 [backend fallback]
+pythontlssnapshot: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/core/pythonfallbackkernel.cpp:152 [backend fallback]
+functorchdynamiclayerfrontmode: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/functorch/dynamiclayer.cpp:487 [backend fallback]
+pythondispatcher: registered at /opt/conda/conda-bld/pytorch_1682343998658/work/aten/src/aten/core/pythonfallbackkernel.cpp:148 [backend fallback]```
+
+### versions
+
+pytorch version: 2.0.1
+is debug build: false
+cuda used to build pytorch: 11.8
+rocm used to build pytorch: n/a
+
+os: centos stream 9 (x86_64)
+gcc version: (gcc) 11.3.1 20221121 (red hat 11.3.1-4)
+clang version: 15.0.7 (red hat 15.0.7-2.el9)
+cmake version: version 3.20.2
+libc version: glibc-2.34
+
+python version: 3.8.12 | packaged by conda-forge | (default, jan 30 2022, 23:42:07)  [gcc 9.4.0] (64-bit runtime)
+python platform: linux-5.14.0-282.el9.x86_64-x86_64-with-glibc2.10
+is cuda available: true
+cuda runtime version: could not collect
+cuda_module_loading set to: lazy
+gpu models and configuration: gpu 0: nvidia geforce rtx 3090
+nvidia driver version: 525.78.01
+cudnn version: could not collect
+hip runtime version: n/a
+miopen runtime version: n/a
+is xnnpack available: true
+
+cpu:
+architecture:                    x86_64
+cpu op-mode(s):                  32-bit, 64-bit
+address sizes:                   39 bits physical, 48 bits virtual
+byte order:                      little endian
+cpu(s):                          16
+on-line cpu(s) list:             0-15
+vendor id:                       genuineintel
+model name:                      11th gen intel(r) core(tm) i7-11700k @ 3.60ghz
+cpu family:                      6
+model:                           167
+thread(s) per core:              2
+core(s) per socket:              8
+socket(s):                       1
+stepping:                        1
+cpu max mhz:                     5000.0000
+cpu min mhz:                     800.0000
+bogomips:                        7200.00
+flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx avx512f avx512dq rdseed adx smap avx512ifma clflushopt intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp hwp_pkg_req avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid fsrm md_clear flush_l1d arch_capabilities
+virtualization:                  vt-x
+l1d cache:                       384 kib (8 instances)
+l1i cache:                       256 kib (8 instances)
+l2 cache:                        4 mib (8 instances)
+l3 cache:                        16 mib (1 instance)
+numa node(s):                    1
+numa node0 cpu(s):               0-15
+vulnerability itlb multihit:     not affected
+vulnerability l1tf:              not affected
+vulnerability mds:               not affected
+vulnerability meltdown:          not affected
+vulnerability mmio stale data:   mitigation; clear cpu buffers; smt vulnerable
+vulnerability retbleed:          mitigation; enhanced ibrs
+vulnerability spec store bypass: mitigation; speculative store bypass disabled via prctl
+vulnerability spectre v1:        mitigation; usercopy/swapgs barriers and __user pointer sanitization
+vulnerability spectre v2:        mitigation; enhanced ibrs, ibpb conditional, rsb filling, pbrsb-eibrs sw sequence
+vulnerability srbds:             not affected
+vulnerability tsx async abort:   not affected
+
+versions of relevant libraries:
+[pip3] numpy==1.24.3
+[pip3] torch==2.0.1
+[pip3] torchaudio==2.0.2
+[pip3] torchvision==0.15.2
+[pip3] triton==2.0.0
+[conda] blas                      1.0                         mkl  
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] libblas                   3.9.0            12_linux64_mkl    conda-forge
+[conda] libcblas                  3.9.0            12_linux64_mkl    conda-forge
+[conda] liblapack                 3.9.0            12_linux64_mkl    conda-forge
+[conda] liblapacke                3.9.0            12_linux64_mkl    conda-forge
+[conda] mkl                       2021.4.0           h06a4308_640  
+[conda] mkl-service               2.4.0            py38h95df7f1_0    conda-forge
+[conda] mkl_fft                   1.3.1            py38h8666266_1    conda-forge
+[conda] mkl_random                1.2.2            py38h1abd341_0    conda-forge
+[conda] numpy                     1.24.3           py38h14f4228_0  
+[conda] numpy-base                1.24.3           py38h31eccc5_0  
+[conda] pytorch                   2.0.1           py3.8_cuda11.8_cudnn8.7.0_0    pytorch
+[conda] pytorch-cuda              11.8                 h7e8668a_5    pytorch
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torchaudio                2.0.2                py38_cu118    pytorch
+[conda] torchtriton               2.0.0                      py38    pytorch
+[conda] torchvision               0.15.2               py38_cu118    pytorch
+
+cc @alexsamardzic @nikitaved @pearu @cpuhrsch @amjames @bhosmer @vincentqb @jbschlosser @alband @janeyx99 @crcrpar
+
+
+
+
+----------------------------------------Comment 3----------------------------------------
+
+🐛 describe the bug
+hi all,
+tl;dr 🐛 if your model involves using a full_backward_hook, computing derivatives throws a missing setup_context error. as a full backward hook is technically a torch.autograd.function, and hence requires a setup_context method in pytorch2, which it doesn't seem to have by default.
+here's a minimal reproducible example,
+
+the resultant error (with complete stack trace) is,
+
+i think this emerges because full_backward_hook is technically a torch.autograd.function and so when you call any torch.func method it requires a setup_context in order to handle any outputs within pytorch2.0. in previous versions of pytorch, full_backward_hook methods were skipped entirely if i recall correctly.
+is there a way to add a setup_context to a full_backward_hook, or perhaps define a custom full_backward_hook with a setup_context method itself?
+after following through the stack trace, i believe i have found where the error is emerging. in https://github.com/pytorch/pytorch/blob/main/torch/nn/modules/_functions.py, backwardhookfunction is defined as a torch.autograd.function object, but it's in the style of pytorch1.x.
+
+so, i'd assume that changing this function to something like,
+
+might resolve this issue? however, i have no idea if this would mess with other parts of pytorch.
+versions
+collecting environment information...
+pytorch version: 2.0.0
+is debug build: false
+cuda used to build pytorch: 11.8
+rocm used to build pytorch: n/a
+os: ubuntu 20.04.6 lts (x86_64)
+gcc version: (ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+clang version: could not collect
+cmake version: version 3.16.3
+libc version: glibc-2.31
+python version: 3.10.10 (main, mar 21 2023, 18:45:11) [gcc 11.2.0] (64-bit runtime)
+python platform: linux-5.15.0-69-generic-x86_64-with-glibc2.31
+is cuda available: true
+cuda runtime version: 10.1.243
+cuda_module_loading set to: lazy
+gpu models and configuration: gpu 0: nvidia geforce rtx 2060
+nvidia driver version: 520.61.05
+cudnn version: probably one of the following:
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn.so.8.3.2
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.3.2
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.3.2
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.3.2
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.3.2
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.3.2
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.3.2
+hip runtime version: n/a
+miopen runtime version: n/a
+is xnnpack available: true
+cpu:
+architecture:                    x86_64
+cpu op-mode(s):                  32-bit, 64-bit
+byte order:                      little endian
+address sizes:                   39 bits physical, 48 bits virtual
+cpu(s):                          16
+on-line cpu(s) list:             0-15
+thread(s) per core:              2
+core(s) per socket:              8
+socket(s):                       1
+numa node(s):                    1
+vendor id:                       genuineintel
+cpu family:                      6
+model:                           165
+model name:                      intel(r) core(tm) i7-10700k cpu @ 3.80ghz
+stepping:                        5
+cpu mhz:                         3800.000
+cpu max mhz:                     5100.0000
+cpu min mhz:                     800.0000
+bogomips:                        7599.80
+virtualisation:                  vt-x
+l1d cache:                       256 kib
+l1i cache:                       256 kib
+l2 cache:                        2 mib
+l3 cache:                        16 mib
+numa node0 cpu(s):               0-15
+vulnerability itlb multihit:     kvm: mitigation: vmx disabled
+vulnerability l1tf:              not affected
+vulnerability mds:               not affected
+vulnerability meltdown:          not affected
+vulnerability mmio stale data:   mitigation; clear cpu buffers; smt vulnerable
+vulnerability retbleed:          mitigation; enhanced ibrs
+vulnerability spec store bypass: mitigation; speculative store bypass disabled via prctl and seccomp
+vulnerability spectre v1:        mitigation; usercopy/swapgs barriers and __user pointer sanitization
+vulnerability spectre v2:        mitigation; enhanced ibrs, ibpb conditional, rsb filling, pbrsb-eibrs sw sequence
+vulnerability srbds:             mitigation; microcode
+vulnerability tsx async abort:   not affected
+flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp pku ospke md_clear flush_l1d arch_capabilities
+versions of relevant libraries:
+[pip3] functorch==1.13.0a0+8e2f53b
+[pip3] numpy==1.23.5
+[pip3] torch==2.0.0
+[pip3] torchaudio==2.0.0
+[pip3] torchvision==0.15.0
+[conda] blas                      1.0                         mkl
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] mkl                       2021.4.0           h06a4308_640
+[conda] mkl-service               2.4.0           py310h7f8727e_0
+[conda] mkl_fft                   1.3.1           py310hd6ae3a3_0
+[conda] mkl_random                1.2.2           py310h00e6091_0
+[conda] numpy                     1.23.5          py310hd5efca6_0
+[conda] numpy-base                1.23.5          py310h8e6c178_0
+[conda] pytorch                   2.0.0           py3.10_cuda11.8_cudnn8.7.0_0    pytorch
+[conda] pytorch-cuda              11.8                 h7e8668a_3    pytorch
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torchaudio                2.0.0               py310_cu118    pytorch
+[conda] torchtriton               2.0.0                     py310    pytorch
+[conda] torchvision               0.15.0              py310_cu118    pytorch
+cc @ezyang @alband @zou3519 @gqchen @pearu @nikitaved @soulitzer @lezcano @varal7 @chillee @samdow @kshitij12345 @janeyx99 @soumith
+ import torch
+from torch import nn, tensor
+from torch.func import vmap, jacrev, functional_call
+
+from typing import tuple
+from collections import defaultdict
+
+class model(nn.module):
+
+  def __init__(self, num_input, num_hidden):
+    super(model, self).__init__()
+    
+    self.fc1 = nn.linear(num_input, num_hidden)
+    self.fc2 = nn.linear(num_hidden, 1)
+    
+    self.act_func = nn.tanh()
+    
+  def forward(self, x):
+    x = self.fc1(x)
+    x = self.act_func(x)
+    x = self.fc2(x)
+    return x
+    
+num_samples = 4096
+num_input=2
+num_hidden=64
+
+device=torch.device("cpu")
+
+state = defaultdict(dict) #equivalent to optim.state
+
+def forward_pre_hook(module: nn.module, input: tuple[tensor]) -> none:
+  a=input[0]
+  state[module]['a'] = a
+
+def full_backward_hook(module: nn.module, grad_input: tuple[tensor], grad_output: tuple[tensor]) -> none:
+  e = grad_output[0]
+  state[module]['e'] = e 
+
+#the input
+x = torch.randn(num_samples, num_input, device=device)
+
+#our model
+net = model(num_input=num_input,
+            num_hidden=num_hidden)
+
+#add the hooks
+for mod in net.modules():
+  if(mod.__class__.__name__ == 'linear'): #avoids registering hook to nn.tanh() etc.
+    mod.register_forward_pre_hook(forward_pre_hook)
+    mod.register_full_backward_hook(full_backward_hook)
+
+y = net(x) #compute output (works fine)
+
+#compute trace of hessian
+def calc_hessian_trace(params, x):
+
+  def output(params, x):
+    return functional_call(net, params, x)
+
+  _hessian = jacrev(jacrev(output, argnums=(1)), argnums=(1))(params, x)
+  return _hessian.diagonal(0,-2,-1).sum(-1)
+
+laplacian = vmap(calc_hessian_trace, in_dims=(none, 0))(dict(net.named_parameters()), x) #fails 
+
+
+
+traceback (most recent call last):
+  file "~/downloads/hooks_issue.py", line 64, in <module>
+    laplacian = vmap(calc_hessian_trace, in_dims=(none, 0))(dict(net.named_parameters()), x) #fails 
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/_functorch/vmap.py", line 434, in wrapped
+    return _flat_vmap(
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/_functorch/vmap.py", line 39, in fn
+    return f(*args, **kwargs)
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/_functorch/vmap.py", line 619, in _flat_vmap
+    batched_outputs = func(*batched_inputs, **kwargs)
+  file "~/downloads/hooks_issue.py", line 61, in calc_hessian_trace
+    _hessian = jacrev(jacrev(output, argnums=(1)), argnums=(1))(params, x)
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/_functorch/eager_transforms.py", line 489, in wrapper_fn
+    vjp_out = _vjp_with_argnums(func, *args, argnums=argnums, has_aux=has_aux)
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/_functorch/vmap.py", line 39, in fn
+    return f(*args, **kwargs)
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/_functorch/eager_transforms.py", line 291, in _vjp_with_argnums
+    primals_out = func(*primals)
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/_functorch/eager_transforms.py", line 489, in wrapper_fn
+    vjp_out = _vjp_with_argnums(func, *args, argnums=argnums, has_aux=has_aux)
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/_functorch/vmap.py", line 39, in fn
+    return f(*args, **kwargs)
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/_functorch/eager_transforms.py", line 291, in _vjp_with_argnums
+    primals_out = func(*primals)
+  file "~/downloads/hooks_issue.py", line 59, in output
+    return functional_call(net, params, x)
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/_functorch/functional_call.py", line 143, in functional_call
+    return nn.utils.stateless._functional_call(
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/nn/utils/stateless.py", line 262, in _functional_call
+    return module(*args, **kwargs)
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+  file "~/downloads/hooks_issue.py", line 19, in forward
+    x = self.fc1(x)
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1536, in _call_impl
+    args = bw_hook.setup_input_hook(args)
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/utils/hooks.py", line 191, in setup_input_hook
+    res, input_idx = self._apply_on_tensors(fn, args)
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/utils/hooks.py", line 170, in _apply_on_tensors
+    new_tensors = torch.nn.modules._functions.backwardhookfunction.apply(*tensors)
+  file "~/anaconda3/envs/pytorch2/lib/python3.10/site-packages/torch/autograd/function.py", line 509, in apply
+    raise runtimeerror(
+runtimeerror: in order to use an autograd.function with functorch transforms (vmap, grad, jvp, jacrev, ...), it must override the setup_context staticmethod. for more details, please see https://pytorch.org/docs/master/notes/extending.func.html
+
+
+
+class backwardhookfunction(torch.autograd.function):
+    @staticmethod
+    def forward(ctx, *args):
+        ctx.mark_non_differentiable(*[arg for arg in args if not arg.requires_grad])
+        return args
+
+    @staticmethod
+    def backward(ctx, *args):
+        return args
+
+
+
+class backwardhookfunction(torch.autograd.function):
+    @staticmethod
+    def forward(*args):
+        return args
+    
+    @staticmethod
+    def setup_context(ctx, *args):
+        ctx.mark_non_differentiable(*[arg for arg in args if not arg.requires_grad])
+
+    @staticmethod
+    def backward(ctx, *args):
+        return args
+
+
+
+
+----------------------------------------Comment 4----------------------------------------
+
+add torch.autograd.function wrappers for the following ops similar to 
+
+
+pytorch/lazy_tensor_core/test/dynamic_lazy_tensor5.py
+
+
+        lines 22 to 35
+      in
+      71b89a9
+
+
+
+
+
+
+ class autogradexpand(torch.autograd.function): 
+
+
+
+ @staticmethod 
+
+
+
+ def forward(ctx, self, size): 
+
+
+
+ ctx.save_for_backward(self) 
+
+
+
+ print("running expand forward") 
+
+
+
+ t = lazy_tensor_core._lazyc._dynamic_expand2(self, size._n) 
+
+
+
+ return t 
+
+
+
+ 
+
+
+
+ @staticmethod 
+
+
+
+ def backward(ctx, grad_output): 
+
+
+
+ # todo: we need sum_to for expand 
+
+
+
+ print("running expand backward") 
+
+
+
+         (input,) = ctx.saved_tensors 
+
+
+
+ return lazy_tensor_core._lazyc._sum_to_size(grad_output, input.sizes()._n), none 
+
+
+
+
+
+
+ addmm(tensor self, tensor mat1, tensor mat2, *, scalar beta=1, scalar alpha=1) -> tensor grad for mat1 : mm_mat1_backward(grad, mat2, mat1.sizes(), mat1.strides(), alpha)
+ cat(tensor[] tensors, int dim=0) -> tensor grad for tensors : cat_tensors_backward(grad, to_args_sizes(tensors), to_args_scalartypes(tensors), dim)
+ div.tensor_mode(tensor self, tensor other, *, str? rounding_mode) -> tensor grad for result : rounding_mode.has_value() ? result.new_zeros(result.sizes()) : self_t / other_p - other_t * (self_p / other_p) / other_p
+ expand(tensor(a) self, int[] size, *, bool implicit=false) -> tensor(a) grad for self : at::sum_to(grad, self.sizes())
+ index_select(tensor self, int dim, tensor index) -> tensor grad for self : index_select_backward(grad, self.sizes(), dim, index)
+ mean(tensor self, *, scalartype? dtype=none) -> tensor grad for self : grad.expand(self.sizes()).to(self.scalar_type()) / self.numel()
+ mm(tensor self, tensor mat2) -> tensor grad for self : mm_mat1_backward(grad, mat2, self.sizes(), self.strides(), 1)
+ repeat(tensor self, int[] repeats) -> tensor grad for self : repeat_backward(grad, repeats, self.sizes())
+ select.int(tensor(a) self, int dim, int index) -> tensor(a) grad for self : select_backward(grad, self.sizes(), dim, index)
+ slice.tensor(tensor(a) self, int dim=0, int? start=none, int? end=none, int step=1) -> tensor(a) grad for self : slice_backward_wrapper(grad, self.sizes(), dim, start, end, step)
+ squeeze(tensor(a) self) -> tensor(a) grad for self : unsqueeze_to(grad, self.sizes())
+ squeeze.dim(tensor(a) self, int dim) -> tensor(a) grad for self : unsqueeze_to(grad, dim, self.sizes())
+ squeeze_(tensor(a!) self) -> tensor(a!) grad for self : unsqueeze_to(grad, self.sizes())
+ squeeze_.dim(tensor(a!) self, int dim) -> tensor(a!) grad for self : unsqueeze_to(grad, dim, self.sizes())
+ sum(tensor self, *, scalartype? dtype=none) -> tensor grad for self : grad.expand(self.sizes())
+ sum.dim_intlist(tensor self, int[1] dim, bool keepdim=false, *, scalartype? dtype=none) -> tensor grad for self : sum_backward(grad, self.sizes(), dim, keepdim)
+ topk(tensor self, int k, int dim=-1, bool largest=true, bool sorted=true) -> (tensor values, tensor indices) grad for self : value_selecting_reduction_backward(grad, dim, indices, self.sizes(), true)
+ view(tensor(a) self, int[] size) -> tensor(a) grad for self : grad.reshape(self.sizes())
+
+ 
+----------------------------------------Comment 5----------------------------------------
+
+🚀 the feature, motivation and pitch
+i'm trying to write a custom torch.autograd.function that can take in and return a list of tensors like
+
+and then
+
+right now i'm getting an error of:
+
+i'm guessing because autograd doesn't support this list[torch.tensor] types
+is there a way to do this? (is there some kind of tensorlist class, even something like nestedtensor would be useful),
+thanks!
+alternatives
+no response
+additional context
+no response
+ class foofunction(torch.autograd.function):
+    @staticmethod
+    def forward(
+        ctx,
+        indices,
+        offsets,
+        weights,
+    ) -> torch.tensor:
+        with torch.enable_grad():
+            return torch.ones(2, requires_grad=true)
+
+    @staticmethod
+    def backward(ctx, dout):
+        return none, none, [torch.ones(1)]
+
+
+
+foo = foofunction()
+weights = [torch.ones(1, requires_grad=true)]
+out = foo.apply(torch.ones(1), torch.ones(1), weights)
+out_sum = out.sum()
+print("out sum", out_sum)
+out_sum.backward()
+print(weights[0].grad)
+
+>>> torch.ones(1)
+
+
+
+file ~/anaconda3/envs/compilers/lib/python3.10/site-packages/torch/_tensor.py:473, in tensor.backward(self, gradient, retain_graph, create_graph, inputs)
+    463 if has_torch_function_unary(self):
+    464     return handle_torch_function(
+    465         tensor.backward,
+    466         (self,),
+   (...)
+    471         inputs=inputs,
+    472     )
+--> 473 torch.autograd.backward(
+    474     self, gradient, retain_graph, create_graph, inputs=inputs
+    475 )
+
+file ~/anaconda3/envs/compilers/lib/python3.10/site-packages/torch/autograd/__init__.py:197, in backward(tensors, grad_tensors, retain_graph, create_graph, grad_variables, inputs)
+    192     retain_graph = create_graph
+    194 # the reason we repeat same the comment below is that
+    195 # some python versions print out the first line of a multi-line function
+    196 # calls in the traceback and some print out the last line
+--> 197 variable._execution_engine.run_backward(  # calls into the c++ engine to run the backward pass
+    198     tensors, grad_tensors_, retain_graph, create_graph, inputs,
+    199     allow_unreachable=true, accumulate_grad=true)
+
+runtimeerror: element 0 of tensors does not require grad and does not have a grad_fn
+
+
+
+
+----------------------------------------Comment 6----------------------------------------
+
+🐛 describe the bug
+we find that the customized pytorch operator through torch.autograd.function always lead to torchdynamo graph re-compilation during training, but seems fine if we only run inference. it seems the first argument ctx is changing across iterations, thus ctx.save_for_backward is a different addresss thus lead to re-compilation in every iteration. this issue basically blocks the models with customized operator to run with torchdynamo. not sure if this is known issue, but just searched in the github issues but didn't find realted issue, so i filled this bug.
+
+here's what i got with pytorch 1.14.0a0+410ce96, as you can see graph reaches cache limit soon:
+
+versions
+
+cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh @mlazos @voznesenskym @yanboliang @penguinwu @anijain2305 @eikanwang @jgong5 @guobing-chen @chunyuan-w @xiaobingsuper @zhuhaozhe @blzheng @xia-weiwen @wenzhe-nrv @jiayisunx @desertfire @jjsjann123 @kevinstephano
+ #!/usr/bin/env python
+
+import torch
+from torch._dynamo import optimize, config
+config.cache_size_limit = 4
+torch.manual_seed(0)
+
+class exp(torch.autograd.function):
+    @staticmethod
+    def forward(ctx, i):
+        result = i.exp()
+        ctx.save_for_backward(result)
+        return result
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        result, = ctx.saved_tensors
+        return grad_output * result
+
+@optimize("inductor")
+def toy_example(x, dy):
+    y = exp.apply(x)
+    y.backward(dy)
+    return y
+
+def test():
+    for i in range(5):
+        x = torch.randn(10, requires_grad=true)
+        dy = torch.randn(10)
+        toy_example(x, dy)
+        print(x.grad.norm())
+
+if __name__ == "__main__":
+    test()
+
+
+$ python bug-3.py
+tensor(3.7900)
+tensor(6.5101)
+tensor(10.7158)
+tensor(22.0629)
+[2022-12-19 14:56:46,327] torch._dynamo.convert_frame: [warning] torch._dynamo hit config.cache_size_limit (4)
+   function: 'forward' (bug-3.py:9)
+   reasons:  ['___guarded_code.valid']
+to diagnose recompilation issues, see https://github.com/pytorch/torchdynamo/blob/main/troubleshooting.md.
+tensor(3.5327)
+
+
+collecting environment information...
+pytorch version: 1.14.0a0+410ce96
+is debug build: false
+cuda used to build pytorch: 11.8
+rocm used to build pytorch: n/a
+
+os: ubuntu 20.04.5 lts (x86_64)
+gcc version: (ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+clang version: could not collect
+cmake version: version 3.24.1
+libc version: glibc-2.31
+
+python version: 3.8.10 (default, jun 22 2022, 20:18:18)  [gcc 9.4.0] (64-bit runtime)
+python platform: linux-5.4.0-99-generic-x86_64-with-glibc2.29
+is cuda available: true
+cuda runtime version: 11.8.89
+cuda_module_loading set to: lazy
+gpu models and configuration: gpu 0: nvidia a100-sxm4-80gb
+nvidia driver version: 515.65.01
+cudnn version: probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.7.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.7.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.7.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.7.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.7.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.7.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.7.0
+hip runtime version: n/a
+miopen runtime version: n/a
+is xnnpack available: true
+
+versions of relevant libraries:
+[pip3] numpy==1.22.2
+[pip3] open-clip-torch==2.7.0
+[pip3] pytorch-quantization==2.1.2
+[pip3] torch==1.14.0a0+410ce96
+[pip3] torch-tensorrt==1.3.0a0
+[pip3] torchtext==0.13.0a0+fae8e8c
+[pip3] torchvision==0.15.0a0
+[conda] could not collect
+
+
+
+
+----------------------------------------Comment 7----------------------------------------
+
+🐛 bug
+
+i want to test custom op and convert pytorch to onnx,but:
+
+
+
+my code is:
+
+`import math
+import time
+import torch
+import torch.nn as nn
+import numpy as np
+from torch.autograd import function
+import torch.nn.functional as f
+import torch.onnx.symbolic_helper as sym_help
+from torch.autograd.function import once_differentiable
+import json
+from torch.nn.modules.utils import _pair
+from torch.onnx.symbolic_helper import parse_args
+class quantizer(function):
+@staticmethod
+def symbolic(g,input):
+return g.op('qconv',input)
+@staticmethod
+def forward(ctx, input):
+return torch.round(input * 3) / 3
+
+def quantize(input):
+return quantizer.apply(input)
+class testm(nn.module):
+def init(self):
+super(testm,self).init()
+self.conv1=nn.conv2d(3,64,3)
+self.quant=quantize
+
+if name=='main':
+
+`
+3. my enviroment is :
+pytorch 1.9.0,
+4.the complete error is:
+`warning: unsupported operator qconv. no schema registered for this operator.
+warning: unsupported operator qconv. no schema registered for this operator.
+warning: unsupported operator qconv. no schema registered for this operator.
+graph(%input : float(1, 3, 224, 224, strides=[150528, 50176, 224, 1], requires_grad=0, device=cpu),
+%conv1.weight : float(64, 3, 3, 3, strides=[27, 9, 3, 1], requires_grad=1, device=cpu),
+%conv1.bias : float(64, strides=[1], requires_grad=1, device=cpu)):
+%3 : float(1, 64, 222, 222, strides=[3154176, 49284, 222, 1], requires_grad=1, device=cpu) = onnx::conv[dilations=[1, 1], group=1, kernel_shape=[3, 3], pads=[0, 0, 0, 0], strides=[1, 1]](%input, %conv1.weight, %conv1.bias) # /home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/nn/modules/conv.py:439:0
+%output : float(1, 64, 222, 222, strides=[3154176, 49284, 222, 1], requires_grad=1, device=cpu) = onnx::qconv(%3) # /home/user/workspace/project/centernet/src/lr_onnx2.py:27:0
+return (%output)
+traceback (most recent call last):
+file "/home/user/workspace/project/centernet/src/lr_onnx2.py", line 45, in 
+torch.onnx.export(
+file "/home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/onnx/init.py", line 275, in export
+return utils.export(model, args, f, export_params, verbose, training,
+file "/home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/onnx/utils.py", line 88, in export
+_export(model, args, f, export_params, verbose, training, input_names, output_names,
+file "/home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/onnx/utils.py", line 718, in _export
+_check_onnx_proto(proto)
+runtimeerror: no op registered for qconv with domain_version of 9
+==> context: bad node spec: input: "3" output: "output" name: "qconv_1" op_type: "qconv"`
+ traceback (most recent call last):
+  file "/home/user/workspace/project/centernet/src/lr_onnx2.py", line 45, in <module>
+    torch.onnx.export(
+  file "/home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/onnx/__init__.py", line 275, in export
+    return utils.export(model, args, f, export_params, verbose, training,
+  file "/home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/onnx/utils.py", line 88, in export
+    _export(model, args, f, export_params, verbose, training, input_names, output_names,
+  file "/home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/onnx/utils.py", line 718, in _export
+    _check_onnx_proto(proto)
+runtimeerror: no op registered for qconv with domain_version of 9
+
+==> context: bad node spec: input: "3" output: "output" name: "qconv_1" op_type: "qconv"
+
+
+
+@staticmethod
+def backward(ctx, grad_output):
+    return grad_output,none
+
+
+
+def forward(self,input):
+    output=self.conv1(input)
+    output=self.quant(output)
+    return output
+
+
+
+model=testm()
+input=torch.ones(1,3,224,224)
+
+torch.onnx.export(
+    model,
+    input,
+    'test.onnx',
+    input_names=["input"],
+    output_names=['output'],
+    verbose=true
+)
+
+
+
+
+----------------------------------------Comment 8----------------------------------------
+
+🚀 feature
+gradient checkpointing feature is available as torch.utils.checkpoint.* in python api. however, after an exhaustive search, i can't find a c++ equivalent of this feature. self-implementing also seems difficult because c++ node class is quite different from python torch.autograd.function class.
+motivation
+due to a subtle reason i have to use c++ for model training. everything works fine in using pytorch c++ apis since they mostly resembles their python counterparts. however, one thing which is essential but missing is the gradient checkpointing feature.
+pitch
+the gradient checkpointing feature has an equivalent in c++: its functions most desirably reside in torch::utils::checkpoint namespace and resemble their python counterparts checkpoint and checkpoint_sequential.
+alternatives
+manually checkpointing the gradients is possible at least in my case, by replicating the logic in checkpointfunction. however, since i can't hack the backward pass, i have to manually do backward() many times from each checkpointed output.
+additional context
+none
+cc @yf225 @glaringlee
+ 
+----------------------------------------Comment 9----------------------------------------
+
+🐛 bug
+certain modules could have return values that output non-tensor values. such modules cannot be checkpointed using torch.util.checkpoint since torch.autograd.function doesn't support non-tensor outputs. this limitation is enforced here: https://github.com/pytorch/pytorch/blob/master/torch/csrc/autograd/python_function.cpp#l369-l370.
+one such example was brought up in #50693, where modules might return none, or booleans as part of the output and such modules cannot be used with checkpointing.
+to reproduce
+
+fails with: typeerror: checkpointfunctionbackward.forward: expected tensor or tuple of tensor (got int) for return value 0
+expected behavior
+as part of gradient recording these non-tensor outputs can be ignored and during the backward pass we can just pass in none to the backward function for torch.autograd.function for corresponding non-tensor outputs. this would ensure that the output of torch.autograd.function.forward can be a tensor or a generic tuple.
+cc @ezyang @alband @zou3519 @gqchen @pearu @nikitaved @soulitzer
+ import torch
+from torch.utils.checkpoint import checkpoint
+
+def foo():
+    return 1, none, torch.rand(10)
+
+checkpoint(foo)
+
+
+
+
+----------------------------------------Comment 10----------------------------------------
+
+🐛 describe the bug
+when i use nn.dataparallel, nn.module.parameters() returns a generator which yields nothing.
+this breaks residual flow (link to the code where nn.module.parameters() has been used) because the custom torch.autograd.function depends on nn.module.parameters() to implement a memory-efficient backward routine.
+i've attached below a minimal reproducing example. this must be run on a multi-gpu machine for reproduction. to verify the issue is indeed related with nn.dataparallel, change the line with use_dataparallel = true to use_dataparallel = false.
+
+when 2 gpus are allocated for the script (with cuda_visible_devices), with use_dataparallel = true the script prints the following,
+
+instead of printing the following.
+
+in contrast, with use_dataparallel = false the script prints the following.
+
+versions
+it's broken with pytorch 1.11.0, but it seems like the residual flow code had worked with previous pytorch versions in multi-gpu settings. i didn't test the minimal reproducing example with previous pytorch versions.
+collecting environment information...
+pytorch version: 1.11.0
+is debug build: false
+cuda used to build pytorch: 11.3
+rocm used to build pytorch: n/a
+
+os: ubuntu 18.04.5 lts (x86_64)
+gcc version: (ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+clang version: could not collect
+cmake version: version 3.10.libc version: glibc-2.27
+
+python version: 3.9.7 (default, sep 16 2021, 13:09:58)  [gcc 7.5.0] (64-bit runtime)
+python platform: linux-4.15.0-140-generic-x86_64-with-glibc2.27
+is cuda available: true
+cuda runtime version: 11.1.105
+gpu models and configuration: 
+gpu 0: geforce rtx 3090
+gpu 1: geforce rtx 3090
+gpu 2: geforce rtx 3090
+gpu 3: geforce rtx 3090
+gpu 4: geforce rtx 3090
+gpu 5: geforce rtx 3090
+gpu 6: geforce rtx 3090
+gpu 7: geforce rtx 3090
+
+nvidia driver version: 460.39
+cudnn version: probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.0./usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.0./usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.0./usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.0./usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.0./usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.0./usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.0./usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn.so.8.0./usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.0./usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.0./usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.0./usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.0./usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.0./usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.0.hip runtime version: n/a
+miopen runtime version: n/a
+is xnnpack available: true
+
+versions of relevant libraries:
+[pip3] numpy==1.21.[pip3] torch==1.11.0
+[pip3] torchaudio==0.11.0
+[pip3] torchvision==0.12.0
+[conda] blas                      1.0                         mkl  
+[conda] cudatoolkit               11.3.1               h2bc3f7f_2  
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] mkl                       2021.4.0           h06a4308_640  
+[conda] mkl-service               2.4.0            py39h7f8727e_0  
+[conda] mkl_fft                   1.3.1            py39hd3c417c_0  
+[conda] mkl_random                1.2.2            py39h51133e4_0  
+[conda] numpy                     1.21.2           py39h20f2e39_0  
+[conda] numpy-base                1.21.2           py39h79a1101_0  
+[conda] pytorch                   1.11.0          py3.9_cuda11.3_cudnn8.2.0_0    pytorch
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torchaudio                0.11.0               py39_cu113    pytorch
+[conda] torchvision               0.12.0               py39_cu113    pytorch
+
+ import torch
+import torch.nn as nn
+torch.set_default_tensor_type('torch.cuda.floattensor')
+
+class testmodule(nn.module):
+    def __init__(self):
+        super(testmodule, self).__init__()
+        self.conv1 = nn.conv2d(64, 128, (3,3), padding=1, stride=1, bias=true)
+
+    def forward(self, x):
+        print(len(list(self.conv1.parameters())))
+        return self.conv1(x)
+
+use_dataparallel = true
+
+tm = testmodule()
+if use_dataparallel:
+    tm = nn.dataparallel(tm)
+
+x = torch.randn(10, 64, 32, 32)
+y = tm(x)
+
+
+
+0
+0
+
+
+
+2
+2
+
+
+
+2
+
+
+
+collecting environment information...
+pytorch version: 1.11.0
+is debug build: false
+cuda used to build pytorch: 11.3
+rocm used to build pytorch: n/a
+
+os: ubuntu 18.04.5 lts (x86_64)
+gcc version: (ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+clang version: could not collect
+cmake version: version 3.10.2
+libc version: glibc-2.27
+
+python version: 3.9.7 (default, sep 16 2021, 13:09:58)  [gcc 7.5.0] (64-bit runtime)
+python platform: linux-4.15.0-140-generic-x86_64-with-glibc2.27
+is cuda available: true
+cuda runtime version: 11.1.105
+gpu models and configuration: 
+gpu 0: geforce rtx 3090
+gpu 1: geforce rtx 3090
+gpu 2: geforce rtx 3090
+gpu 3: geforce rtx 3090
+gpu 4: geforce rtx 3090
+gpu 5: geforce rtx 3090
+gpu 6: geforce rtx 3090
+gpu 7: geforce rtx 3090
+
+nvidia driver version: 460.39
+cudnn version: probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.0.2
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.0.2
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.0.2
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.0.2
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.0.2
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.0.2
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.0.2
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn.so.8.0.2
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.0.2
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.0.2
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.0.2
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.0.2
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.0.2
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.0.2
+hip runtime version: n/a
+miopen runtime version: n/a
+is xnnpack available: true
+
+versions of relevant libraries:
+[pip3] numpy==1.21.2
+[pip3] torch==1.11.0
+[pip3] torchaudio==0.11.0
+[pip3] torchvision==0.12.0
+[conda] blas                      1.0                         mkl  
+[conda] cudatoolkit               11.3.1               h2bc3f7f_2  
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] mkl                       2021.4.0           h06a4308_640  
+[conda] mkl-service               2.4.0            py39h7f8727e_0  
+[conda] mkl_fft                   1.3.1            py39hd3c417c_0  
+[conda] mkl_random                1.2.2            py39h51133e4_0  
+[conda] numpy                     1.21.2           py39h20f2e39_0  
+[conda] numpy-base                1.21.2           py39h79a1101_0  
+[conda] pytorch                   1.11.0          py3.9_cuda11.3_cudnn8.2.0_0    pytorch
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torchaudio                0.11.0               py39_cu113    pytorch
+[conda] torchvision               0.12.0               py39_cu113    pytorch
+
+
+
+
+----------------------------------------Comment 11----------------------------------------
+
+🐛 describe the bug
+for float8 training, we'd like to pass tensor subclasses into custom torch.autograd.function and save them for backward.  currently this is not traceable by dynamo.  would be great to add this support
+minimal repro: https://gist.github.com/vkuzo/65367060edabcae5c8f3a51db19ed974
+stack trace: https://gist.github.com/vkuzo/a512f18c6e5757efa9ef29cd0b505ca2
+versions
+torch==2.1.0a0+gita14d99b
+cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @voznesenskym @penguinwu @eikanwang @jgong5 @guobing-chen @xiaobingsuper @zhuhaozhe @blzheng @xia-weiwen @wenzhe-nrv @jiayisunx @ipiszy @chenyang78 @aakhundov
+ 
+----------------------------------------Comment 12----------------------------------------
+
+🐛 bug
+when an object of tensor's subclass is saved in torch.autograd.function using ctx.save_for_backward, the type is not preserved in the backward method when accessing it with ctx.saved_tensors.
+to reproduce
+this is an example script to illustrate what i meant:
+
+the script above prints:
+
+when saved in forward method, the type of a is subtensor. however, when accessed in backward, the type of a is torch.tensor.
+expected behavior
+i'm not sure if this is what pytorch's team expected, but i expect that the type of a should be preserved in the backward method.
+environment
+
+pytorch version (e.g., 1.0): 1.9.0.dev20210516
+os (e.g., linux): wsl on ubuntu 20.04
+how you installed pytorch (conda, pip, source): conda
+build command you used (if compiling from source): n/a
+python version: 3.8.5
+cuda/cudnn version: n/a
+gpu models and configuration: n/a
+any other relevant information: n/a
+
+additional context
+ import torch
+
+class subtensor(torch.tensor):
+    pass
+
+a = subtensor([2]).requires_grad_()
+b = torch.tensor(1.0).requires_grad_()
+
+class fcn(torch.autograd.function):
+    @staticmethod
+    def forward(ctx, a, b):
+        ctx.save_for_backward(a, b)
+        print("a in forward :", type(a))
+        c = a * b
+        return c
+    @staticmethod
+    def backward(ctx, grad_c):
+        a, b = ctx.saved_tensors
+        print("a in backward:", type(a))
+        return b * grad_c, a * grad_c
+
+c = fcn.apply(a, b)
+print("c            :", type(c))
+da, db = torch.autograd.grad(c, (a, b))
+print("da           :", type(da))
+print("db           :", type(db))
+
+
+
+a in forward : <class '__main__.subtensor'>
+c            : <class '__main__.subtensor'>
+a in backward: <class 'torch.tensor'>
+da           : <class '__main__.subtensor'>
+db           : <class '__main__.subtensor'>
+
+
+
+
+----------------------------------------Comment 13----------------------------------------
+
+🐛 bug
+if an instance of torch.autograd.function raises a python exception during the backward pass, distributed autograd will always convert the type of that exception to runtimeerror.
+to reproduce
+see distautogradtest.test_backward_autograd_engine_error:
+
+
+
+pytorch/torch/testing/_internal/distributed/rpc/dist_autograd_test.py
+
+
+        lines 1055 to 1058
+      in
+      6ad9e5c
+
+
+
+
+
+
+ with self.assertraisesregex(runtimeerror, 'simulate error on backward pass'): 
+
+
+
+ # run backwards, and validate we receive an error. 
+
+
+
+ dist_autograd.backward([val.sum()]) 
+
+
+
+ 
+
+
+
+
+
+the test explicitly expects runtimeerror even though simulatebackwarderror raises exception:
+
+
+
+pytorch/torch/testing/_internal/distributed/rpc/dist_autograd_test.py
+
+
+        lines 144 to 145
+      in
+      6ad9e5c
+
+
+
+
+
+
+ def backward(ctx, input): 
+
+
+
+ raise exception('simulate error on backward pass') 
+
+
+
+
+
+expected behavior
+the raised exception should have the same type as raised in the python code.
+additional context
+this root cause seems to be that autograd raises a python_error exception in c++ and that is translated to runtimeerror by the default pybind11 exception translator. in #30588 i register a new exception translator that treats python_errors correctly. however, this failed ci with some workers crashing (see #30588 (comment))
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @xush6528 @osalpekar @jjlilley
+ 
+----------------------------------------Comment 14----------------------------------------
+
+🐛 bug
+applying a torch.autograd.function usually returns the same torch.tensor subclass as the input, but not always. this seems to happen when an input requires_grad and potentially some other requirements.
+to reproduce
+steps to reproduce the behavior:
+
+if you remove the x.requires_grad_() call, the assertion passes.
+expected behavior
+i expect torch.autograd.function to preserve the subclass passed in.
+barring that, i expect it to behave consistently about whether it preserves it or throws it away.
+the documentation claims
+
+as of version 1.7.0, methods on torch.tensor and functions in public torch.* namespaces applied on torch.tensor subclasses will return subclass instances instead of torch.tensor instances:
+
+it's a bit unclear to me if that's meant to encompass custom torch.autograd.function implementations that are built on such primitives.
+environment
+pytorch version: 1.8.1+cu102
+is debug build: false
+cuda used to build pytorch: 10.2
+rocm used to build pytorch: n/a
+os: ubuntu 20.04.2 lts (x86_64)
+gcc version: (ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+clang version: 13.0.0-++20210418052640+d480f968ad8b-1~exp1~20210418153358.383
+cmake version: version 3.16.3
+python version: 3.8 (64-bit runtime)
+is cuda available: true
+cuda runtime version: 10.1.243
+gpu models and configuration: gpu 0: geforce rtx 2080 super
+nvidia driver version: 450.119.03
+cudnn version: could not collect
+hip runtime version: n/a
+miopen runtime version: n/a
+versions of relevant libraries:
+[pip3] numpy==1.18.5
+[pip3] torch==1.8.1
+[pip3] torchvision==0.9.1
+[conda] could not collect
+cc @ezyang @alband @zou3519 @gqchen @pearu @nikitaved @soulitzer @lezcano
+ import torch
+import torch.autograd
+
+class idfunction(torch.autograd.function):
+  @staticmethod
+  def forward(ctx, arg):
+    return arg
+
+  @staticmethod
+  def backward(ctx, arg):
+    return arg
+
+class mytensor(torch.tensor):
+  pass
+
+x = torch.ones([1, 5, 5]).as_subclass(mytensor)
+x.requires_grad_()
+applied = idfunction.apply(x)
+assert type(applied) is mytensor, f"expected mytensor, got {type(applied)}"
+
+
+
+----------------------------------------Comment 15----------------------------------------
+
+🐛 bug
+when performing a task such as optimization within a torch.autograd.function forward pass, no gradient functions are generated for intermittent non-leaf variables and hence optimization fails.
+to reproduce
+steps to reproduce the behavior:
+write out a custom torch.autograd.function and attempt to perform some sort of optimization with a generated parameter. define any loss function with any basic operation and perform a loss.backward(). sample code is shown below:
+
+in the print out of the variables, we see that y is a parameter with requires_grad=true but loss does not have any grad_fn defined.
+expected behavior
+in the above example, loss should be a tensor with grad_fn defined. in particular, basic operations should propogate this grad_fn behavior.
+environment
+os: mac osx 10.13.6
+gcc version: could not collect
+cmake version: version 3.11.2
+python version: 3.6
+is cuda available: no
+cuda runtime version: could not collect
+gpu models and configuration: could not collect
+nvidia driver version: 1.1.0
+cudnn version: could not collect
+versions of relevant libraries:
+[pip] msgpack-numpy==0.4.3.1
+[pip] numpy==1.17.0
+[pip] numpydoc==0.7.0
+[pip] torch==1.3.1
+[pip] torchvision==0.2.0
+[conda] mkl                       2018.0.0             h5ef208c_6
+[conda] mkl-service               1.1.2            py36h7ea6df4_4
+[conda] torch                     1.3.1                     
+[conda] torchvision               0.2.0                     
+additional context
+none
+cc @ezyang @ssnl @alband @zou3519 @gqchen
+ import torch
+import torch.nn as nn
+
+
+class examplefunction(torch.autograd.function):
+    @staticmethod
+    def forward(ctx, x):
+        y = nn.parameter(torch.zeros_like(x))
+        print(y)
+        for i in range(100):
+            if y.grad is not none:
+                y.grad.detach_()
+                y.grad.zero_()
+            loss = torch.sum(x * y)
+            print(loss)
+            loss.backward()
+            y.data -= 0.001 * y.grad
+
+        return y
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        pass
+
+ex = examplefunction.apply
+
+print(ex(torch.ones(5)))
+
+
+
+
+----------------------------------------Comment 16----------------------------------------
+
+i created a minimal code to reproduce my error.
+i create two operations (complex number square and cube) using pycuda.
+the two functions works properly when called directly
+
+but if i implement my own torch.autograd.function using my two functions, then it crashes when backward is called.
+
+the following code crashes
+
+errors:
+
+but the following one execute without complain:
+
+ x = torch.rand(10, 2).cuda()
+complex_cube(x)
+
+
+# inspired by https://gist.github.com/szagoruyko/89f83b6f5f4833d3c8adf81ee49f22a8
+
+from functools import lru_cache
+import torch
+
+import pycuda.autoinit
+import pycuda.driver as cuda
+from pycuda.compiler import sourcemodule
+
+cuda_num_threads = 1024
+
+def get_blocks(n):
+    return (n + cuda_num_threads - 1) // cuda_num_threads
+
+class holder(cuda.pointerholderbase):
+    def __init__(self, t):
+        super(holder, self).__init__()
+        assert t.is_cuda
+        self.t = t
+        self.gpudata = t.data_ptr()
+    def get_pointer(self):
+        return self.t.data_ptr()
+
+def complex_square(x):
+    assert x.is_cuda
+    assert x.size(-1) == 2
+    batch_size = x.size()[:-1]
+
+    x = x.view(-1, 2) # [batch, complex] (nbatch, 2)
+    nbatch = x.size(0)
+
+    cuda_kernel = _setup_complex_square_cuda_kernel(nbatch)
+
+    output = torch.cuda.floattensor(nbatch, 2)
+    cuda_kernel(holder(x), holder(output),
+                block=(cuda_num_threads, 1, 1),
+                grid=(get_blocks(nbatch), 1, 1))
+    # [batch, complex] (nbatch, 2)
+
+    output = output.view(*batch_size, 2)
+    return output
+
+@lru_cache(maxsize=32)
+def _setup_complex_square_cuda_kernel(nbatch):
+    kernel = '''
+extern "c"
+__global__ void main_(const float* in, float* out) {
+    for (int index = blockidx.x * blockdim.x + threadidx.x; index < {nbatch}; index += blockdim.x * griddim.x) {
+        float in_re = in[index * 2 + 0];
+        float in_im = in[index * 2 + 1];
+        out[index * 2 + 0] = in_re * in_re - in_im * in_im;
+        out[index * 2 + 1] = 2.0 * in_re * in_im;
+    }
+}
+'''.replace("{nbatch}", str(nbatch))
+    
+    return sourcemodule(kernel).get_function("main_")
+
+def complex_cube(x):
+    assert x.is_cuda
+    assert x.size(-1) == 2
+    batch_size = x.size()[:-1]
+
+    x = x.view(-1, 2) # [batch, complex] (nbatch, 2)
+    nbatch = x.size(0)
+
+    cuda_kernel = _setup_complex_cube_cuda_kernel(nbatch)
+
+    output = torch.cuda.floattensor(nbatch, 2)
+    cuda_kernel(holder(x), holder(output),
+                block=(cuda_num_threads, 1, 1),
+                grid=(get_blocks(nbatch), 1, 1))
+    # [batch, complex] (nbatch, 2)
+
+    output = output.view(*batch_size, 2)
+    return output
+
+@lru_cache(maxsize=32)
+def _setup_complex_cube_cuda_kernel(nbatch):
+    kernel = '''
+extern "c"
+__global__ void main_(const float* in, float* out) {
+    for (int index = blockidx.x * blockdim.x + threadidx.x; index < {nbatch}; index += blockdim.x * griddim.x) {
+        float in_re = in[index * 2 + 0];
+        float in_im = in[index * 2 + 1];
+        out[index * 2 + 0] = in_re * (in_re * in_re - 3.0 * in_im * in_im);
+        out[index * 2 + 1] = in_im * (3.0 * in_re * in_re - in_im * in_im);
+    }
+}
+'''.replace("{nbatch}", str(nbatch))
+
+    return sourcemodule(kernel).get_function("main_")
+
+class foobar(torch.autograd.function):
+    def __init__(self):
+        super(foobar, self).__init__()
+
+    def forward(self, x):
+        return complex_square(x)
+
+    def backward(self, grad_output):
+        return complex_cube(grad_output)
+
+
+from torch.autograd import variable
+
+x = torch.rand(100, 100, 2).cuda()
+x = variable(x, requires_grad=true)
+
+op = foobar()
+y = op(x)
+
+z = y.sum()
+z.backward()
+
+
+---------------------------------------------------------------------------
+logicerror                                traceback (most recent call last)
+<ipython-input-2-3272bbf3c18d> in <module>()
+      8 
+      9 z = y.sum()
+---> 10 z.backward()
+
+/home/mario/.local/lib/python3.5/site-packages/torch/autograd/variable.py in backward(self, gradient, retain_variables)
+    144                     'or with gradient w.r.t. the variable')
+    145             gradient = self.data.new().resize_as_(self.data).fill_(1)
+--> 146         self._execution_engine.run_backward((self,), (gradient,), retain_variables)
+    147 
+    148     def register_hook(self, hook):
+
+<ipython-input-1-8ba3f2e35a97> in backward(self, grad_output)
+    100 
+    101     def backward(self, grad_output):
+--> 102         return complex_cube(grad_output)
+
+<ipython-input-1-8ba3f2e35a97> in complex_cube(x)
+     65     nbatch = x.size(0)
+     66 
+---> 67     cuda_kernel = _setup_complex_cube_cuda_kernel(nbatch)
+     68 
+     69     output = torch.cuda.floattensor(nbatch, 2)
+
+<ipython-input-1-8ba3f2e35a97> in _setup_complex_cube_cuda_kernel(nbatch)
+     90 '''.replace("{nbatch}", str(nbatch))
+     91 
+---> 92     return sourcemodule(kernel).get_function("main_")
+     93 
+     94 class foobar(torch.autograd.function):
+
+/home/mario/.local/lib/python3.5/site-packages/pycuda/compiler.py in __init__(self, source, nvcc, options, keep, no_extern_c, arch, code, cache_dir, include_dirs)
+    292 
+    293         from pycuda.driver import module_from_buffer
+--> 294         self.module = module_from_buffer(cubin)
+    295 
+    296         self._bind_module()
+
+logicerror: explicit_context_dependent failed: invalid device context - no currently active context?
+
+
+
+from torch.autograd import variable
+
+x = torch.rand(100, 100, 2).cuda()
+x = variable(x, requires_grad=true)
+
+op = foobar()
+y = op(x)
+
+complex_cube(y.data) # this line is added
+
+z = y.sum()
+z.backward()
+
+
+
+----------------------------------------Comment 17----------------------------------------
+
+🐛 describe the bug
+hi, when i try to use vmap with triton.jit (i.e., when i pass a batchedtensor to a triton.jited function) i get the error "cannot access data pointer of tensor that doesn't have storage." in particular, i get this error when in a torch.autograd.function backward call when i call triton code:
+
+where _flash_attn_backward is a triton method.
+is there any way to get around this problem? i don't fully understand how batchedtensor works, but at this point in the computation i just need pytorch to treat the tensor as any other tensor (does this make sense?) that i can pass to triton; no more tracking is necessary. (like could i use torch._c._functorch.get_unwrapped from https://discuss.pytorch.org/t/save-batchedtensor-to-a-pickle-file/170561 or _unwrap_for_grad/_wrap_for_grad?)
+i saw that there are similar sounding issues (#96041) for which vmap is not expected to work, is this another one of these cases?
+thank you!
+versions
+
+     @staticmethod
+    def backward(ctx, do, *args):
+        q, k, v, o, lse, bias = ctx.saved_tensors
+        assert not ctx.needs_input_grad[3], 'flashattention does not support bias gradient yet'
+        # triton's autotune causes the tensor._version to change, and so pytorch autograd
+        # does a memcpy. to avoid this we run in inference_mode, which doesn't track the version.
+        with torch.inference_mode():
+            dq = torch.empty_like(q)
+            dk = torch.empty_like(k)
+            dv = torch.empty_like(v)
+            _flash_attn_backward(do, q, k, v, o, lse, dq, dk, dv,
+                                 bias=bias, causal=ctx.causal, softmax_scale=ctx.softmax_scale)
+        return (dq, dk, dv, none, none, none), none, none
+
+
+
+pytorch version: 2.1.0.dev20230713+cu118
+is debug build: false
+cuda used to build pytorch: 11.8
+rocm used to build pytorch: n/a
+
+os: ubuntu 22.04.2 lts (x86_64)
+gcc version: (ubuntu 11.3.0-1ubuntu1~22.04.1) 11.3.0
+clang version: could not collect
+cmake version: version 3.26.3
+libc version: glibc-2.35
+
+python version: 3.10.12 (main, jul  5 2023, 18:54:27) [gcc 11.2.0] (64-bit runtime)
+python platform: linux-5.15.0-76-generic-x86_64-with-glibc2.35
+is cuda available: true
+cuda runtime version: 11.7.64
+cuda_module_loading set to: lazy
+gpu models and configuration:
+gpu 0: nvidia a100-pcie-40gb
+gpu 1: nvidia a100-pcie-40gb
+gpu 2: nvidia a100-pcie-40gb
+gpu 3: nvidia a100-pcie-40gb
+gpu 4: nvidia a100-pcie-40gb
+gpu 5: nvidia a100-pcie-40gb
+gpu 6: nvidia a100-pcie-40gb
+gpu 7: nvidia a100-pcie-40gb
+gpu 8: nvidia a100-pcie-40gb
+
+nvidia driver version: 515.43.04
+cudnn version: could not collect
+hip runtime version: n/a
+miopen runtime version: n/a
+is xnnpack available: true
+
+cpu:
+architecture:                    x86_64
+cpu op-mode(s):                  32-bit, 64-bit
+address sizes:                   43 bits physical, 48 bits virtual
+byte order:                      little endian
+cpu(s):                          96
+on-line cpu(s) list:             0-95
+vendor id:                       authenticamd
+model name:                      amd epyc 7402 24-core processor
+cpu family:                      23
+model:                           49
+thread(s) per core:              2
+core(s) per socket:              24
+socket(s):                       2
+stepping:                        0
+frequency boost:                 enabled
+cpu max mhz:                     2800.0000
+cpu min mhz:                     1500.0000
+bogomips:                        5600.11
+flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd amd_ppin arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip rdpid overflow_recov succor smca sme sev sev_es
+virtualization:                  amd-v
+l1d cache:                       1.5 mib (48 instances)
+l1i cache:                       1.5 mib (48 instances)
+l2 cache:                        24 mib (48 instances)
+l3 cache:                        256 mib (16 instances)
+numa node(s):                    2
+numa node0 cpu(s):               0-23,48-71
+numa node1 cpu(s):               24-47,72-95
+vulnerability itlb multihit:     not affected
+vulnerability l1tf:              not affected
+vulnerability mds:               not affected
+vulnerability meltdown:          not affected
+vulnerability mmio stale data:   not affected
+vulnerability retbleed:          mitigation; untrained return thunk; smt enabled with stibp protection
+vulnerability spec store bypass: mitigation; speculative store bypass disabled via prctl and seccomp
+vulnerability spectre v1:        mitigation; usercopy/swapgs barriers and __user pointer sanitization
+vulnerability spectre v2:        mitigation; retpolines, ibpb conditional, stibp always-on, rsb filling, pbrsb-eibrs not affected
+vulnerability srbds:             not affected
+vulnerability tsx async abort:   not affected
+
+versions of relevant libraries:
+[pip3] mypy-extensions==1.0.0
+[pip3] numpy==1.24.4
+[pip3] pytorch-ranger==0.1.1
+[pip3] pytorch-triton==2.1.0+3c400e7818
+[pip3] torch==2.1.0.dev20230713+cu118
+[pip3] torch-optimizer==0.3.0
+[pip3] torchaudio==2.1.0.dev20230713+cu118
+[pip3] torchdata==0.6.1
+[pip3] torchmetrics==0.11.4
+[pip3] torchtext==0.15.2
+[pip3] torchvision==0.16.0.dev20230713+cu118
+[pip3] triton==2.0.0
+[pip3] triton-pre-mlir==2.0.0
+[conda] blas                      1.0                         mkl
+[conda] cudatoolkit               11.8.0               h6a678d5_0
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] mkl                       2023.1.0         h6d00ec8_46342
+[conda] mkl-service               2.4.0           py310h5eee18b_1
+[conda] mkl_fft                   1.3.6           py310h1128e8f_1
+[conda] mkl_random                1.2.2           py310h1128e8f_1
+[conda] numpy                     1.24.4                   pypi_0    pypi
+[conda] pytorch-cuda              11.7                 h778d358_5    pytorch
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] pytorch-ranger            0.1.1                    pypi_0    pypi
+[conda] pytorch-triton            2.1.0+3c400e7818          pypi_0    pypi
+[conda] torch                     2.1.0.dev20230713+cu118          pypi_0    pypi
+[conda] torch-optimizer           0.3.0                    pypi_0    pypi
+[conda] torchaudio                2.1.0.dev20230713+cu118          pypi_0    pypi
+[conda] torchdata                 0.6.1                    pypi_0    pypi
+[conda] torchmetrics              0.11.4                   pypi_0    pypi
+[conda] torchtext                 0.15.2                   pypi_0    pypi
+[conda] torchtriton               2.0.0                     py310    pytorch
+[conda] torchvision               0.16.0.dev20230713+cu118          pypi_0    pypi
+[conda] triton-pre-mlir           2.0.0                    pypi_0    pypi
+
+
+
+
+----------------------------------------Comment 18----------------------------------------
+
+🐛 describe the bug
+https://discuss.pytorch.org/t/torch-autograd-function-returns-error-asking-for-depricated-variable-when-passed-parameterlist/147233 shows that torch.autograd.function doesn't support parameterlist. i'm currently running into the same error.
+reproducing the post's code in google colab gives:
+
+this gives me the same error as the post:
+
+making the same substitution of:
+
+returns the same error:
+
+versions
+note: running this on google colab
+
+cc @ezyang @alband @zou3519 @gqchen @pearu @nikitaved @soulitzer @lezcano @varal7
+ import torch
+from torch.autograd import function
+from numpy import flip
+import numpy as np
+from scipy.signal import convolve2d, correlate2d
+from torch.nn.modules.module import module
+from torch.nn.parameter import parameter
+import torch.nn as nn
+from torch.autograd import variable
+
+class scipyconv2dfunction(function):
+  @staticmethod
+  def forward(ctx, input, filter, bias, params0, params1):
+    # detach so we can cast to numpy
+    input, filter, bias = input.detach(), filter.detach(), bias.detach()
+    # creating new lists from the list of params in a basic way. we add 0.01
+    # to each value in the list to represent a change between the input
+    # list and the output list. in practice the values of the list may change
+    # much more depending on the functionality of the forward pass. for purposes
+    # of brevity we keep such a change to be only "+ 0.01"
+    param_new0=[]
+    for param in params0:
+      param_new0.append(param.detach().numpy()[0] + 0.01)
+    param_new1=[]
+    for param in params1:
+      param_new1.append(param.detach().numpy()[0] + 0.01)
+
+    result = correlate2d(input.numpy(), filter.numpy(), mode='valid')
+    result += bias.numpy()
+
+    param_new0 = torch.as_tensor(param_new0).to(torch.float64)
+    param_new1 = torch.as_tensor(param_new1).to(torch.float64)
+    ctx.save_for_backward(input, filter, bias, param_new0, param_new1)
+    return torch.as_tensor(result, dtype=input.dtype)
+
+  @staticmethod
+  def backward(ctx, grad_output):
+    grad_output = grad_output.detach()
+    input, filter, bias, param_new0, param_new1 = ctx.saved_tensors
+    grad_output = grad_output.numpy()
+    # converting the parameter lists to numpy
+    param_new0 = param_new0.numpy()
+    param_new1 = param_new1.numpy()
+    # making a small change in the lists to represent a change due to backprop.
+    # in practice this change may be much larger, however for purposes of
+    # brevity we keep such a change to be only "- 0.05"
+    param_new0 = param_new0 - 0.05
+    param_new1 = param_new1 - 0.05
+    grad_bias = np.sum(grad_output, keepdims=true)
+    grad_input = convolve2d(grad_output, filter.numpy(), mode='full')
+    # the previous line can be expressed equivalently as:
+    # grad_input = correlate2d(grad_output, flip(flip(filter.numpy(), axis=0), axis=1), mode='full')
+    grad_filter = correlate2d(input.numpy(), grad_output, mode='valid')
+    # returning our gradients including our parameter lists
+    return torch.from_numpy(grad_input), torch.from_numpy(grad_filter).to(torch.float), torch.from_numpy(grad_bias).to(torch.float), torch.from_numpy(param_new0).to(torch.float), torch.from_numpy(param_new1).to(torch.float) 
+
+class scipyconv2d(module):
+  def __init__(self, filter_width, filter_height):
+    super(scipyconv2d, self).__init__()
+    self.filter = parameter(torch.randn(filter_width, filter_height))
+    self.bias = parameter(torch.randn(1, 1))
+    # defining new parameterlists
+    self.params0 = nn.parameterlist([parameter(torch.randn(1)), parameter(torch.randn(1))])
+    self.params1 = nn.parameterlist([parameter(torch.randn(1)), parameter(torch.randn(1))])
+
+  def forward(self, input):
+    return scipyconv2dfunction.apply(input, self.filter, self.bias, self.params0, self.params1)
+    #return scipyconv2dfunction.apply(input, self.filter, self.bias, variable(self.params0), variable(self.params1))
+
+module = scipyconv2d(3, 3)
+print("filter and bias: ", list(module.parameters()))
+input = torch.randn(10, 10, requires_grad=true)
+output = module(input)
+print("output from the convolution: ", output)
+output.backward(torch.randn(8, 8))
+print("gradient for the input map: ", input.grad)
+
+
+
+runtimeerror                              traceback (most recent call last)
+
+[<ipython-input-2-505681dd0c5e>](https://localhost:8080/#) in <module>()
+     74 output = module(input)
+     75 print("output from the convolution: ", output)
+---> 76 output.backward(torch.randn(8, 8))
+     77 print("gradient for the input map: ", input.grad)
+
+1 frames
+
+[/usr/local/lib/python3.7/dist-packages/torch/_tensor.py](https://localhost:8080/#) in backward(self, gradient, retain_graph, create_graph, inputs)
+    305                 create_graph=create_graph,
+    306                 inputs=inputs)
+--> 307         torch.autograd.backward(self, gradient, retain_graph, create_graph, inputs=inputs)
+    308 
+    309     def register_hook(self, hook):
+
+[/usr/local/lib/python3.7/dist-packages/torch/autograd/__init__.py](https://localhost:8080/#) in backward(tensors, grad_tensors, retain_graph, create_graph, grad_variables, inputs)
+    154     variable._execution_engine.run_backward(
+    155         tensors, grad_tensors_, retain_graph, create_graph, inputs,
+--> 156         allow_unreachable=true, accumulate_grad=true)  # allow_unreachable flag
+    157 
+    158 
+
+runtimeerror: function scipyconv2dfunctionbackward returned a gradient different than none at position 4, but the corresponding forward input was not a variable
+
+
+
+#return scipyconv2dfunction.apply(input, self.filter, self.bias, self.params0, self.params1)
+return scipyconv2dfunction.apply(input, self.filter, self.bias, variable(self.params0), variable(self.params1))
+
+
+
+---------------------------------------------------------------------------
+
+typeerror                                 traceback (most recent call last)
+
+[<ipython-input-3-9876b3d95252>](https://localhost:8080/#) in <module>()
+     72 print("filter and bias: ", list(module.parameters()))
+     73 input = torch.randn(10, 10, requires_grad=true)
+---> 74 output = module(input)
+     75 print("output from the convolution: ", output)
+     76 output.backward(torch.randn(8, 8))
+
+1 frames
+
+[/usr/local/lib/python3.7/dist-packages/torch/nn/modules/module.py](https://localhost:8080/#) in _call_impl(self, *input, **kwargs)
+   1100         if not (self._backward_hooks or self._forward_hooks or self._forward_pre_hooks or _global_backward_hooks
+   1101                 or _global_forward_hooks or _global_forward_pre_hooks):
+-> 1102             return forward_call(*input, **kwargs)
+   1103         # do not call functions when jit is used
+   1104         full_backward_hooks, non_full_backward_hooks = [], []
+
+[<ipython-input-3-9876b3d95252>](https://localhost:8080/#) in forward(self, input)
+     67   def forward(self, input):
+     68     #return scipyconv2dfunction.apply(input, self.filter, self.bias, self.params0, self.params1)
+---> 69     return scipyconv2dfunction.apply(input, self.filter, self.bias, variable(self.params0), variable(self.params1))
+     70 
+     71 module = scipyconv2d(3, 3)
+
+typeerror: variable data has to be a tensor, but got parameterlist
+
+
+
+--2022-03-24 23:58:21--  https://raw.githubusercontent.com/pytorch/pytorch/master/torch/utils/collect_env.py
+resolving raw.githubusercontent.com (raw.githubusercontent.com)... ###.###.###.###, ###.###.###.###, ###.###.###.###, ...
+connecting to raw.githubusercontent.com (raw.githubusercontent.com)|###.###.###.###|:###... connected.
+http request sent, awaiting response... 200 ok
+length: 17051 (17k) [text/plain]
+saving to: ‘collect_env.py’
+
+collect_env.py      100%[===================>]  16.65k  --.-kb/s    in 0.001s  
+
+2022-03-24 23:58:22 (15.9 mb/s) - ‘collect_env.py’ saved [17051/17051]
+
+collecting environment information...
+pytorch version: 1.10.0+cu111
+is debug build: false
+cuda used to build pytorch: 11.1
+rocm used to build pytorch: n/a
+
+os: ubuntu 18.04.5 lts (x86_64)
+gcc version: (ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+clang version: 6.0.0-1ubuntu2 (tags/release_600/final)
+cmake version: version 3.12.0
+libc version: glibc-2.26
+
+python version: 3.7.13 (default, mar 16 2022, 17:37:17)  [gcc 7.5.0] (64-bit runtime)
+python platform: linux-5.4.144+-x86_64-with-ubuntu-18.04-bionic
+is cuda available: false
+cuda runtime version: 11.1.105
+gpu models and configuration: could not collect
+nvidia driver version: could not collect
+cudnn version: probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.7.6.5
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.0.5
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.0.5
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.0.5
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.0.5
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.0.5
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.0.5
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.0.5
+hip runtime version: n/a
+miopen runtime version: n/a
+is xnnpack available: true
+
+versions of relevant libraries:
+[pip3] numpy==1.21.5
+[pip3] torch==1.10.0+cu111
+[pip3] torchaudio==0.10.0+cu111
+[pip3] torchsummary==1.5.1
+[pip3] torchtext==0.11.0
+[pip3] torchvision==0.11.1+cu111
+[conda] could not collect
+
+
+
+
+----------------------------------------Comment 19----------------------------------------
+
+[rfc] trigger callback when backwards begins for ddp with custom autograd function
+with @zhaojuanmao
+context
+a variety of improvements to distributeddataparallel, namely around ensuring local training parity and enhancing performance  where possible for certain cases are planned or already in the works. in particular, with respect to local training parity, we are aiming to support the following use cases:
+
+not all outputs of ddp forward() used in loss computation. today, this results in an error during backward as these parameters are not marked as unused.
+calling backward() twice. this is useful for a variety of use cases (i.e. computing different losses, loss with respect to different targets, etc) but ddp does not support this due to the way we account for autoggrad hooks.
+activation checkpointing with multiple checkpoints, as well as activation checkpointing with unused parameters
+
+for the above cases, it would be very useful to have a callback that fires when ddp user issues a call to backward, which helps ddp know that backwards is being called - currently, we only have access to the backwards pass via the autograd hooks installed on the reducer. such a callback will allow the following features:
+
+traverse graph beginning from outputs to find complete set of unused parameters (unused parameters means parameters that don’t get gradient in this backward pass). this set will include the parameters that don’t get gradient because a particular model output was unused when computing loss.
+calling backward() twice, by resetting the appropriate flags each time our callback fires. this mainly involves moving reducer::prepare_for_backward to be called by this function.
+miscellaneous fixes such as moving backward start log time to this function.
+enqueuing a delay_allreduce after backwards pass is over, which @zhaojuanmao is doing in enable static graph training in ddp #55248.
+
+proposal
+in order to achieve this, the proposal is to implement a custom torch.autograd.function as follows:
+
+calling this function on single-tensor ddp outputs is quite straightforward:
+
+however, the more interesting use case is models with non-tensor outputs. ddp supports dict, tuple and list data structures that contain tensors, in  nested fashion. adapting the above, to, for example, a tuple:
+
+would not be correct, as the custom function only considers tensors in the input/output and not general python data structures, as per #55509. the result of this would be errenous since we would feed a python structure as input, and get back outputs that don't require grad.
+another non-solution is calling this function once for each tensor. ideally, we would want this function called only once at the start of backwards,  and grad_outputs would contain gradients for each tensor that was output by the user’s forward pass (so we can do things like use zero gradients to determine unused parameters).
+the following, for tuples, provides the expected behavior:
+
+the above implies the main things we need to do are:
+
+get output data structure from user forward
+parse all tensors from output (we already have _find_tensors that does this)
+call passthrough with all outputs as argument: tensor_outputs = passthrough.apply(*tensor_outputs)
+reconstruct output return type, by iterating through the output data structure recursively and filling in the appropriate tensor_outputs.
+
+the following is a full prototype of this proposal for tuple data structures, which can be generalized to the output data structures that we support:
+
+note that the custom function reports 0 for b's grad_output, which is what we expected since it was unused in loss computation.
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @agolynski @scipioneer @h-huang @mrzzd @cbalioglu
+ class passthrough(function):
+    @staticmethod
+    def forward(ctx, *inputs):
+        # set any needed attributes from ddp onto ctx so it can be used during backwards pass.
+        ctx.save_for_backward(inputs)
+        return inputs
+
+    @staticmethod
+    def backward(ctx, *grad_outputs):
+        # implement various functionality discussed above
+        return grad_outputs
+
+
+
+ret: torch.tensor = ddp_forward(inputs)
+ret = passthrough.apply(ret)
+return ret
+
+
+
+ret: tuple[torch.tensor, torch.tensor]= ddp_forward(inputs)
+ret = passthrough.apply(ret)
+return ret
+
+
+
+ret: torch.tensor = ddp_forward(inputs)
+a, b = ret
+new_a, new_b = passthrough.apply(a, b)
+# we need to reassign the return value here, because a and b were not modified in place
+ret = (new_a, new_b)
+
+
+
+import torch
+import torch.nn as nn
+from torch.autograd import function
+
+
+class passthrough(function):
+    @staticmethod
+    def forward(ctx, *inputs):
+        return inputs
+
+    @staticmethod
+    def backward(ctx, *grad_outputs):
+        print(f"grad_outputs {grad_outputs}")
+        # use gradients to search through the graph as in
+        # https://gist.github.com/rohan-varma/7c8dab3635193c04c607e67c4951f519
+        return grad_outputs
+
+
+class mymodel(nn.module):
+    def __init__(self):
+        super().__init__()
+        self.a = nn.linear(1, 1, bias=false)
+        self.b = nn.linear(1, 1, bias=false)
+
+    def forward(self, x):
+        a, b = self.a(x), self.b(x)
+        # get tensors from tuple. this would be a more general call to
+        # _find_tensors.
+        ret = a, b
+        new_a, new_b = passthrough.apply(a, b)
+        # reconstruct tuple from output tensors. this would require a more general
+        # function that repacks the tensor(s) into the data structure.
+        ret = new_a, new_b
+        return ret
+
+
+model = mymodel()
+inp = torch.ones(1)
+out = model(inp)
+loss = out[0].sum()
+print("calling backward...")
+loss.backward()
+print("done with bwd")
+
+
+
+
+----------------------------------------Comment 20----------------------------------------
+
+when using torch.autograd.grad to calculate gradient, we hope pyotrch can create graph for gradient with create_graph sets to true. this works fine for custom subclass of torch.autograd.function which you can verify here https://gist.github.com/daiver/1d702b5a9faf0a22e3007500c243da93.
+however, torch.autograd.grad() would fail to create graph (gradient calculation is correct) if there are cuda extensions. the cuda extension is called preciseroipooling https://github.com/vacancy/preciseroipooling. here is a tiny example.
+
+computation graphs
+i use torchviz to draw the computation graph.
+
+
+fisrt, the computation graph of out:
+
+
+
+and after i calculate gradient w.r.t some node that behind cuda extension(backward does not go through this extension), the computation graph looks like this. everything is fine. pytorch creates graph for output gradient.
+
+
+
+however, when i trying to calculate gradient w.r.t nodes before cuda extension(backward does go through this extension), create graph fails. output of torch.autograd.grad has no grad_fn and does not require gradient. computation graph becomes none.
+
+
+
+update
+here are the codes and outputs of custom autograd function.
+
+i printed out requires_grad and grad_fn of grad_output and grad_input. as shown in the results, grad_output works fine. but after we call the cuda extension，calculated gradients(grad_input and grad_coor) lose their grad_fn.
+
+i also tried to manipulate grad_output within python environment such as make a new tensor out and out = grad_output * grad_output instead of using cuda extension. this new tensor also gets correct grad_fn(<mulbackward0 object at 0x7f4bf042dc90>)
+cc @ezyang @ssnl @alband @zou3519 @gqchen
+ import torch
+import torch.nn as nn
+import torch.nn.functional as f
+from torchviz import make_dot
+from preciseroipooling.pytorch.prroi_pool import prroipool2d
+
+class model(nn.module):
+    def __init__(self):
+        super().__init__()
+        self.pool = prroipool2d(3, 3, spatial_scale=0.5)
+        self.f1 = nn.linear(9,1)
+
+    def forward(self, features,rois):
+        # run the iounet module
+        poolfeat = self.pool(features, rois)
+        poolfeat = poolfeat.reshape(2, 16, -1)
+        iou = self.f1(poolfeat)
+        out = iou * iou
+        g_out = make_dot(out)
+
+        # calculate gradient w.r.t nodes behind cuda extension
+        grad_poolfeat= torch.autograd.grad(out, poolfeat, grad_outputs=torch.ones_like(out), retain_graph=true, create_graph=true)[0]
+        g_grad_poolfeat = make_dot(grad_poolfeat)
+       # calculate gradient w.r.t nodes before cuda extension
+        grad_roi = torch.autograd.grad(grad_poolfeat, rois, grad_outputs=torch.ones_like(grad_poolfeat), retain_graph=true, create_graph=true)
+        g_grad_roi = make_dot(grad_roi)
+
+        return iou
+
+if __name__ == '__main__':
+    model = model().to('cuda:0')
+    features = torch.rand((4, 16, 32, 32),requires_grad=true).cuda()
+    rois = torch.tensor([
+        [0, 0, 0, 14, 14],
+        [1, 14, 14, 28, 28],
+    ]).float().cuda()
+    rois.requires_grad=true
+    iou = model(features, rois)
+
+
+
+@staticmethod
+    def backward(ctx, grad_output):
+        pydevd.settrace(suspend=false, trace_only_current_thread=true)
+        print('---grad_output status---')
+        print('requires_grad:', grad_output.requires_grad)
+        print('grad_fn:', grad_output.grad_fn)
+
+        _prroi_pooling = _import_prroi_pooling()
+
+        features, rois, output = ctx.saved_tensors
+        grad_input = grad_coor = none
+
+        if features.requires_grad:
+            grad_output = grad_output.contiguous()
+            grad_input = _prroi_pooling.prroi_pooling_backward_cuda(features, rois, output, grad_output, *ctx.params)
+            print('---grad_input status---')
+            print('requires_grad:', grad_input.requires_grad)
+            print('grad_fn:', grad_input.grad_fn)
+        if rois.requires_grad:
+            grad_output = grad_output.contiguous()
+            grad_coor = _prroi_pooling.prroi_pooling_coor_backward_cuda(features, rois, output, grad_output, *ctx.params)
+            print('---grad_coor status---')
+            print('requires_grad:', grad_input.requires_grad)
+            print('grad_fn:', grad_input.grad_fn)
+
+        return grad_input, grad_coor, none, none, none
+
+
+
+---grad_output status---
+requires_grad: true
+grad_fn: <viewbackward object at 0x7fc7891d6e10>
+---grad_input status---
+requires_grad: false
+grad_fn: none
+---grad_coor status---
+requires_grad: false
+grad_fn: none
+
+
+
+
+----------------------------------------Comment 21----------------------------------------
+
+steps to reproduce:
+
+device='cuda' is important; if you run this on cpu device the exception gets caught.
+backtrace looks like this:
+
+crashing here is very unpleasant as torch_show_cpp_stacktraces doesn't work so you have to attach with gdb to diagnose.
+cc @ezyang @gchanan @zou3519 @bdhirsh @jbschlosser @alband @gqchen @pearu @nikitaved @soulitzer @lezcano @varal7
+ import torch
+from torch.autograd import variable
+from torch.autograd.function import once_differentiable
+
+def cb():
+    raise runtimeerror("blah")
+
+class myfunc(torch.autograd.function):
+    @staticmethod
+    def forward(ctx, input):
+        return input
+
+    @staticmethod
+    @once_differentiable
+    def backward(ctx, grad):
+        variable._execution_engine.queue_callback(cb)
+        return grad
+
+a = torch.rand((3, 3), device='cuda', requires_grad=true)
+b = myfunc.apply(a)
+b.sum().backward()
+
+
+
+(gdb) bt
+#0  __gi_raise (sig=sig@entry=6) at ../sysdeps/unix/sysv/linux/raise.c:50
+#1  0x00007ffff7c58859 in __gi_abort () at abort.c:79
+#2  0x00007fffd7f59951 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#3  0x00007fffd7f6547c in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#4  0x00007fffd7f654e7 in std::terminate() () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#5  0x00007fffd7f65799 in __cxa_throw () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#6  0x00007fffcb96501f in std::_function_handler<void (), thpengine_queue_callback(_object*, _object*)::{lambda()#2}>::_m_invoke(std::_any_data const&) [clone .cold] ()
+   from /raid/ezyang/pytorch-tmp/torch/lib/libtorch_python.so
+#7  0x00007fffc4711778 in torch::autograd::graphtask::exec_post_processing() ()
+   from /raid/ezyang/pytorch-tmp/torch/lib/libtorch_cpu.so
+#8  0x00007fffc471319f in torch::autograd::graphtask::mark_as_completed_and_run_post_processing() ()
+   from /raid/ezyang/pytorch-tmp/torch/lib/libtorch_cpu.so
+#9  0x00007fffc47179e2 in torch::autograd::engine::thread_main(std::shared_ptr<torch::autograd::graphtask> const&) () from /raid/ezyang/pytorch-tmp/torch/lib/libtorch_cpu.so
+#10 0x00007fffc470f20f in torch::autograd::engine::thread_init(int, std::shared_ptr<torch::autograd::readyqueue> const&, bool) () from /raid/ezyang/pytorch-tmp/torch/lib/libtorch_cpu.so
+#11 0x00007fffcbe5f1c0 in torch::autograd::python::pythonengine::thread_init(int, std::shared_ptr<torch::autograd::readyqueue> const&, bool) () from /raid/ezyang/pytorch-tmp/torch/lib/libtorch_python.so
+#12 0x00007fffd7f91d84 in ?? () from /lib/x86_64-linux-gnu/libstdc++.so.6
+#13 0x00007ffff7e2e609 in start_thread (arg=<optimized out>) at pthread_create.c:477
+#14 0x00007ffff7d55293 in clone () at ../sysdeps/unix/sysv/linux/x86_64/clone.s:95
+
+
+
+
+----------------------------------------Comment 22----------------------------------------
+
+🐛 describe the bug
+operations implemented using torch.autograd.function and wrapped in torch.compile are not fused in the backward pass.
+
+i've provided a minimal reproducer to demonstrate this. taking the function:
+
+i provide 3 alternative versions:
+
+times2_custom_loop:  exactly the same as times2_loop, but with each * 2 implemented as an operation with a custom gradient (via torch.autograd.function)
+times2_loop_compiled: times2_loop wrapped in torch.compile
+times2_custom_loop_compiled: times2_custom_loop wrapped in torch.compile
+
+i would expect the basic version and the "custom" version to both speed up considerably when wrapped in torch.compile. this is true in the forward pass, but only the basic version speeds up in the backward pass, indicating that no fusion is taking place for the "custom" version.
+results for my benchmarks on these functions are as follows:
+
+the forward plot is as expected: the compiled version of the op is faster for both the regular (green) and custom-gradient implementation (red).
+the backward plot is not: only the regular version of the compiled op is faster (green). the custom-gradient implementation (red) is just as slow as the non-compiled version.
+(for the full reproducer, see the following notebook: reproducer.ipynb.zip)
+error logs
+no response
+minified repro
+no response
+versions
+collecting environment information...
+pytorch version: 2.0.1+cu117
+is debug build: false
+cuda used to build pytorch: 11.7
+rocm used to build pytorch: n/a
+os: amazon linux 2 (x86_64)
+gcc version: (gcc) 7.3.1 20180712 (red hat 7.3.1-15)
+clang version: could not collect
+cmake version: version 3.26.3
+libc version: glibc-2.26
+python version: 3.10.8 | packaged by conda-forge | (main, nov 22 2022, 08:26:04) [gcc 10.4.0] (64-bit runtime)
+python platform: linux-5.10.157-139.675.amzn2.x86_64-x86_64-with-glibc2.26
+is cuda available: true
+cuda runtime version: 11.0.221
+cuda_module_loading set to: lazy
+gpu models and configuration: gpu 0: tesla v100-sxm2-16gb
+nvidia driver version: 515.65.01
+cudnn version: probably one of the following:
+/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn.so.8.0.5
+/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.0.5
+/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.0.5
+/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.0.5
+/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.0.5
+/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.0.5
+/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.0.5
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn.so.8.1.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.1.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.1.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.1.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.1.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.1.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.1.1
+hip runtime version: n/a
+miopen runtime version: n/a
+is xnnpack available: true
+cpu:
+architecture:        x86_64
+cpu op-mode(s):      32-bit, 64-bit
+byte order:          little endian
+cpu(s):              8
+on-line cpu(s) list: 0-7
+thread(s) per core:  2
+core(s) per socket:  4
+socket(s):           1
+numa node(s):        1
+vendor id:           genuineintel
+cpu family:          6
+model:               79
+model name:          intel(r) xeon(r) cpu e5-2686 v4 @ 2.30ghz
+stepping:            1
+cpu mhz:             2701.691
+cpu max mhz:         3000.0000
+cpu min mhz:         1200.0000
+bogomips:            4599.99
+hypervisor vendor:   xen
+virtualization type: full
+l1d cache:           32k
+l1i cache:           32k
+l2 cache:            256k
+l3 cache:            46080k
+numa node0 cpu(s):   0-7
+flags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch cpuid_fault invpcid_single pti fsgsbase bmi1 hle avx2 smep bmi2 erms invpcid rtm rdseed adx xsaveopt
+versions of relevant libraries:
+[pip3] flake8==6.0.0
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.22.3
+[pip3] numpydoc==1.5.0
+[pip3] torch==2.0.1
+[pip3] triton==2.0.0
+[conda] mkl                       2023.0.0         h84fe81f_25396    conda-forge
+[conda] mkl-service               2.4.0           py310h3605609_14    intel
+[conda] mkl_fft                   1.3.1           py310hcab1719_22    intel
+[conda] mkl_random                1.2.2           py310hbf47bc3_22    intel
+[conda] mkl_umath                 0.1.1           py310hf66a691_32    intel
+[conda] numpy                     1.22.3          py310hf0956d0_5    intel
+[conda] numpy-base                1.22.3          py310h45c9ace_5    intel
+[conda] numpydoc                  1.5.0              pyhd8ed1ab_0    conda-forge
+[conda] torch                     2.0.1                    pypi_0    pypi
+[conda] triton                    2.0.0                    pypi_0    pypi
+cc @ezyang @msaroufim @wconstab @ngimel @bdhirsh @anijain2305
+ def times2_loop(x):
+    for _ in range(10):
+        x *= 2
+    return x
+
+
+
+
+----------------------------------------Comment 23----------------------------------------
+
+🐛 bug
+according to the extending pytorch doc page, optional arguments are allowed in a torch.autograd.function. this works well when passing the optional argument as a positional argument, but fails when passing the optional argument as a keyword argument.
+to reproduce
+for example, consider the following minimal non-working example, which implements the custom function y = factor*sin(x):
+
+calling it with factor passed positional, or not at all, works fine:
+
+however, passing it as a keyword argument results in an error:
+
+expected behavior
+passing the optional argument as a keyword argument should match the behaviour when passing as a positional argument:
+
+this is useful for two reasons:
+
+it is consistent with standard python use, and helps to avoid unexpected behaviour
+sometimes it is useful to use custom functions to wrap 'black-box' numpy functions which evaluate their value and their gradient, and don't have a torch equivalent. in a lot of cases, these depend on keyword arguments, and it would be nice to be able to specify **kwargs in the static forward method signature.
+
+environment
+pytorch version: 1.0.1.post2
+is debug build: no
+cuda used to build pytorch: none
+os: ubuntu 14.04.5 lts
+gcc version: (ubuntu 5.5.0-12ubuntu1~14.04) 5.5.0 20171010
+cmake version: version 3.2.2
+python version: 3.6
+is cuda available: no
+cuda runtime version: no cuda
+gpu models and configuration: no cuda
+nvidia driver version: no cuda
+cudnn version: no cuda
+versions of relevant libraries:
+[pip3] numpy==1.13.3
+[pip3] torch==1.0.1.post2
+[pip3] torchvision==0.2.1
+[conda] could not collect
+cc @ezyang @alband @zou3519 @gqchen @pearu @nikitaved @soulitzer @lezcano @varal7
+ import torch
+import numpy as np
+
+class mysin(torch.autograd.function):
+
+    @staticmethod
+    def forward(ctx, input, factor=1):
+        args = input.detach().numpy()
+        res = factor*np.sin(args)
+        ctx.save_for_backward(input)
+        ctx.factor = factor
+        return torch.from_numpy(res)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        args = ctx.saved_tensors[0].detach().numpy()
+        jacobian = ctx.factor*np.diag(np.cos(args))
+        grad_input = torch.from_numpy(grad_output.numpy().t @ jacobian)
+        return grad_input, none
+
+my_sin = mysin.apply
+
+
+>>> x = torch.autograd.variable(torch.tensor([0.812]), requires_grad=true)
+>>> out = my_sin(x, 6)
+>>> out.backward()
+>>> print(x.grad, 6*np.cos(0.812))
+tensor([4.1283]) 4.12829088343
+
+
+>>> x = torch.autograd.variable(torch.tensor([0.812]), requires_grad=true)
+>>> out = my_sin(x, factor=6)
+>>> out.backward()
+>>> x.grad
+---------------------------------------------------------------------------
+typeerror                                 traceback (most recent call last)
+<ipython-input-60-d83054d85504> in <module>()
+      1 x = torch.autograd.variable(torch.tensor([0.812]), requires_grad=true)
+----> 2 out = my_sin(x, factor=6)
+      3 out.backward()
+      4 x.grad
+
+typeerror: apply() takes no keyword arguments
+
+
+>>> x = torch.autograd.variable(torch.tensor([0.812]), requires_grad=true)
+>>> out = my_sin(x, factor=6)
+>>> out.backward()
+>>> print(x.grad, 6*np.cos(0.812))
+tensor([4.1283]) 4.12829088343
+
+
+
+----------------------------------------Comment 24----------------------------------------
+
+onnx export fails for trivial torch.autograd.function
+the torch.autograd.function is very useful solution for training gpt3-like models with multi-gpu code.
+it was used in very efficient implementation of transformer training developed by nvidia:
+https://github.com/nvidia/megatron-lm/blob/main/megatron/mpu/random.py#l319
+the pytorch onnx trace can't correctly interpret simple usage of this function like this:
+
+it generates error for unknown checkpoint.function python operator:
+
+to reproduce
+steps to reproduce the behavior:
+import torch
+
+class checkpointfunction(torch.autograd.function):
+    @staticmethod
+    def forward(ctx, run_function, *args):
+        return run_function(*args)
+
+def checkpoint(function, *args):
+    
+class net(torch.nn.module):
+    def __init__(self):
+        super(net, self).__init__()
+  
+    def forward(self, input):
+        def custom_forward(*inputs):
+            x_ = inputs[0]
+            return x_
+
+        return checkpoint(custom_forward, input)
+
+  
+model = net()
+input = torch.zeros(2)
+output = model(input, )
+print(output)
+
+with torch.no_grad():
+    torch.onnx.export(model, (input, ), './check.onnx',)
+the output from script:
+traceback (most recent call last):
+  file "./apply_onnx.py", line 35, in <module>
+    output = model(input, )
+  file "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1051, in _call_impl
+    return forward_call(*input, **kwargs)
+  file "./apply_onnx.py", line 27, in forward
+    return checkpoint(custom_forward, input)
+  file "./apply_onnx.py", line 16, in checkpoint
+    attributeerror: type object 'checkpointfunction' has no attribute 'apply'
+root@nvdl-bsg-intel01:/mnt/nvdl/usr/piotrm/src/pytorch_multi_node# vim apply_onnx.py
+root@nvdl-bsg-intel01:/mnt/nvdl/usr/piotrm/src/pytorch_multi_node# python3 ./apply_onnx.py
+tensor([0., 0.])
+traceback (most recent call last):
+  file "./apply_onnx.py", line 36, in <module>
+    torch.onnx.export(model, (input, ), './check.onnx',)
+  file "/opt/conda/lib/python3.8/site-packages/torch/onnx/__init__.py", line 271, in export
+    return utils.export(model, args, f, export_params, verbose, training,
+  file "/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py", line 88, in export
+    _export(model, args, f, export_params, verbose, training, input_names, output_names,
+  file "/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py", line 690, in _export
+    proto, export_map = graph._export_onnx(
+
+defined at:
+./apply_onnx.py(12): checkpoint
+./apply_onnx.py(23): forward
+/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py(1039): _slow_forward
+/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py(1051): _call_impl
+/opt/conda/lib/python3.8/site-packages/torch/jit/_trace.py(118): wrapper
+/opt/conda/lib/python3.8/site-packages/torch/jit/_trace.py(127): forward
+/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py(1051): _call_impl
+/opt/conda/lib/python3.8/site-packages/torch/jit/_trace.py(1160): _get_trace_graph
+/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py(373): _trace_and_get_graph_from_model
+/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py(409): _create_jit_graph
+/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py(445): _model_to_graph
+/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py(676): _export
+/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py(88): export
+/opt/conda/lib/python3.8/site-packages/torch/onnx/__init__.py(271): export
+./apply_onnx.py(36): <module>
+
+
+graph we tried to export:
+graph(%input : float(2, strides=[1], requires_grad=0, device=cpu)):
+  %1 : float(2, strides=[1], requires_grad=0, device=cpu) = ^checkpointfunction(<function net.forward.<locals>.custom_forward at 0x7f75e83ebdc0>)(%input) # ./apply_onnx.py:12:0
+  return (%1)
+
+
+expected behavior
+trivial model with one input/output should be generated by onnx trace.
+environment
+
+additional context
+cc @bowenbao @neginraoof
+ return checkpointfunction.apply(function, *args)
+
+
+
+runtimeerror: onnx export failed: couldn't export python operator checkpointfunction
+
+
+
+import torch
+
+class checkpointfunction(torch.autograd.function):
+    @staticmethod
+    def forward(ctx, run_function, *args):
+        return run_function(*args)
+
+def checkpoint(function, *args):
+    return checkpointfunction.apply(function, *args)
+
+class net(torch.nn.module):
+    def __init__(self):
+        super(net, self).__init__()
+  
+    def forward(self, input):
+        def custom_forward(*inputs):
+            x_ = inputs[0]
+            return x_
+
+        return checkpoint(custom_forward, input)
+
+  
+model = net()
+input = torch.zeros(2)
+output = model(input, )
+print(output)
+
+with torch.no_grad():
+    torch.onnx.export(model, (input, ), './check.onnx',)
+
+
+traceback (most recent call last):
+  file "./apply_onnx.py", line 35, in <module>
+    output = model(input, )
+  file "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1051, in _call_impl
+    return forward_call(*input, **kwargs)
+  file "./apply_onnx.py", line 27, in forward
+    return checkpoint(custom_forward, input)
+  file "./apply_onnx.py", line 16, in checkpoint
+    return checkpointfunction.apply(function, *args)
+attributeerror: type object 'checkpointfunction' has no attribute 'apply'
+root@nvdl-bsg-intel01:/mnt/nvdl/usr/piotrm/src/pytorch_multi_node# vim apply_onnx.py
+root@nvdl-bsg-intel01:/mnt/nvdl/usr/piotrm/src/pytorch_multi_node# python3 ./apply_onnx.py
+tensor([0., 0.])
+traceback (most recent call last):
+  file "./apply_onnx.py", line 36, in <module>
+    torch.onnx.export(model, (input, ), './check.onnx',)
+  file "/opt/conda/lib/python3.8/site-packages/torch/onnx/__init__.py", line 271, in export
+    return utils.export(model, args, f, export_params, verbose, training,
+  file "/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py", line 88, in export
+    _export(model, args, f, export_params, verbose, training, input_names, output_names,
+  file "/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py", line 690, in _export
+    proto, export_map = graph._export_onnx(
+runtimeerror: onnx export failed: couldn't export python operator checkpointfunction
+
+defined at:
+./apply_onnx.py(12): checkpoint
+./apply_onnx.py(23): forward
+/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py(1039): _slow_forward
+/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py(1051): _call_impl
+/opt/conda/lib/python3.8/site-packages/torch/jit/_trace.py(118): wrapper
+/opt/conda/lib/python3.8/site-packages/torch/jit/_trace.py(127): forward
+/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py(1051): _call_impl
+/opt/conda/lib/python3.8/site-packages/torch/jit/_trace.py(1160): _get_trace_graph
+/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py(373): _trace_and_get_graph_from_model
+/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py(409): _create_jit_graph
+/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py(445): _model_to_graph
+/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py(676): _export
+/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py(88): export
+/opt/conda/lib/python3.8/site-packages/torch/onnx/__init__.py(271): export
+./apply_onnx.py(36): <module>
+
+
+graph we tried to export:
+graph(%input : float(2, strides=[1], requires_grad=0, device=cpu)):
+  %1 : float(2, strides=[1], requires_grad=0, device=cpu) = ^checkpointfunction(<function net.forward.<locals>.custom_forward at 0x7f75e83ebdc0>)(%input) # ./apply_onnx.py:12:0
+  return (%1)
+
+
+
+
+pytorch version: 1.9.0a0+c3d40fd
+is debug build: false
+cuda used to build pytorch: 11.3
+rocm used to build pytorch: n/a
+
+os: ubuntu 20.04.2 lts (x86_64)
+gcc version: (ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+clang version: could not collect
+cmake version: version 3.20.4
+libc version: glibc-2.31
+
+python version: 3.8.10 | packaged by conda-forge | (default, may 11 2021, 07:01:05)  [gcc 9.3.0] (64-bit runtime)
+python platform: linux-4.15.0-121-generic-x86_64-with-glibc2.10
+is cuda available: true
+cuda runtime version: 11.3.109
+gpu models and configuration: gpu 0: nvidia graphics device
+nvidia driver version: 470.42.01
+cudnn version: probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.2.1
+hip runtime version: n/a
+miopen runtime version: n/a
+
+versions of relevant libraries:
+[pip3] numpy==1.20.3
+[pip3] nvidia-dlprof-pytorch-nvtx==1.2.0
+[pip3] pytorch-quantization==2.1.0
+[pip3] pytorch-transformers==1.1.0
+[pip3] torch==1.9.0a0+c3d40fd
+[pip3] torchtext==0.10.0a0
+[pip3] torchvision==0.10.0a0
+[conda] magma-cuda110             2.5.2                         5    local
+[conda] mkl                       2019.5                      281    conda-forge
+[conda] mkl-include               2019.5                      281    conda-forge
+[conda] numpy                     1.20.3           py38h9894fe3_1    conda-forge
+[conda] nvidia-dlprof-pytorch-nvtx 1.2.0                    pypi_0    pypi
+[conda] pytorch-quantization      2.1.0                    pypi_0    pypi
+[conda] pytorch-transformers      1.1.0                    pypi_0    pypi
+[conda] torch                     1.9.0a0+c3d40fd          pypi_0    pypi
+[conda] torchtext                 0.10.0a0                 pypi_0    pypi
+[conda] torchvision               0.10.0a0                 pypi_0    pypi
+
+
+
+
+
+----------------------------------------Comment 25----------------------------------------
+
+🐛 describe the bug
+it would be great if dynamo supported tracing through a torch.autograd.function where inputs can be tensor subclasses.  currently this doesn't work.  this will be useful for ensuring float8 training code is pt2.0 traceable.  currently seeing:
+
+repro: https://gist.github.com/vkuzo/56d54666e4e59b439ac0300094732872
+concise logs: https://gist.github.com/vkuzo/2b0e37aa76a61033ee0eda7ff1d8d5a4
+verbose logs: https://gist.github.com/vkuzo/0ef0845390c43fc2f551b24f3a9a7801
+versions
+master
+cc @ezyang @alband @zou3519 @gqchen @pearu @nikitaved @soulitzer @lezcano @varal7 @msaroufim @wconstab @bdhirsh @anijain2305 @voznesenskym @penguinwu @eikanwang @jgong5 @guobing-chen @xiaobingsuper @zhuhaozhe @blzheng @xia-weiwen @wenzhe-nrv @jiayisunx @chenyang78 @aakhundov
+   file "/data/users/vasiliy/pytorch/torch/_dynamo/variables/builder.py", line 1304, in wrap_fx_proxy_cls
+    assert "source" in options and options["source"] is not none
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+
+----------------------------------------Comment 26----------------------------------------
+
+we will have a list of graph breaks with the minimized repro for the hack{day/week}.
+(assigned task to @yanboliang temporarily before we start the hackday)
+dynamo graph breaks
+
+ [easy] [dynamo] tb hf_reformer graph breaks #101154
+ [easy] [dynamo] graph break: call_method nnmodulevariable() _conv_forward #101155
+ [easy] dynamo does not support methods defined on namedtuples #91662
+ [medium] [dynamo] symbolic_convert returns valueerror: cell is empty #97115
+ [easy] [dynamo] unsupported: comparison nnmodulevariable() <built-in function eq> nnmodulevariable() #102338
+ [easy] [dynamo] support several missing torch.* ops #102340
+ [easy] [dynamo] dynamo struggles with in-line dicts where keys are types #101980
+ [easy] [easy] graph break on module.buffers #102877
+ [easy] [dynamo] diffusers - graph break on ordereddict  #102878
+ [easy] [dynamo] graph break on itertools.chain #102879
+ [easy] graph break caused by funcs defined in torch._c in dynamo #103125
+
+other dynamo issues
+
+ [easy] [torch.compile] add explain as a backend #102053
+ [easy] torch.compile raises datadependentoutputexception with torch.autograd.set_detect_anomaly #100854
+ [medium] sufficiently deep nesting + inlining + closure fails with keyerror #99639
+ [medium] [torch.compile] doesn't support permute(*tensor) #98973
+ [medium] [torch.compile] reduces nn.parameter incorrectly to make the execution of model fail #99569
+
+ [medium] ^^ followup to the above issue, which was worked-around with a graph break but underlying aot autograd + nn.parameter issue still exists
+
+
+ [easy] [dynamo] call_function builtinvariable and op returned non-tensor cause graph breaks #99752
+ [easy] dynamo doesn't support user defined decorator #93340
+ [easy] [dynamo] torch.autograd.function bug #103139
+
+newly added ones during hackaday
+
+ from avik - https://www.internalfb.com/phabricator/paste/view/p763199946
+ from zhengxu - [dynamo] python 3.11: attributeerror: 'torch._c.dynamo.eval_frame._pyinterpreterframe' object has no attribute 'f_lineno' #103210
+
+other pt2 stack issues
+
+ debuggability + inductor: inductor: nameerror: name 'math_floor' is not defined when running fx_graph_runnable.py #97778
+ [medium] [pt2] provide public api to get compile options/configs #101832
+ model benchmarks - [inductor] flaky rexnet_100 accuracy tests #96759
+ make explain pretty - pretty dataclass dynamo explain #102869
+
+hard ones
+
+ aot autograd - shape error when training hf deberta-base with inductor #96456
+ [hard] stop importing huggingface transformers in dataclassvariable #100386
+ [hard] [vague] [dynamo][be] revisit call_method of nnmodulevariable #102063
+
+ 
+----------------------------------------Comment 27----------------------------------------
+
+🐛 describe the bug
+changes introduced in #84774 broke the composition of function modes when used with torch.autograd.function. here's a reproducer:
+
+reverting #84774 fixes the problem.
+versions
+latest master.
+cc @hameerabbasi @rgommers @peterbell10 @ezyang @chillee @zou3519 @alband @samdow
+ import torch
+
+class errormode(torch.overrides.torchfunctionmode):
+    def __torch_function__(
+        self,
+        orig_func,
+        types,
+        args = (),
+        kwargs = none,
+    ):
+        if kwargs is none:
+            kwargs = {}
+        raise runtimeerror("test")
+        return orig_func(*args, **kwargs)
+
+class passthrough(torch.overrides.torchfunctionmode):
+    def __torch_function__(
+        self,
+        orig_func,
+        types,
+        args = (),
+        kwargs = none,
+    ):
+        if kwargs is none:
+            kwargs = {}
+        return orig_func(*args, **kwargs)
+
+# taken from
+# https://pytorch.org/tutorials/beginner/examples_autograd/polynomial_custom_function.html
+class legendrepolynomial3(torch.autograd.function):
+    @staticmethod
+    def forward(ctx, input):
+        ctx.save_for_backward(input)
+        return 0.5 * (5 * input ** 3 - 3 * input)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        input, = ctx.saved_tensors
+        with errormode():
+            result = grad_output * 1.5 * (5 * input ** 2 - 1)
+        return result
+
+p3 = legendrepolynomial3.apply
+x = torch.randn(2, requires_grad=true)
+
+def func(x):
+    y = p3(x)
+    return torch.autograd.grad([y], [x], [torch.ones_like(y)])
+
+try:
+    func(x)
+except runtimeerror as e:
+    print(f"error message: {e}")
+
+# should raise "runtimeerror: test" but doesn't
+try:
+    with passthrough():
+        func(x)
+        print("no error!")
+except runtimeerror as e:
+    print(f"error message: {e}")
+
+
+
+----------------------------------------Comment 28----------------------------------------
+
+🐛 bug
+
+i want to test custom op and convert pytorch to onnx,but:
+
+
+
+my code is:
+
+
+
+my enviroment is :
+
+pytorch 1.9.0,
+4.the complete error is:
+warning: unsupported operator qconv. no schema registered for this operator.
+warning: unsupported operator qconv. no schema registered for this operator.
+warning: unsupported operator qconv. no schema registered for this operator.
+graph(%input : float(1, 3, 224, 224, strides=[150528, 50176, 224, 1], requires_grad=0, device=cpu),
+      %conv1.weight : float(64, 3, 3, 3, strides=[27, 9, 3, 1], requires_grad=1, device=cpu),
+      %conv1.bias : float(64, strides=[1], requires_grad=1, device=cpu)):
+  %3 : float(1, 64, 222, 222, strides=[3154176, 49284, 222, 1], requires_grad=1, device=cpu) = onnx::conv[dilations=[1, 1], group=1, kernel_shape=[3, 3], pads=[0, 0, 0, 0], strides=[1, 1]](%input, %conv1.weight, %conv1.bias) # /home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/nn/modules/conv.py:439:0
+  %output : float(1, 64, 222, 222, strides=[3154176, 49284, 222, 1], requires_grad=1, device=cpu) = onnx::qconv(%3) # /home/user/workspace/project/centernet/src/lr_onnx2.py:27:0
+  return (%output)
+
+
+cc @bowenbao @neginraoof
+ traceback (most recent call last):
+  file "/home/user/workspace/project/centernet/src/lr_onnx2.py", line 45, in <module>
+    torch.onnx.export(
+  file "/home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/onnx/__init__.py", line 275, in export
+    return utils.export(model, args, f, export_params, verbose, training,
+  file "/home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/onnx/utils.py", line 88, in export
+    _export(model, args, f, export_params, verbose, training, input_names, output_names,
+  file "/home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/onnx/utils.py", line 718, in _export
+    _check_onnx_proto(proto)
+runtimeerror: no op registered for qconv with domain_version of 9
+
+==> context: bad node spec: input: "3" output: "output" name: "qconv_1" op_type: "qconv"
+
+
+
+import math
+import time
+import torch
+import torch.nn as nn
+import numpy as np
+from torch.autograd import function
+import torch.nn.functional as f
+import torch.onnx.symbolic_helper as sym_help
+from torch.autograd.function import once_differentiable
+import json
+from torch.nn.modules.utils import _pair
+from torch.onnx.symbolic_helper import parse_args
+
+class quantizer(function):
+    @staticmethod
+    def symbolic(g,input):
+        return g.op('qconv',input)
+    @staticmethod
+    def forward(ctx, input):
+        return torch.round(input * 3) / 3
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        return grad_output,none
+
+def quantize(input):
+    return quantizer.apply(input)
+    
+class testm(nn.module):
+    def __init__(self):
+        super(testm,self).__init__()
+        self.conv1=nn.conv2d(3,64,3)
+        self.quant=quantize
+
+    def forward(self,input):
+        output=self.conv1(input)
+        output=self.quant(output)
+        return output
+
+if __name__=='__main__':
+
+    model=testm()
+    input=torch.ones(1,3,224,224)
+   
+    torch.onnx.export(
+        model,
+        input,
+        'test.onnx',
+        input_names=["input"],
+        output_names=['output'],
+        verbose=true
+    )
+
+
+
+warning: unsupported operator qconv. no schema registered for this operator.
+warning: unsupported operator qconv. no schema registered for this operator.
+warning: unsupported operator qconv. no schema registered for this operator.
+graph(%input : float(1, 3, 224, 224, strides=[150528, 50176, 224, 1], requires_grad=0, device=cpu),
+      %conv1.weight : float(64, 3, 3, 3, strides=[27, 9, 3, 1], requires_grad=1, device=cpu),
+      %conv1.bias : float(64, strides=[1], requires_grad=1, device=cpu)):
+  %3 : float(1, 64, 222, 222, strides=[3154176, 49284, 222, 1], requires_grad=1, device=cpu) = onnx::conv[dilations=[1, 1], group=1, kernel_shape=[3, 3], pads=[0, 0, 0, 0], strides=[1, 1]](%input, %conv1.weight, %conv1.bias) # /home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/nn/modules/conv.py:439:0
+  %output : float(1, 64, 222, 222, strides=[3154176, 49284, 222, 1], requires_grad=1, device=cpu) = onnx::qconv(%3) # /home/user/workspace/project/centernet/src/lr_onnx2.py:27:0
+  return (%output)
+
+traceback (most recent call last):
+  file "/home/user/workspace/project/centernet/src/lr_onnx2.py", line 45, in <module>
+    torch.onnx.export(
+  file "/home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/onnx/__init__.py", line 275, in export
+    return utils.export(model, args, f, export_params, verbose, training,
+  file "/home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/onnx/utils.py", line 88, in export
+    _export(model, args, f, export_params, verbose, training, input_names, output_names,
+  file "/home/user/anaconda3/envs/pytorch/lib/python3.8/site-packages/torch/onnx/utils.py", line 718, in _export
+    _check_onnx_proto(proto)
+runtimeerror: no op registered for qconv with domain_version of 9
+
+==> context: bad node spec: input: "3" output: "output" name: "qconv_1" op_type: "qconv"
+
+
+
+
+----------------------------------------Comment 29----------------------------------------
+
+i have an auto-encoder as below (in pseudo-code):
+
+i now compute a custom loss on output. this custom loss is a pytorch extension that i myself wrote. it has both forward and backward defined as illustrated for writing extensions:
+
+then in my training code:
+
+now, i want to compute the hessian of the loss wrt the intermediate code tensor (the bottleneck of the auto-encoder).
+the code is a tensor of size [1,32] (a 32-dimensional bottleneck layer).
+from other answers written for the same question, i know i can do this:
+
+all of the above runs, but double_grad is computed as a zero matrix of 32x32 (all entries zero).
+if i replace the loss with nn.mseloss() , then double_grad gets correct values. but that's not the case for my custom_loss
+i believe, that is because, i also need to provide the 2nd derivative of my custom loss w.r.t the reconstruction (output of decoder).
+but, where do i provide it? i can easily compute the 2nd derivative of my custom operation w.r.t the output of network, and i want to provide something like double_backward to the torch.autograd.function implementation of my operation, so that the second backward operation can use it to compute the hessian.
+can someone tell me how to solve this? any method is fine, the above suggestion of double_backward is simply to explain the problem i'm facing.
+thanks!
+ code = encoder(x)  # x is input
+reconstruction = decoder(code) 
+
+
+
+class customlossfunction(torch.autograd.function):
+    @staticmethod
+    def forward(ctx,reconstruction,x):
+         loss = some_operation(reconstruction,x)
+         return loss
+
+    @staticmethod
+    def backward(ctx,grad_output):
+        gradient = some_operation(reconstruction,x,grad_output)
+        return gradient
+
+class customloss(torch.nn.module):
+    def forward(self,reconstruction,x):
+        return customlossfunction.apply(reconstruction,x)
+
+
+
+custom_loss = customloss()
+code = encoder(x)
+reconstruction = decoder(code)
+loss = custom_loss(reconstruction,x)
+
+
+
+grad = torch.autograd.grad(loss,code,create_graph=true)
+# loss is scalar, so grad is same size as code : [1,32]
+
+double_grad = torch.autograd.grad(grad,code,grad_outputs=torch.ones_like(grad))
+# expectation is a 32x32 hessian
+
+
+
+
+----------------------------------------Comment 30----------------------------------------
+
+🐛 bug
+(pardon my posts from a few days back about memory leak, i'm in the middle of hunting memory leaks in my applications)
+i extended pytorch with torch.autograd.function to write the gradient of some functionals (i.e. functions that receives other functions as their inputs), but i found a memory leak when there is a circular reference with the functionals.
+to reproduce
+
+when i run the code above, i got
+
+expected behavior
+no memory leak should happen.
+in the example code above, i put a comment no_memleak_if to indicate how to remove the memory leak.
+only one no_memleak_if should be followed to remove the leak.
+however, the memory leak should not appear even if the code is like above.
+environment
+
+pytorch version (e.g., 1.0): 1.8.0a0+4803eaf
+os (e.g., linux): linux
+how you installed pytorch (conda, pip, source): source
+build command you used (if compiling from source): python setup.py install
+python version: 3.8.5
+cuda/cudnn version: 11.1
+gpu models and configuration: titan x
+any other relevant information: -
+
+additional context
+i cannot do ctx.save_for_backward(fcn) because fcn is a method, not a tensor.
+cc @ezyang @alband @zou3519 @gqchen @pearu @nikitaved @soulitzer @jlin27 @mruberry
+ import torch
+
+def functional(fcn, y0):
+    params = fcn.__self__.parameters()  # assuming fcn is a method of `torch.nn.module`
+    return functional.apply(fcn, y0, *params)  # no_memleak_if: params is an empty list
+
+class functional(torch.autograd.function):
+    @staticmethod
+    def forward(ctx, fcn, y0, *params):
+        y = fcn(y0)
+        ctx.fcn = fcn  # no_memleak_if: removing this line, but fcn is needed in backward
+        return y
+
+class dummymodule(torch.nn.module):
+    def __init__(self, a):
+        super().__init__()
+        self.a = torch.nn.parameter(a)
+        x0 = torch.ones_like(a)
+        xsol = functional(self.forward, x0)  # no_memleak_if: changing this line to self.forward(x0)
+        self.xsol = xsol  # no_memleak_if: removing this line or using xsol.detach()
+
+    def forward(self, x):
+        return self.a * x
+
+def test_functional():
+    a = torch.ones((200000000,), dtype=torch.double, device=torch.device("cuda"))
+    model = dummymodule(a)
+
+for i in range(5):
+    test_functional()
+    torch.cuda.empty_cache()
+    print("memory allocated:", float(torch.cuda.memory_allocated() / (1024 ** 2)), "mib")
+
+
+$ python memtest.py
+memory allocated: 3052.0 mib
+memory allocated: 6104.0 mib
+memory allocated: 9156.0 mib
+traceback (most recent call last):
+  file "memtest.py", line 34, in <module>
+    test_functional()
+  file "memtest.py", line 31, in test_functional
+    model = dummymodule(a)
+  file "memtest.py", line 20, in __init__
+    x0 = torch.ones_like(a)
+runtimeerror: cuda out of memory. tried to allocate 1.49 gib (gpu 0; 11.91 gib total capacity; 10.43 gib already allocated; 918.25 mib free; 10.43 gib reserved in total by pytorch)
+
+
+
+
+----------------------------------------Comment 31----------------------------------------
+
+🐛 bug
+when i define a custom torch.autograd.function that call torch.nn.functional.conv_transpose2d, cudnn is not called.
+to reproduce
+
+enable cudnn logging with export cudnn_loginfo_dbg=1; export cudnn_logdest_dbg=/tmp/cudnn/log
+define and call a custom function that call f.conv_transpose2d
+check the logs: they are empty
+
+example:
+
+expected behavior
+cudnn should be called. if we replace functionconvtranspose2d_.apply by f.conv_transpose2d, the logs are not empty.
+environment
+
+additional context
+f.conv2d works correctly inside a function.
+code and demo at https://gist.github.com/mfatthieubizien/97b86866e1dfb40872306c58544366e4/revisions
+additional questions
+
+is there a workaround?
+what performance impact can i expect?
+if i want to patch that, where should i look?
+
+cc @ezyang @ssnl @alband @zou3519 @gqchen
+ import torch
+from torch.nn import functional as f
+from torch.autograd import function
+class functionconvtranspose2d_(function):
+    @staticmethod
+    def forward(ctx, input, weight, bias=none, stride=1, padding=0, dilation=1, groups=1):
+        return f.conv_transpose2d(input, weight, bias, stride, padding, dilation, groups)
+x = torch.rand((1, 8, 32, 32)).cuda().requires_grad_()
+weight = torch.rand(8, 8, 8, 1).cuda().requires_grad_()
+bias = torch.rand(8).cuda().requires_grad_()
+functionconvtranspose2d_.apply(x, weight, bias, 2)
+
+
+
+pytorch version: 1.2.0
+is debug build: no
+cuda used to build pytorch: 10.0.130
+
+os: ubuntu 18.04.2 lts
+gcc version: (ubuntu 7.4.0-1ubuntu1~18.04.1) 7.4.0
+cmake version: could not collect
+
+python version: 3.7
+is cuda available: yes
+cuda runtime version: could not collect
+gpu models and configuration: 
+gpu 0: geforce rtx 2080 ti
+gpu 1: geforce rtx 2080 ti
+
+nvidia driver version: 410.104
+cudnn version: /usr/lib/x86_64-linux-gnu/libcudnn.so.7.5.0
+
+versions of relevant libraries:
+[pip] numpy==1.17.1
+[pip] torch==1.2.0
+[pip] torchvision==0.4.0a0+6b959ee
+[conda] mkl                       2019.4                      243  
+[conda] pytorch                   1.2.0           py3.7_cuda10.0.130_cudnn7.6.2_0    pytorch
+[conda] torchvision               0.4.0                py37_cu100    pytorch
+
+
+
+
+----------------------------------------Comment 32----------------------------------------
+
+hi all,
+i am having this issue where the backward() of a custom torch.autograd.function is not called, when said function is not directly applied to a leaf variable.
+my pytorch version is 0.3.0.post4.
+thanks!
+-gabriel huang
+
+output:
+
+ import torch
+import torch.autograd as autograd
+import torch.nn as nn
+
+class myfun(torch.autograd.function):
+    @staticmethod
+    def forward(ctx, x):
+        return x
+
+    @staticmethod
+    def backward(ctx, grad_out):
+        grad_input = grad_out.clone()
+        print 'custom backward called!'
+        return grad_input * 666
+
+    
+print '***** myfun(x) ***** \n'
+x = autograd.variable(torch.tensor([1]), requires_grad=true)
+z = myfun.apply(x)
+z.backward()
+print 'gradient', x.grad  # this is 666, which is correct.
+
+print '***** myfun(x+1) ***** \n'
+x = autograd.variable(torch.tensor([1]), requires_grad=true)
+z = myfun.apply(x+1)
+z.backward()
+print 'gradient', x.grad  # this should be 666, not 1.
+
+
+***** myfun(x) ***** 
+
+custom backward called!
+gradient variable containing:
+ 666
+[torch.floattensor of size 1]
+
+***** myfun(x+1) ***** 
+
+gradient variable containing:
+ 1
+[torch.floattensor of size 1]
+
+
+
+----------------------------------------Comment 33----------------------------------------
+
+🚀 feature
+both leakyrelu and elu need about twice the vram for storing tensors for the backward-passes.
+this results from the out-of-place versions storing the input-tensor for the gradient calculation with autograd, where saving the output-tensor would be valid as well. however, the output-tensors are often already saved by the following layer, so that only one instead of two tensors would have to be saved when saving only the output-tensor, similar to relu #63027.
+however, this needs an adaptation of the autograd generation to allow some saved-tensors to be set at run-time.
+motivation
+leakyrelu is a standard activation function and used by many nets, where especially for convolutional networks the size of data-tensors is mostly restricting the network size regarding the vram, so that needing half the vram for activation functions enables the use of larger networks.
+the in-place version of leakyrelu and elu does already use the output-tensor instead of the input-tensor. however, they need to restrict other input parameter e.g. for leakyrelu negative_slope >= 0. with out-of-place versions being the standard used activation functions in pytorch, many users are using the more vram needy version, where it also inconsistent for out-of-place and in-place versions using different restrictions needing a differing amount of vram.
+pitch
+for the new version, both leakyrelu and elu save for e.g. negative_slope >= 0 for leakyrelu the output-tensor result for gradient calculations instead of the input-tensor self. for e.g. negative_slope < 0, the input-tensor self has to be saved, due being ambiguous regarding the gradient calculations #63027.
+there are multiple ways to realize that with derivatives.yaml. however, so far saved tensors are determined at compile-time, so that gen_autograd.py would need to be improved to allow setting some tensors to be saved at run-time depending on the function parameters e.g. save_tensor = negative_slope.to<double>() >= 0 ? result : self;.
+option 1
+determine saved tensor sets for both negative_slope >= 0 and negative_slope < 0 at compile time, and save only the tensors of the set corresponding to whether negative_slope is larger or smaller than 0.
+new derivatives.yaml:
+
+option 2:
+use a new variable similar to how return works, where the variable is set during run-time.
+new derivatives.yaml:
+
+alternatives
+do nothing. however, this uses twice the vram for both leakyrelu and elu.
+additional context
+the following script shows an implementation of the requested functionality for leakyrelu when using torch.autograd.function. it shows the time needed for forward + backward propagation in a closed-loop set-up of 10 iterations, and the vram needed without the input-tensors and network parameter.
+its results show that about half the vram is needed for negative_slope >= 0, and the same vram for negative_slope < 0.
+
+output negative_slope >= 0
+new leakyrelu:
+forward + backward: 0.56s,
+forward (vram):     2.95gb,
+backward (vram):    1.49gb
+leakyrelu:
+forward + backward: 0.54s,
+forward (vram):     5.37gb,
+backward (vram):    1.49gb
+max abs difference prediction: 0.00e+00
+max abs difference grad:       0.00e+00
+output negative_slope < 0
+new leakyrelu:
+forward + backward: 0.59s,
+forward (vram):     5.37gb,
+backward (vram):    1.49gb
+leakyrelu:
+forward + backward: 0.53s,
+forward (vram):     5.37gb,
+backward (vram):    1.49gb
+max abs difference prediction: 0.00e+00
+max abs difference grad:       0.00e+00
+cc @ezyang @alband @zou3519 @gqchen @pearu @nikitaved @soulitzer @lezcano @varal7 @mruberry @jbschlosser
+ - name: leaky_relu(tensor self, scalar negative_slope=0.01) -> tensor
+  self: "negative_slope.to<double>() >= 0 ? leaky_relu_backward(grad, result, negative_slope, true) else leaky_relu_backward(grad, self, negative_slope, false)"
+  result: auto_element_wise
+
+
+- name: leaky_relu(tensor self, scalar negative_slope=0.01) -> tensor
+  save: "negative_slope.to<double>() >= 0 ? result : self"
+  self: leaky_relu_backward(grad, save, negative_slope, false)
+  result: auto_element_wise
+
+
+import torch as th
+from torch import nn
+import time
+
+from torch.nn import functional
+from torch.autograd import function
+
+iteration = 10
+device = 0
+negative_slope = 0.01
+shape = [1, 256, 512, 512]
+
+
+class leakyrelufunction(function):
+    @staticmethod
+    def forward(ctx, input: th.tensor, negative_slope=1e-2) -> th.tensor:
+        relu = functional.leaky_relu(input, negative_slope)
+        ctx.save_for_backward(relu if negative_slope >= 0 else input)
+        ctx.negative_slope = negative_slope
+        return relu
+
+    @staticmethod
+    def backward(ctx, grad: th.tensor):
+        relu, = ctx.saved_tensors
+        negative_slope = ctx.negative_slope
+        grad *= negative_slope * (relu <= 0) + (relu > 0)
+        return grad, none
+
+
+class leakyrelu(nn.module):
+    def __init__(self, negative_slope: float = 1e-2):
+        super(leakyrelu, self).__init__()
+        self.negative_slope = negative_slope
+
+    def forward(self, input: th.tensor) -> th.tensor:
+        return leakyrelufunction.apply(input, self.negative_slope)
+
+
+def speed_test(model: nn.module, module: nn.module, input: th.tensor, output: th.tensor, criterion, iteration=10):
+    device = input.device
+    module = module.to(device=device)
+
+    input.grad = none
+    input.requires_grad_()
+
+    model = model.to(device=device)
+
+    th.cuda.synchronize()
+    th.cuda.reset_peak_memory_stats()
+    vram_0 = th.cuda.max_memory_allocated()
+    time_0 = time.time()
+
+    prediction = input
+    for _ in range(iteration):
+        prediction = model(prediction)
+        prediction = module(prediction)
+
+    th.cuda.synchronize()
+    vram_forward = th.cuda.max_memory_allocated()
+    loss = criterion(prediction, output)
+    loss.backward()
+
+    th.cuda.synchronize()
+    print(f'forward + backward: {time.time() - time_0:1.2f}s, \n'
+          f'forward (vram):     {(vram_forward - vram_0)/1e9:1.2f}gb, \n'
+          f'backward (vram):    {(th.cuda.max_memory_allocated() - vram_forward) / 1e9:1.2f}gb')
+
+    return prediction, input.grad
+
+
+if __name__ == "__main__":
+    device = th.device(device)
+
+    input = th.rand(size=shape, device=device)
+    label = th.rand_like(input)
+
+    model = nn.conv2d(
+        in_channels=input.shape[1],
+        out_channels=input.shape[1],
+        kernel_size=(3, 3),
+        padding=(1, 1),
+        bias=true).to(device=device)
+
+    criterion = nn.mseloss()
+
+    # for initializing device
+    for _ in range(10):
+        criterion(model(input), label).backward()
+
+    print('new leakyrelu:')
+    pr_new = speed_test(model, leakyrelu(negative_slope=negative_slope), input, label, criterion, iteration)
+
+    print('')
+    print('leakyrelu:')
+    pr_relu = speed_test(model, nn.leakyrelu(negative_slope=negative_slope), input, label, criterion, iteration)
+
+    print('')
+    print(f'max abs difference prediction: {th.max((pr_new[0] - pr_relu[0]).abs()).detach().cpu():1.2e}')
+    print(f'max abs difference grad:       {th.max((pr_new[1] - pr_relu[1]).abs()).detach().cpu():1.2e}')
+
+
+
+----------------------------------------Comment 34----------------------------------------
+
+not sure if this is a bug or expected behavior, but opening the issue for discussion/clarification. in the following repro, b is not used for loss computation and therefore i'd expect the gradient for the linear layer self.b to stay as none, however, the gradient is 0:
+
+this produces the output:
+
+it looks like since out[1] is not used in computing loss, the torch.autograd.function fills in a 0 for the corresponding grad tensor in grad_outputs, and as a result, the .grad field gets set to 0.  however, this particular torch.autograd.function as defined doesn't really do anything (it just forwards the inputs/outputs) so i would expect it the resulting gradients to not be different than if the torch.autograd.function was not used. when the torch.autograd.function usage is omitted from the forward pass, the gradient for b is not touched as expected:
+
+ideally i would expect it to be the same even with the torch.autograd.function, since the gradients are not modified at all. would appreciate any comments/thoughts on this, thank you!
+cc @ezyang @alband @zou3519 @gqchen @pearu @nikitaved @soulitzer @lezcano
+ import torch
+import torch.nn as nn
+from torch.autograd import function
+
+
+class passthrough(function):
+    @staticmethod
+    def forward(ctx, *inputs):
+        return inputs
+
+    @staticmethod
+    def backward(ctx, *grad_outputs):
+        print(f"grad_outputs {grad_outputs}")
+        return grad_outputs
+
+
+class mymodel(nn.module):
+    def __init__(self):
+        super().__init__()
+        self.a = nn.linear(1, 1, bias=false)
+        self.b = nn.linear(1, 1, bias=false)
+
+    def forward(self, x):
+        a, b = self.a(x), self.b(x)
+        ret = a, b
+        new_a, new_b = passthrough.apply(a, b)
+        ret = new_a, new_b
+        return ret
+
+model = mymodel()
+
+def print_grads():
+    for param_name, param in model.named_parameters():
+        print(f"{param_name} : {param.grad}")
+
+
+inp = torch.ones(1)
+print("-- before backward ---")
+model.zero_grad()
+print_grads()
+
+model.zero_grad()
+out = model(inp)
+loss = out[0].sum()
+print("calling backward...")
+loss.backward()
+print("-- after bwd --")
+print_grads()
+
+
+
+-- before backward ---
+a.weight : none
+b.weight : none
+calling backward...
+grad_outputs (tensor([1.]), tensor([0.]))
+-- after bwd --
+a.weight : tensor([[1.]])
+b.weight : tensor([[0.]])
+
+
+
+-- before backward ---
+a.weight : none
+b.weight : none
+calling backward...
+-- after bwd --
+a.weight : tensor([[1.]])
+b.weight : none
+
+
+
+
+----------------------------------------Comment 35----------------------------------------
+
+🐛 describe the bug
+some internal models use once_differentiable. the error message is very opaque:
+
+returns
+
+cc @ezyang @gchanan @kadeng @msaroufim @wconstab @bdhirsh @anijain2305 @voznesenskym @penguinwu @eikanwang @jgong5 @guobing-chen @xiaobingsuper @zhuhaozhe @blzheng @xia-weiwen @wenzhe-nrv @jiayisunx @chenyang78 @aakhundov
+error logs
+no response
+minified repro
+no response
+versions
+main
+ import torch
+from typing import *
+from torch.autograd.function import once_differentiable
+
+
+class scalegradient(torch.autograd.function):
+    @staticmethod
+    def forward(ctx, x):
+        return x
+
+    @staticmethod
+    @once_differentiable
+    def backward(ctx, grad):
+        return grad * 0.5
+
+x = torch.randn(3, requires_grad=true)
+def f(x):
+    return scalegradient.apply(x)
+output = torch.compile(f, backend='eager', fullgraph=true)(x)
+
+
+unsupported: inline in skipfiles: scalegradient.backward  | wrapper /raid/rzou/pt/debug-cpu2/torch/aut
+ograd/function.py
+
+from user code:
+   file "<ipython-input-20-149cb1010897>", line 18, in f
+    return scalegradient.apply(x)
+  file "/raid/rzou/pt/debug-cpu2/torch/_dynamo/variables/misc.py", line 241, in trampoline_autograd_bw
+d
+    return fn_cls.backward(*args, **kwargs)
+
+set torch_logs="+dynamo" and torchdynamo_verbose=1 for more information
+
+
+you can suppress this exception and fall back to eager by setting:
+    import torch._dynamo
+    torch._dynamo.config.suppress_errors = true
+
+
+
+
+
+----------------------------------------Comment 36----------------------------------------
+
+
+ add autograd wrappers for ops that use sizes in their derivatives: [lazy] add torch.autograd.function wrappers for the following ops in order to support dynamic shapes #68287
+ add autograd wrappers for ops that take sizes as their arguments in forward. [lazy] add torch.autograd.function wrappers for the following ops in order to support dynamic shapes #68298
+ support zeros and zeros_like in lazy ts backend, as autograd calls zeros_like and zeros : 
+
+
+pytorch/torch/csrc/autograd/custom_function.cpp
+
+
+         line 33
+      in
+      71b89a9
+
+
+
+
+
+
+ // todo: we could use zeros_like here or another callback to generate at.zeros(t.size()) 
+
+
+
+
+
+ replace sum_to with sum_to_size and check if it works through a dispatcher
+ add a python binding to generate a check that gradients for outputs match output shapes in ltc ir: 
+
+
+pytorch/torch/autograd/__init__.py
+
+
+         line 36
+      in
+      71b89a9
+
+
+
+
+
+
+ # todo: add an ltc op to do the check 
+
+
+
+
+
+ generate a list of compound ops that use  sizes for hf_bert, maskrcnn
+ rewrite compound ops that use sizes in python or handle size() in c++
+
+ 
+----------------------------------------Comment 37----------------------------------------
+
+torch.autograd.function with multiple outputs returns outputs not requiring grad
+if the forward function of a torch.autograd.function takes in multiple inputs and returns them as outputs, the returned outputs don't require grad. see repro below:
+
+according to the output, after applying passthrough, the outputs no longer require grad, causing an error in the backward pass:
+
+the following, which uses just a single tensor instead of a tuple of 2 tensors, works as expected:
+
+output:
+
+my question is, is torch.autograd.function not intended to be used this way or should it work correctly with multiple output tensors?
+cc @ezyang @alband @zou3519 @gqchen @pearu @nikitaved @soulitzer
+ import torch
+import torch.nn as nn
+from torch.autograd import function
+
+
+class passthrough(function):
+    @staticmethod
+    def forward(ctx, input):
+        ctx.save_for_backward(input)
+        return input
+
+    @staticmethod
+    def backward(ctx, grad_outputs):
+        print(f"grad_outputs {grad_outputs}")
+        return grad_outputs
+
+
+class mymodel(nn.module):
+    def __init__(self):
+        super().__init__()
+        self.a = nn.linear(1, 1, bias=false)
+        self.b = nn.linear(1, 1, bias=false)
+
+    def forward(self, x):
+        a, b = self.a(x), self.b(x)
+        ret = a, b
+        print(f"in fwd pass {ret[0].requires_grad}")
+        ret = passthrough.apply(ret)
+        print(f"after passthrough {ret[0].requires_grad}")
+        return ret
+
+
+model = mymodel()
+inp = torch.ones(1)
+out = model(inp)
+loss = out[0] + out[1]
+loss.backward()
+
+
+
+in fwd pass true
+after passthrough false
+traceback (most recent call last):
+  file "<string>", line 38, in <module>
+  file "<string>", line 36, in __run
+  file "/usr/local/fbcode/platform009/lib/python3.8/runpy.py", line 194, in _run_module_as_main
+    return _run_code(code, main_globals, none,
+  file "/usr/local/fbcode/platform009/lib/python3.8/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  file "/data/users/rvarm1/fbsource/fbcode/buck-out/dev/gen/scripts/rvarm1/ddp/ddp_custom_function#link-tree/scripts/rvarm1/ddp/ddp_custom_function.py", line 44, in <module>
+  file "/data/users/rvarm1/fbsource/fbcode/buck-out/dev/gen/scripts/rvarm1/ddp/ddp_custom_function#link-tree/torch/_tensor.py", line 255, in backward
+    torch.autograd.backward(self, gradient, retain_graph, create_graph, inputs=inputs)
+  file "/data/users/rvarm1/fbsource/fbcode/buck-out/dev/gen/scripts/rvarm1/ddp/ddp_custom_function#link-tree/torch/autograd/__init__.py", line 146, in backward
+    variable._execution_engine.run_backward(
+runtimeerror: element 0 of tensors does not require grad and does not have a grad_fn
+
+
+
+import torch
+import torch.nn as nn
+from torch.autograd import function
+
+
+class passthrough(function):
+    @staticmethod
+    def forward(ctx, input):
+        ctx.save_for_backward(input)
+        return input
+
+    @staticmethod
+    def backward(ctx, grad_outputs):
+        print(f"grad_outputs {grad_outputs}")
+        return grad_outputs
+
+
+class mymodel(nn.module):
+    def __init__(self):
+        super().__init__()
+        self.a = nn.linear(1, 1, bias=false)
+        self.b = nn.linear(1, 1, bias=false)
+
+    def forward(self, x):
+        a, b = self.a(x), self.b(x)
+        ret = a
+        print(f"in fwd pass {ret.requires_grad}")
+        ret = passthrough.apply(ret)
+        print(f"after passthrough {ret.requires_grad}")
+        return ret
+
+
+model = mymodel()
+inp = torch.ones(1)
+out = model(inp)
+out.sum().backward()
+
+
+
+in fwd pass true
+after passthrough true
+grad_outputs tensor([1.])
+
+
+
+
+----------------------------------------Comment 38----------------------------------------
+
+pytorch checks if tensors have been modified in-place to ensure correctness of the backward operation, with ctx.save_for_backward and ctx.saved_tensors in the forward and backward methods of subclasses of torch.autograd.function. this check does not appear to function when the saved tensor is not the 'owner' of its storage, e.g. when it is the result of a view or transpose operation.
+to reproduce:
+
+expected behaviour is for an exception to be raised on the line y.backward(torch.rand_like(y)), in the same manner as an exception is raised on the line yy.backward(torch.rand_like(yy)).
+
+pytorch version (e.g., 1.0): 1.2
+os (e.g., linux): linux
+how you installed pytorch (conda, pip, source): conda
+python version: 3.7.4
+
+cc @ezyang @ssnl @alband
+ import torch
+
+class f(torch.autograd.function):
+    @staticmethod
+    def forward(ctx, tensor1):
+        # make sure we don't share storage with our input
+        # (just to be clear that that's not what's going wrong)
+        tensor2 = tensor1.clone()
+        # tensor3 shares storage with tensor2
+        # tensor3 = tensor2.view(-1) etc. would also demonstrate the problem
+        tensor3 = tensor2.t()
+        ctx.save_for_backward(tensor3)
+        return tensor3
+    @staticmethod
+    def backward(ctx, grad):
+        # trigger correctness check
+        _ = ctx.saved_tensors
+        return grad.t().clone()
+
+
+x = torch.rand(2, 3, requires_grad=true)
+y = f.apply(x)
+y += 1
+# does not raise an error; this is the bug.
+y.backward(torch.rand_like(y))
+
+
+# in constrast, the following code correctly raises an error.
+class ff(torch.autograd.function):
+    @staticmethod
+    def forward(ctx, tensor1):
+        tensor2 = tensor1.clone()
+        ctx.save_for_backward(tensor2)
+        return tensor2
+    @staticmethod
+    def backward(ctx, grad):
+        _ = ctx.saved_tensors
+        return grad.clone()
+
+xx = torch.rand(2, 3, requires_grad=true)
+yy = ff.apply(xx)
+yy += 1
+yy.backward(torch.rand_like(yy))
+
+
+
+----------------------------------------Comment 39----------------------------------------
+
+add torch.autograd.function wrappers for the following ops similar to 
+
+
+pytorch/lazy_tensor_core/test/dynamic_lazy_tensor5.py
+
+
+        lines 22 to 35
+      in
+      71b89a9
+
+
+
+
+
+
+ class autogradexpand(torch.autograd.function): 
+
+
+
+ @staticmethod 
+
+
+
+ def forward(ctx, self, size): 
+
+
+
+ ctx.save_for_backward(self) 
+
+
+
+ print("running expand forward") 
+
+
+
+ t = lazy_tensor_core._lazyc._dynamic_expand2(self, size._n) 
+
+
+
+ return t 
+
+
+
+ 
+
+
+
+ @staticmethod 
+
+
+
+ def backward(ctx, grad_output): 
+
+
+
+ # todo: we need sum_to for expand 
+
+
+
+ print("running expand backward") 
+
+
+
+         (input,) = ctx.saved_tensors 
+
+
+
+ return lazy_tensor_core._lazyc._sum_to_size(grad_output, input.sizes()._n), none 
+
+
+
+
+
+
+ as_strided(tensor(a) self, int[] size, int[] stride, int? storage_offset=none) -> tensor(a)
+ as_strided_(tensor(a!) self, int[] size, int[] stride, int? storage_offset=none) -> tensor(a!)
+ empty.memory_format(int[] size, *, scalartype? dtype=none, layout? layout=none, device? device=none, bool? pin_memory=none, memoryformat? memory_format=none) -> tensor
+ empty_strided(int[] size, int[] stride, *, scalartype? dtype=none, layout? layout=none, device? device=none, bool? pin_memory=none) -> tensor
+ expand(tensor(a) self, int[] size, *, bool implicit=false) -> tensor(a)
+ view(tensor(a) self, int[] size) -> tensor(a)
+
+ 
+----------------------------------------Comment 40----------------------------------------
+
+🐛 describe the bug
+@chillee nerdsniped me into thinking about how to get aotautograd working on higher order derivatives. for a moment, let's forget about the actual compilation aspect, and just focus on what it would take to trace out and then reconstruct a torch.autograd.function that supports higher order derivatives.
+the basic hazard, as laid out in @zdevito's  https://colab.research.google.com/drive/1vpee6uveprz9hmshh1ks0xxxjyu533ec?usp=sharing is that saved tensors for backwards may receive gradient contributions when run in a higher order context. if we trace only a single backwards, we won't ever see such contributions (because they're always zero in this case.)
+so what ingredients do we need for our torch.autograd.function?
+
+we need to explicitly return every saved tensor for backwards as an output of the torch.autograd.function, so that they are able to receive gradients when used, and
+we need a way to specify additional gradients for the saved tensors when we run backwards
+
+if we have (1), we automatically have (2), since we can add the list of tensors to the outputs argument of torch.autograd.grad, and then just specify the extra gradient contributions we wanted to provide with grad_outputs. so all we need is something like torch.autograd.saved_for_backwards(outputs, inputs) which returns a list of all tensors which were saved for backwards given the graph specified by outputs and inputs, so that we can additionally return them as outputs.
+then, aotautograd can simply perform this query, and add the saved tensors for backwards as extra outputs to the forward function they trace. graph partitioning is then trivial, as the cut points are exactly uses of these saved tensors.
+versions
+master
+cc @ezyang @alband @zou3519 @gqchen @pearu @nikitaved @soulitzer @lezcano @varal7
+ 
+----------------------------------------Comment 41----------------------------------------
+
+🐛 bug
+symbolic_override was removed but no mechanism is provided (at least not in a documented way) to replicate its function, i.e. to specify that a python function should be exported as a whole, as a specific onnx op, instead of a traced graph.
+to reproduce
+steps to reproduce the behavior:
+
+use symbolic_override
+pull torch master
+symbolic_override no longer works
+
+expected behavior
+symbolic_override still exists or there is a way to emulate it.
+environment
+pytorch version: 1.0.0a0+8e1e3ba
+is debug build: no
+cuda used to build pytorch: 9.2.88
+os: ubuntu 16.04.3 lts
+gcc version: (ubuntu 5.4.0-6ubuntu1~16.04.10) 5.4.0 20160609
+cmake version: version 3.12.0-rc2
+python version: 3.5
+is cuda available: yes
+cuda runtime version: 9.2.88
+gpu models and configuration:
+gpu 0: titan x (pascal)
+gpu 1: titan x (pascal)
+nvidia driver version: 396.26
+cudnn version: 7.2.1
+versions of relevant libraries:
+[pip3] numpy (1.13.3)
+[pip3] torch (1.0.0a0+8e1e3ba)
+[pip3] torchfile (0.1.0)
+[pip3] torchvision (0.1.9)
+[conda] could not collect
+additional context
+symbolic_override was removed here:
+#13441
+specifically:
+59b7539
+one can use a torch.autograd.function but then you have to implement the backward separately which i want autograd to do automatically. the only thing i need is that the function is exported as a single onnx operation.
+ 

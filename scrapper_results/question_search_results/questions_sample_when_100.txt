@@ -1,0 +1,424 @@
+
+ --------- org/blog/scaling-vision-model-training-platforms-with-pytorch/
+
+how to wrap normalization layers like layernorm in fp32 when use fsdp, do we have a example code?
+
+ --------- py output as i get a 404 not found error when trying to download?
+
+ --------- we wonder if this is already an ongoing process for the torch team and when should we expect to have this feature in the future?
+
+ --------- o
+[100%] linking cxx executable example
+[100%] built target example
+but get a error when i run it:
+
+is something wrong while i used the c++ api?  what can i do?
+
+ --------- this results are the same when:
+
+with input tensor of 1000 or 10000000
+when using 1 or 4 cores (my laptop has 4 physical cores)
+
+is this the expected behaviour? will cuda path be affected too?
+
+ --------- example code:
+
+even though the output is correct, dynamo seems to break the graph when the user stream context is seen -
+
+it seems there is no graph captured for the ops in the user stream context, as there is a no graph with relu (op in the user stream context in the example code) seen below -
+
+is there a way to capture the user stream ops in a graph via dynamo?
+
+ --------- why is cpu utilization so low when using openblas as blas?
+
+ --------- yet i get an error when i try to train the second model?
+
+ --------- cpp line 4763， there are so many tricks for the op with 'device' argument, such as init cuda device, torch::utils::maybe_initialize_cuda(options);
+
+when i  want to use a new backend which also need to init like cuda, so i want to add some code to make my backend running fine, it is that ok ?
+
+ --------- when will there be support for ppc64el arch?  i read an old post that said never!  is this still the consensus?
+
+ --------- this error message should be raised too when the output_size is bigger than 3?
+
+ --------- data。will pytorch's support for onnx export be enhanced, extended or optimized in the future?
+when there are operations in the model that do not support onnx export, are there any suggestions other than modifying the pytorch model according to the constraints?
+
+ --------- is there any problems when i use flutter to build a pytorth_android apk?
+
+ --------- shape[0]/batch_size)
+train_dataset = tensordataset(x_train,y_train)
+sampler= mysamplerforbalancedbatches(train_dataset, n_classes, batch_size,steps)
+train_loader = dataloader(train_dataset, shuffle=false, sampler=sampler)
+"
+i am not sure it is working as i expect, when i try to check what the function dataloader gives me back by using:
+"for sample in train_loader:
+print(sample[0])
+break"
+i have this error:
+<indexerror: tensors used as indices must be long, byte or bool tensors>
+does anyone know how to solve this problem?
+
+ --------- during training my training and validation set accuracies are fairly high in the regions of 99% for both sets, however when i attempt to test my model on a number of unseen test images, i always get the same label? would you know what the reason for this is?is this a bug?
+
+ --------- however when i profile the full network when training (forward pass + backward), i get the following:
+
+now in this case the bilinear operation (which has to be the one calling the trilinear operation), uses more than 98% of the total time, which to me suggests that the operation either has a bug or is highly unoptimized?
+
+ --------- i find that when i install the pytorch from source, i can install the magma by "conda install -c pytorch magma-cuda80", however, when i install the pytorch by "conda install pytorch torchvision -c pytorch", it seems that the magma does not be installed, why? do i need install it extraly?
+
+ --------- )
+i was wondering - perhaps there should be a warning or an exception when a non-cpu tensor is being created inside a worker process spawn by dataloader?
+or maybe an exception when a non-cpu tensor is being created inside a dataset in general?
+
+ --------- ❓ questions and help
+hi, i want to ask about the difference between the following two pieces of code:
+
+i passed vgg to model in  modeloutputs()
+and
+
+i'm just curious about what  the difference between the two pieces of code above for backward and forward is? when the loss backward, will the gradients be different?
+could someone help me?
+
+ --------- i have tried to set the batch size to 1 and num_workers to 0 but i get the following error when i do:
+
+any idea how to fix this?
+
+ --------- could you tell me when the function will available?
+
+ --------- 73
+
+additional context
+as mentioned above, this error is thrown when preparing the caffe2 backend for cuda device, and i managed to remove the warning by modifying the source here:
+
+unless this is the expected behavior?
+
+ --------- linear layer give an error when you feed it a matrix that has size different from the expected size?
+
+ --------- should they be different?
+which one is preferred?
+how wide spread is this?
+shouldn't thctensormathpointwise functions be used in thcunn operations when possible?
+opinions @gchanan @jekbradbury ?
+
+ --------- when i test the dll, i found i must add -include:?
+
+ --------- so,  is there any way to stop the subprocesses when the main process exits?
+
+ --------- should we put the dist call within the _sharding_worker_init_fn when the process group is already initialized?
+
+ --------- why?
+
+it would make it easier to detect when timeouts happen
+given the current behavior, a job could go on forever (or can it?
+
+ --------- cleanup passes return boolean to indicate if they successfully made a change
+
+ constant propagation (@eellison )
+ commonsubexpression elimination (@krovatkin)
+ removelistmutation (@penguinwu)
+ peepholeoptimizelistidioms (@penguinwu )
+ unrollconstantloops (@penguinwu )
+
+cleanup passes lazily initialize aliasdb when it is first needed
+
+ constant propagation (@eellison )
+ removelistmutation (@penguinwu )
+[x ] commonsubexpression elimination (@krovatkin)
+ eliminatedeadcode (maybe do this one a bit later)(@desertfire)
+
+cleanup passes only call eliminatedeadcode if they successfully made a change
+
+ constant propagation (@eellison )
+
+other misc:
+
+ separate out non-tensor (scalar peephole optimizations?
+
+ --------- 🐛 describe the bug
+i get the following when running the above combination:
+
+in my case, the error seems to be reported but the job doesn't crash and just hangs, which is interesting and might be related to other collectives going on?
+
+ --------- when removing all but this two lines the code runs fine too:
+
+any ideas how to fix this?
+
+ --------- actually, i wondered also, why does this not throw an exception, such that it only works when both inputs are on the same device?
+
+ --------- my code is very simple gan code which just fit the sin(x) function:
+
+but when i runing it got this error:
+
+is there something wrong with my code?
+
+ --------- maybe an indexing error when translating from lua ?
+
+ --------- for example,
+
+if a user function returns a cuda tensor, calling that function through rpc should still return a cpu tensor, or should we try to load that tensor onto the corresponding gpu?
+when calling rpc with a cuda tensor as argument, does the callee always get a cpu tensor, or should we try to load it to the corresponding gpu?
+
+ --------- 📚 the doc issue
+old params were removed, now how to disable check on onnx when export?
+suggest a potential alternative/fix
+also, why disable this feature?
+
+ --------- i am getting this:
+
+i wonder if there is some forgotten initialization code that is not getting called when linked statically?
+static library build not being tested and broken?
+
+ --------- what was your thinking when implementing this ?
+
+ --------- to fine-tune with fsdp:
+
+following how do i freeze weights when using fsdp?
+
+ --------- should pytorch flag to users when the default device isn't matching the device the op is run on?
+
+ --------- when trying to add/modify a function to take a tensor(a!)?
+
+ --------- however, when i do the following
+
+it outputs two integers and the type:
+200
+8
+[cpulongtype{2}]
+why is the type still cpulongtype?
+
+ --------- i guess this may work automagically when variables and tensors are unified?
+
+ --------- it's not yet fully developed or some other aspects must be taken into consideration when saving with jit a quantized model?
+
+ --------- ❓
+i write my own dataset and use to dataloader, when i set dataloader worker to n > 1, then when training, i record data time for construct batch, and network forward/backward time, the log show that, the first batch data time cost is very large, and then followed with n-1 very low time cost, and the repeat with the network time is very smooth, as follow:
+
+as i think maybe only the first batch is time cost, and then every batch will has a smooth batch data construct time cost, because of parallel backend load process, why the different in my practice?
+
+ --------- does anyone know which library contains the thpvariable_wrap function? when compiling i always get the same error message:
+error lnk2019: unresolved external symbol "__declspec(dllimport) struct _object * __cdecl thpvariable_wrap(class at::tensorbase)" (_imp?
+
+ --------- hi,dear
+just want to install the great pytorch, but when i use pip ,ups the error
+
+ubuntu1804,
+python37
+so what should i do ?
+
+ --------- is there any way to setup some parameters to use less memory when compiling ?
+
+ --------- 🐛 bug
+when building pytorch from source in windows using visual studio 2019, the compilation ulti8mately fails with an internal compiler error which is given bellow:
+build outout:
+
+linker errrors:
+
+to reproduce
+steps to reproduce the behavior:
+
+and this is what i did afterward:
+
+expected behavior
+should build just fine?
+
+ --------- when build_test=1, the first error is
+
+when build_test=0, the first error is
+
+i have two additional questions:
+
+why is gtest built when build_test=0?
+
+ --------- and when the training begins, intermediate variables use another half memory…
+does anyone find the same issue?
+
+ --------- to reproduce
+steps to reproduce the behavior:
+
+expected behavior
+option 1: prints an error when stream device and context device does not match?
+option 2: automatically switch to the inner most context?
+@colesbury any preference?
+
+ --------- for meta tensors
+what happens when one accesses the data_ptr for a meta tensor? meta tensors currently don't work with linalg_cholesky, but is the data_ptr read going to be problematic?
+
+ --------- what if we call tp_clear on a pytensor when it's part of a reference cycle, even though the cpptensor is still alive?
+
+ --------- 🐛 bug
+when i run the 2 gpu at the same time in docker environment(nvidia-docker)
+it gives the broken pipe error
+what is the problem? and how to solve it?
+
+ --------- is there any way to free some memory when inference?
+
+ --------- however, what happens when you have a lopsided distribution of ignore pixels on one gpu using distributeddataparallel?
+
+ --------- ❓what does "it/s" when downloading pth file?
+
+ --------- so my question is: how can i specify a cuda target version for cudnn when building from source? or is there anything else that i am missing?
+
+ --------- or, instead, should we raise a warning or error when the input is a tensor?
+
+ --------- when you're returning the result of each draw, you're repeatedly sampling either the categorical distribution (the with replacement variant), or a distribution i cannot find a name for (draw?
+
+ --------- ❓ is this a feature or a bug
+when using the cross entropy with k-target class in a sequence application, is it expected to squeeze before calling the loss or we are suppose to just past a vector of minibatch_size, sequence_length, k-tag ?
+
+ --------- when running a100 server, should i only use images provided by nvidia?
+can't i install torch myself?
+
+ --------- 🐛 bug
+when i use funtion as below and change bucket_cap_mb form 20 to 25, the md5 of my grad has change,is there any one can explain about this?
+
+ --------- if that's the case then docs should reflect that and state that distributeddataparallel is faster only when you have n-nodes or n-gpus?
+
+ --------- this code firstly utilised dataloader function (`num_workers’=4) to load training data:
+train_loader = dataloader(train_dset, batch_size, shuffle=true, num_workers=4, collate_fn=trim_collate)
+then, in training process, it utilised a `for’ loop to load training data and train the model:
+for i, (v, norm_bb, q, target, _, _, bb, spa_adj_matrix, sem_adj_matrix) in enumerate(train_loader):
+error: i got the following error messages when running above `for’ loop:
+0%|          | 0/6934 [00:00<?, ?
+
+ --------- random seed, torch cpu cuda random seed, and use shuffle=false for dataloader,but the test result is different when i run the code next time with cuda,but normal on cpu,is there something to be set?
+
+ --------- when the default value was set as -100, was it intended to be used as as an invalid_ignore index?
+can models use -100 as invalid ignore_index?
+
+ --------- can i disable psimd during installation of pytorch from source? why is pytorch trying to download psimd to /pytorch/build/confu-srcs/psimd even when psimd_source_dir is defined? psimd is already in third_party packages, hence makes no sense why downloading is necessary?
+
+ --------- what’s missed when building the program?
+
+ --------- so i decided to write the tensors to disk and write an independent script:
+
+this worked completely fine! to test that the problem doesn't originate from any of the variables elementwise_smape depends on (model_outputs, numerator, denominator), i tried replacing the loss function with each of the dependent variables, but all worked!
+
+
+
+so what the hell is going on with the element-wise division that causes a problem when model_outputs are generated by the model, but not when model_outputs are loaded from disk?
+
+ --------- but when this multiplication is implemented in a for loop manner, how can we can the gradient of tensor ma or mb?
+
+ --------- does anyone have an explanation why performance would degrade when upgrading my version?
+
+ --------- see discussion in #41474 (comment)
+is the warning message from cmake outdated? if so since when? is that a mistake?
+
+ --------- so how to set batch_size when using dataparallel mode in pytorch? is it similiar with keras?
+
+ --------- 🐛 describe the bug
+when calling vmap with custom c++ functions, the gradients are broken:
+i'm basing this on the safetanh from torchrl
+
+i guess i should fix the c++ code in some way, but maybe we should raise an exception somewhere here?
+
+ --------- 🐛 describe the bug
+
+why this wanring appear when export onnx?
+how to avoid it? examples on how to add for cstomized symbolic function?
+
+ --------- for example, an (insane) mapping function like:
+
+will this always work(when tensors on gpu and cpu)?
+
+ --------- so what is it doing when batch size is 1?
+
+ --------- 0 not found when import torch?
+
+ --------- when i have a tensor x of shape [t, b, f], and i loop over t, would it be a good idea to have this code (when training)?
+
+if __getitem__ is not using sparse gradients, wouldn't it be better to have sparse gradients in this case? wouldn't it always be better to have sparse gradients?
+
+ --------- when i download the pytorch and install it ,then，can i install both pytorch and caffe and caffe2 together?
+
+ --------- and could you tell me when it is?
+
+ --------- is it possible to propagate preemption status in the message field when one does oc describe pytorch <job-name> ?
+
+ --------- any ideas on what is going wrong when backended by 'nccl' ?
+
+ --------- in many situations, like image enhancement, super-resolution, we need to deal with input image with arbitrary size,  training and testing in python is not a problem, but when i want to export the model with jit and load in libtorch c++ api, i couldn't find a way to deal with this
+the official demo have a predefined input size, if we want to to deal with arbitrary size, how can we manage to do that?
+
+ --------- 🚀 the feature, motivation and pitch
+when use fsdp, it need load model on cpu, but every process load which means it need 8 times cpu memory on a 8 gpu machine, causing insufficient cpu memory, is there any solution to this now?
+
+ --------- here is the output when i run valgrind:
+
+any ideas?
+
+ --------- in my project, if i do
+
+it all links and works great!
+but, if i do the following manually,
+
+it fails when i try to load the library with:
+
+what is find_package(torch) adding that i am missing?
+
+ --------- when i import torch under pytorch folder ,everyting is ok:
+~/pytorch python
+
+
+
+import torch
+
+
+
+but when i change to other folder like ~/pytorch/tools
+
+
+
+import torch
+i got an error like this:
+
+
+
+
+anyone know why?
+
+ --------- i was wondering if there were any potential compatibility issues when using fsdp full shard in conjunction with bf16 amp during training?
+i do understand that different mixed precision configurations can be selected through:
+
+but i am not sure if these predefined configurations will directly conflict with bf16 amp:
+
+or if they are even compatible at all?
+
+ --------- how do i go about calculating gradients when some of the layers are set to requires_grad=false?
+
+ --------- hi! i'm modifying some code pytorch-faster-rcnn, i after adding some layers and loss term, in the training, the loss is going down, but after several steps in inital training, all gradients goes to zeros, but loss still not low, i checked when beginning training the gradients are normal, very puzelled about this behavior, can someone give me some general clue of how to debug this kind of problem?
+
+ --------- after that when i try to link libtorch to the project i get the lnk2019 unresolved external symbol error?is there anyway to solve this
+severity	code	description	project	file	line	suppression state error	lnk2019	unresolved external symbol "__declspec(dllimport) public: struct c10::strongtypeptr & __cdecl c10::strongtypeptr::operator=(struct c10::strongtypeptr const &)" (__imp_??4strongtypeptr@c10@@qeaaaeau01@aebu01@@z) referenced in function "public: struct c10::ivalue::object & __cdecl c10::ivalue::object::operator=(struct c10::ivalue::object const &)" (??
+
+ --------- 0
+
+question 1: why is false treated as a list in the first test code?
+question 2: why can’t false be treated as a value of 0 on a higher version, because when compiled according to the bottom layer of python, false will be set to 0, so why does the program fail?
+
+ --------- support for weak references in intrusive pointer comes at a non-trivial performance cost:
+
+we must maintain an extra atomic refcount field for weak pointers
+when strong references go to zero we must do an extra atomic decref to the weak count
+we require an extra virtual method release_resources, meaning we do two virtual calls on destruction of all tensors
+
+can we remove weak reference support?
+
+ --------- py
+what i've noticed is that:
+when mode == -1, no activation checkpointing is applied, the gpu memory is:
+
+when mode == 0, use pytorch's checkpoint_wrapper, the gpu memory is:
+
+when mode == 1, use pytorch's checkpoint_wrapper with offload_to_cpu true, the gpu memory is:
+
+when mode == 2, use fairscale's checkpoint_wrapper, the gpu memory is:
+
+it is not clear to me why this is happening, is this expected?
+
+ --------- distributed command, i am not sure how to do this with qsub, when the gpus are in different machines, could you provide me with some initial script for this?
+
+ --------- so here is my question, why does pytorch need convert a int to int64 when export? how should we change it?
+
+ --------- given these premises, the standing issue was: when do we use single backticks or double backticks?

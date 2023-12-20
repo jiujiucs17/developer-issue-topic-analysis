@@ -1,0 +1,172 @@
+----------------------------------------Comment 1----------------------------------------
+
+Porting TH operators is essential for code simplicity and performance reasons.
+Porting guides and Q&A are available in umbrella issue: #24507
+Feel free to add @VitalyFedyunin as a reviewer to get a prioritized review.
+cc @ezyang @gchanan @zou3519 @bdhirsh @jbschlosser
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Mutliprocess spawn can segfault while exiting the parent process on glibc 2.31
+
+To Reproduce
+Steps to reproduce the behavior:
+
+Install pytorch 1.5.0 with pip on Ubuntu 20.04
+Run c10d_spawn unit test python3.8 pytorch/test/distributed/test_c10d_spawn.py
+Observe that all tests succeed, but that the process segfaults while exiting
+
+Expected behavior
+Parent process should exit cleanly
+Environment
+
+PyTorch Version (e.g., 1.0): 1.5.0
+OS (e.g., Linux): Ubuntu 20.04
+How you installed PyTorch (conda, pip, source): pip
+Build command you used (if compiling from source): n/a
+Python version: 3.8
+CUDA/cuDNN version: 10.2 / 7.6.5
+GPU models and configuration: 2x 980 Ti
+Any other relevant information:
+
+Additional context
+I compiled a debug build from source to get the backtrace.
+
+cc @ezyang @gchanan @zou3519 @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @xush6528 @osalpekar
+
+----------------------------------------Comment 1----------------------------------------
+
+test is flaky, example: https://github.com/pytorch/pytorch/runs/4054754297?check_suite_focus=true
+cc @ezyang @gchanan @zou3519 @bdhirsh @jbschlosser @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @SciPioneer @H-Huang
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+The following code
+
+gives tensor([inf, 0., 0., 0., 0., 0., 0.], dtype=torch.float64), as I expect. However, appending another 0 to x and another 1 to y seems to change the behaviour of div:
+
+gives tensor([nan, 0., 0., 0., 0., 0., 0., 0.], dtype=torch.float64).
+Why does the first element of the result change from inf to nan just because I made x and y longer?
+Versions
+1.11.0
+cc @ezyang @gchanan @zou3519
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Add a new test
+
+run this test, it will fail with something like
+
+It will not fail if you have a non-scalar tensor a
+cc @ezyang @gchanan @zou3519 @bdhirsh
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+
+Fails with
+
+If you rename inf to something else like y, it will pass.
+Versions
+master
+cc @gchanan @zou3519 @soumith @msaroufim @wconstab @ngimel @bdhirsh
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+torch.compile returns inconsistent value AvgPool when ceil_mode = True. I think this issue should be similar with #94775, which is MaxPool
+
+Versions
+
+Click to expand
+
+
+cc @ezyang @gchanan @zou3519 @soumith @msaroufim @wconstab @ngimel @bdhirsh @anijain2305
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+The minimal code to reproduce the error:
+
+which throws the following error:
+
+However, casting params to cfloat before hand works:
+
+and torch.cat but without casting also works:
+
+Versions
+PyTorch version: 1.10.1
+Is debug build: False
+CUDA used to build PyTorch: 11.3
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.2 LTS (x86_64)
+GCC version: (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+Clang version: Could not collect
+CMake version: version 3.10.2
+Libc version: glibc-2.31
+Python version: 3.9.10 | packaged by conda-forge | (main, Jan 28 2022, 19:23:19)  [GCC 9.4.0] (64-bit runtime)
+Python platform: Linux-5.4.0-66-generic-x86_64-with-glibc2.31
+Is CUDA available: False
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.22.1
+[pip3] torch==1.10.1
+[pip3] torch-tb-profiler==0.3.1
+[pip3] torchfile==0.1.0
+[pip3] torchnet==0.0.5.1
+[pip3] torchvision==0.11.2
+[conda] blas                      1.0                         mkl
+[conda] cudatoolkit               11.3.1               h2bc3f7f_2
+[conda] libblas                   3.9.0            12_linux64_mkl    conda-forge
+[conda] libcblas                  3.9.0            12_linux64_mkl    conda-forge
+[conda] liblapack                 3.9.0            12_linux64_mkl    conda-forge
+[conda] liblapacke                3.9.0            12_linux64_mkl    conda-forge
+[conda] mkl                       2021.4.0           h06a4308_640
+[conda] mkl-service               2.4.0            py39h7f8727e_0
+[conda] mkl_fft                   1.3.1            py39hd3c417c_0
+[conda] mkl_random                1.2.2            py39h51133e4_0
+[conda] numpy                     1.22.1                   pypi_0    pypi
+[conda] numpy-base                1.21.2           py39h79a1101_0
+[conda] pytorch                   1.10.1          py3.9_cuda11.3_cudnn8.2.0_0    pytorch
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torch-tb-profiler         0.3.1                    pypi_0    pypi
+[conda] torchfile                 0.1.0                    pypi_0    pypi
+[conda] torchnet                  0.0.5.1                  pypi_0    pypi
+[conda] torchvision               0.11.2               py39_cu113    pytorch
+cc @ezyang @gchanan @zou3519 @albanD @gqchen @pearu @nikitaved @soulitzer @lezcano @Varal7 @anjali411 @dylanbespalko @mruberry
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+torch.utils Cannot find reference 'utils' in '__init__.pyi | __init__.pyi' 
+To Reproduce
+Steps to reproduce the behavior:
+
+Expected behavior
+Expected there would be a hint on the content of the module after entering a dot
+Environment
+
+Additional context
+
+cc @ezyang @gchanan @zou3519 @ssnl @VitalyFedyunin @malfet @rgommers
+
+----------------------------------------Comment 1----------------------------------------
+
+The Transformer implementation docs (https://pytorch.org/docs/stable/nn.html?highlight=transformer#torch.nn.Transformer) state that they implement the original paper but fail to acknowledge that they don’t implement the following:
+
+Layer Norm as the default normalization option.
+Positional Encodings
+Embeddings before the encoding and decoding step
+
+It’s fine that these are all not implemented directly in the module but making it more clear that they aren’t and were in the original paper would be helpful.
+cc @ezyang @gchanan @zou3519 @bdhirsh @jbschlosser @brianjo @mruberry @albanD @walterddr @bhosmer @cpuhrsch @anjali411 @zhangguanheng66 @jlin27
+

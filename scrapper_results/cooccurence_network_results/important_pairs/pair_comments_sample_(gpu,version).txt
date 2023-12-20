@@ -1,0 +1,356 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+When exporting split operation to ONNX in opset13 with dynamic shape, it fails with "TypeError: 'NoneType' object is not subscriptable"
+To Reproduce
+Steps to reproduce the behavior:
+
+Run the following code
+
+
+Expected behavior
+It should export to ONNX with a dynamic input shape, same as for other ops.
+Environment
+Please copy and paste the output from our
+environment collection script
+(or fill out the checklist below manually).
+You can get the script and run it with:
+
+
+PyTorch Version (e.g., 1.0): 1.8.1+cu111
+OS (e.g., Linux): Ubuntu 20.04
+How you installed PyTorch (conda, pip, source): pip
+Python version: 3.7
+CUDA/cuDNN version: 11.1
+GPU models and configuration: V100-DGXS-32GB
+Any other relevant information:
+
+Additional context
+This is discovered when exporting HuggingFace BERT model to ONNX.
+cc @houseroad @spandantiwari @lara-hdr @BowenBao @neginraoof @SplitInfinity
+
+----------------------------------------Comment 1----------------------------------------
+
+Performance issue
+Noticed a significant difference in the performance of pytorch and exported onnx models with a simple conv layer.
+The difference is more than 5 times after warming up.
+Urgency
+none
+System information
+OS Platform and Distribution: Linux Ubuntu 18.04: Linux x86_64
+ONNX Runtime installed from (source or binary): binary
+ONNX Runtime version: onnxruntime-1.7.0
+Python version: Python 3.8.5
+Pytorch version: 1.8.1
+CUDA/cuDNN version: CUDA Version: 11.1
+GPU model and memory: Tesla V100 (32G)
+To Reproduce
+Run the script below with parameters
+reproduce onnx performance. The script creates onnx model on the fly.
+
+output
+
+reproduce pytorch
+
+output
+
+
+Full cudnn logs here
+updated_cudnn_logs.zip
+To get logs,traces pelase run:
+
+Expected behavior
+Onnx performance is the same as pytorch.
+Additional context
+Found that some arguments of cudnnConvolutionForward differ (cudnn log).
+pytorch
+
+onnx
+
+List of noted differences:
+
+xDesc.dimA and strideA onnx ([32,896,832,1] vs pytorch [32,896,1,832])
+convDesc.dataType onnx val=CUDNN_DATA_HALF (2) vs pytorch val=CUDNN_DATA_FLOAT (0)
+and time to time algo val becomes CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM instead of CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM
+
+Also
+In tracing used different matrix kernels
+pytorch: volta_fp16_s884cudnn_fp16_128x128_ldg8_relu_f2f_exp_large_nhwc2nchw_tn_v1
+onnx: implicit_convolve_hhgemm
+Could you please answer what is the cause of the differences?
+Why in pytorch version of cudnn example datatype not set to half?
+Or what do I wrong in benchmarking or onnx setup?
+UPDATE:
+
+Added io_binding. Copy result to cpu in both cases.
+Changed script params and updated timings. Now performance differs two times.
+Cudnn logs and gemm names updated.
+
+UPDATE 2:
+
+removed copy from gpy to cpu
+update performance comparison
+now pytorch  ~3.5 times faster.
+
+cc @houseroad @spandantiwari @lara-hdr @BowenBao @neginraoof @SplitInfinity @VitalyFedyunin @ngimel
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+torch.onnx.export exports invalid ONNX graph for the following function:
+
+The datatype of the constant 1.0 is identified as double. Then, the inputs of the add operator in 1.0 + torch.erf(x) are float tensor and double tensor, which is invalid in ONNX.
+Error message of ONNX Runtime:
+
+ONNX graph:
+
+However, torch.onnx.export works well when the torch.jit.script annotation is removed.
+To Reproduce
+Steps to reproduce the behavior:
+
+run the following code to export ONNX file
+input this ONNX file to ONNX Runtime
+
+import torch
+import torch.nn as nn
+
+
+class Model(nn.Module):
+    def __init__(self):
+        super(Model, self).__init__()
+
+    def forward(self, input):
+        return func(input)
+
+model = Model()
+model.eval()
+
+a = torch.ones(32, 32, dtype=torch.float32)
+torch.onnx.export(model, a, 'th_func.onnx', verbose=False, opset_version=11)
+
+Expected behavior
+Valid ONNX graph
+Environment
+Please copy and paste the output from our
+environment collection script
+(or fill out the checklist below manually).
+You can get the script and run it with:
+
+
+PyTorch Version (e.g., 1.0): 1.7.1
+OS (e.g., Linux): Ubuntu 16.04.7 LTS
+How you installed PyTorch (conda, pip, source): pip
+Build command you used (if compiling from source):
+Python version: 3.6
+CUDA/cuDNN version: 10.2/7.6.5
+GPU models and configuration: Tesla V100-PCIE-16GB
+Any other relevant information:
+
+Additional context
+cc @houseroad @spandantiwari @lara-hdr @BowenBao @neginraoof @gmagogsfm
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Python crashes with "Floating point exception (core dumped)" after running torch.tensor(0) / torch.tensor(0).
+To Reproduce
+
+Expected behavior
+Python shouldn't crash.
+Environment
+Collecting environment information...
+PyTorch version: 1.4.0
+Is debug build: No
+CUDA used to build PyTorch: 10.1
+OS: Ubuntu 18.04.3 LTS
+GCC version: (Ubuntu 7.4.0-1ubuntu1~18.04.1) 7.4.0
+CMake version: version 3.13.3
+Python version: 3.6
+Is CUDA available: Yes
+CUDA runtime version: 10.0.130
+GPU models and configuration:
+GPU 0: Tesla T4
+GPU 1: Tesla T4
+GPU 2: Tesla T4
+GPU 3: Tesla T4
+Nvidia driver version: 418.87.01
+cuDNN version: /usr/local/cuda-10.1/targets/x86_64-linux/lib/libcudnn.so.7.6.2
+Versions of relevant libraries:
+[pip3] numpy==1.18.0
+[pip3] pytorch-nlp==0.5.0
+[pip3] torch==1.4.0
+[conda] Could not collect
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+assert statements are not removed in jit graph even if -O is provided to python interpreter.
+To Reproduce
+
+Output:
+
+Expected behavior
+The assert statements should be removed when __debug__ is False. Please refer to https://docs.python.org/3/using/cmdline.html#cmdoption-o and https://docs.python.org/3/reference/simple_stmts.html#assert .
+Environment
+Collecting environment information...
+PyTorch version: 1.1.0
+Is debug build: No
+CUDA used to build PyTorch: 10.0.130
+OS: Ubuntu 18.04.1 LTS
+GCC version: (Ubuntu 7.3.0-27ubuntu1~18.04) 7.3.0
+CMake version: Could not collect
+Python version: 3.7
+Is CUDA available: Yes
+CUDA runtime version: 10.0.130
+GPU models and configuration: GPU 0: GeForce RTX 2080
+Nvidia driver version: 410.48
+cuDNN version: Probably one of the following:
+/usr/local/cuda-10.0/lib64/libcudnn.so.7.4.1
+/usr/local/cuda-10.0/lib64/libcudnn_static.a
+Versions of relevant libraries:
+[pip] Could not collect
+[conda] pytorch                   1.1.0           py3.7_cuda10.0.130_cudnn7.5.1_0    pytorch
+[conda] torchtext                 0.3.1                    pypi_0    pypi
+[conda] torchvision               0.2.2                      py_3    pytorch
+Additional context
+
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+When I take derivative of an element of an expanded tensor (or if such expression is a part of the graph) the derivative is incorrect.
+Code example
+
+The expected result is 1
+System Info
+PyTorch version: 0.4.0
+Is debug build: No
+CUDA used to build PyTorch: 8.0.61
+OS: Debian GNU/Linux 9.3 (stretch)
+GCC version: (Debian 6.3.0-18+deb9u1) 6.3.0 20170516
+CMake version: version 3.7.2
+Python version: 3.5
+Is CUDA available: Yes
+CUDA runtime version: 9.0.176
+GPU models and configuration:
+GPU 0: GeForce GTX 1080
+GPU 1: GeForce GTX 1080
+Nvidia driver version: 384.98
+cuDNN version: Probably one of the following:
+/usr/local/cuda-7.5/lib64/libcudnn.so.7.0.64
+/usr/local/cuda-7.5/lib64/libcudnn_static.a
+/usr/local/cuda-9.0/lib64/libcudnn.so.7.0.3
+/usr/local/cuda-9.0/lib64/libcudnn_static.a
+/usr/local/lib/python3.5/dist-packages/torch/lib/libcudnn-900fef33.so.7.0.5
+/usr/local/matlab90/bin/glnxa64/libcudnn.so.7.0.64
+
+----------------------------------------Comment 1----------------------------------------
+
+If you have a question or would like help and support, please ask at our
+forums.
+If you are submitting a feature request, please preface the title with [feature request].
+If you are submitting a bug report, please fill in the following details.
+my cpu is ppcle64
+
+PyTorch or Caffe2: i want to bulid pytorch
+How you installed PyTorch (conda, pip, source): pip
+Build command you used (if compiling from source):
+OS: Contens8
+PyTorch version:
+Python version:
+CUDA/cuDNN version:
+GPU models and configuration:
+GCC version (if compiling from source):
+CMake version:
+Versions of any other relevant libraries:
+
+
+----------------------------------------Comment 1----------------------------------------
+
+If you have a question or would like help and support, please ask at our
+forums.
+If you are submitting a feature request, please preface the title with [feature request].
+If you are submitting a bug report, please fill in the following details.
+Issue description
+Provide a short description.
+Code example
+Please try to provide a minimal example to repro the bug.
+Error messages and stack traces are also helpful.
+System Info
+Please copy and paste the output from our
+environment collection script
+(or fill out the checklist below manually).
+You can get the script and run it with:
+
+
+PyTorch or Caffe2:
+How you installed PyTorch (conda, pip, source):
+Build command you used (if compiling from source):
+OS:
+PyTorch version:
+Python version:
+CUDA/cuDNN version:
+GPU models and configuration:
+GCC version (if compiling from source):
+CMake version:
+Versions of any other relevant libraries:
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+torch.nn.functional.binary_cross_entropy_with_logits outputs NaN when input is empty or large
+torch.nn.functional.binary_cross_entropy outputs NaN when input is empty
+To Reproduce
+
+Output:
+
+
+Output:
+
+
+Output:
+
+Expected behavior
+Expect a grace exception message if the parameters are invalid or unexpected
+Environment
+PyTorch version: 1.8.0.dev20210126+cpu
+Is debug build: False
+CUDA used to build PyTorch: None
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.4 LTS (x86_64)
+GCC version: Could not collect
+Clang version: Could not collect
+CMake version: Could not collect
+Python version: 3.7 (64-bit runtime)
+Is CUDA available: False
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+cc @albanD @mruberry @jbschlosser
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Instaling pytorch nightly using the method suggested on the website results in a 404 error
+To Reproduce
+Steps to reproduce the behavior:
+
+Run
+
+
+Expected behavior
+Install pytorch nightly. This procedure worked a few weeks ago.
+Observed behavior
+
+Environment
+
+PyTorch Version (e.g., 1.0): Nightly
+OS (e.g., Linux): Debian 9 on a Google cloud VM
+Python version: 3.5
+CUDA/cuDNN version: 10.0
+GPU models and configuration: Tesla T4
+
+

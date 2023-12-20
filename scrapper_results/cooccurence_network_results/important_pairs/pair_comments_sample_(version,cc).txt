@@ -1,0 +1,162 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+(Note from @VitalyFedyunin: CPP implementation fails to report input/hidden sizes errors properly and returns cryptic asserts instead. Actual error hides is this line 
+
+
+pytorch/aten/src/ATen/native/cudnn/RNN.cpp
+
+
+         Line 1231
+      in
+      420b37f
+
+
+
+
+
+
+ int64_t hidden_size = hx.size(2); 
+
+
+
+
+ and similar for miopen).
+
+Hello,
+I am very new to Pytorch and trying to create a simple example using C++ frontend. After a long time of trying, I found out that I cannot get torch::nn::Sequential to work with torch::nn::RNN. Nor could I find any example code online where these two are combined.
+To Reproduce
+To reproduce the issue, use the following simple example
+
+The above code compiles but gives run-time error:
+
+If I declare time_serie_detector as torch::nn::RNN without using torch::nn::Sequential, there is no error occurring.
+Expected behavior
+I expected torch::nn::Sequential to be compatible with torch::nn::RNN.
+Environment
+PyTorch version: libtorch1.2.0
+Is debug build: N/A
+CUDA used to build PyTorch: N/A
+OS: Ubuntu 18.04.3 LTS
+GCC version: (Ubuntu 7.4.0-1ubuntu1~18.04.1) 7.4.0
+CMake version: version 3.13.3
+Python version: 2.7
+Is CUDA available: Yes
+CUDA runtime version: 10.2
+GPU models and configuration: GPU 0: GeForce GTX 1060 3GB
+Nvidia driver version: 430.26
+cuDNN version: /usr/lib/x86_64-linux-gnu/libcudnn.so.7.6.3
+cc @yf225
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+When installing PyTorch with CUDA support, I get really slow download speed (500Kbps) when it comes to CUDA packages (such as cuda-nvdisasm-11.8.8, libcufft-dev-10.9.0, nsight-compute-2022, ...) coming from the nvidia conda repo, whereas packages coming from the pytorch conda repo download at 250Mbps.
+This is using the recommended conda install instructions for PyTorch:
+conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
+This was less an issue with PyTorch 1.12 and earlier as there was the fastchan conda repo for such packages, but that's no longer the case with PyTorch 1.13 which explicitly requires packages from the nvidia repo.
+I'm on Windows 11, and based in France.
+Versions
+PyTorch 1.13
+cc @ezyang @gchanan @zou3519 @seemethere @malfet @ngimel @peterjc123 @mszhanyi @skyline75489 @nbcsm
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+When I run lintrunner in my local repo, rather than run ufmt on the changed files, it computes that all 700 python files are changed and attempts to format them (verified by using -v and looking at what files are passed to ufmt).
+When checking what lintrunner does to compute what files to change it runs a line like:
+
+However, there is no guarantee that the local master is meaningful or up-to-date. In fact, in this particular repo my master is nearly 3 years out of date, because the ghstack workflow doesn't require using branches of master to do work:
+
+Its possible this computation would be more meaningful using origin/master which is fetched when using ghstack.
+Versions
+all versions
+cc @ZainRizvi @kit1980 @huydhn @clee2000
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Originally reported by @fmassa
+Examples:
+
+
+Error logs
+No response
+Minified repro
+No response
+Versions
+main
+cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @voznesenskym @penguinwu @EikanWang @jgong5 @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @Xia-Weiwen @wenzhe-nrv @jiayisunx @chenyang78 @aakhundov @kadeng
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I was trying some loss functions and find the third derivative of torch.erf is NaN, which I think may be incorrect. The equation I wrote is torch.erf(torch.log(torch.exp(torch.reciprocal(y+x)+z))+x+y) and the input for x, y, z is 100., 70.78463832, 268.13439677. I found the third derivative of x, y, z are NaNs. However, if I simplify the equation to torch.erf(torch.reciprocal(y+x)+z+x+y), which is mathematical equivalent to the previous one because log(exp(x))=x, the third derivative of x, y, z are 0.0. Here is the code to reproduce this issue:
+
+For your reference, I also try the same equation on TensorFlow to calculate the third derivative and TensorFlow outputs 0.0.
+
+I also provide a gist to reproduce the result: https://colab.research.google.com/drive/1LlT9hqIeqDfl0koxJLx3_lbVM7bS1jPt?usp=sharing
+Versions
+1.13.0+cu116
+cc @ezyang @albanD @zou3519 @gqchen @pearu @nikitaved @soulitzer @lezcano @Varal7 @mruberry @kshitij12345
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+aot_eager backend wraps bw_compiler constantly on each graph break & recompilation, making the function call exceeds Python recursion limit for huge model or frequent recompilations. Repro example below
+
+Add the following lines to torch/_dynamo/optimizations/training.py and then run the above script, the results as follow
+
+
+Is this intended or a bug? What else can I do apart from reducing torch._dynamo.config.cache_size_limit and increasing sys.setrecursionlimit() to prevent this issue?
+Versions
+
+cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh @mlazos @voznesenskym @yanboliang @penguinwu @anijain2305 @EikanWang @jgong5 @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @Xia-Weiwen @wenzhe-nrv @jiayisunx @desertfire
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+After getting the error:
+
+As I'm running via conda I set this with:
+
+And restart the environment, checking !conda env config vars list, I can see PYTORCH_ENABLE_MPS_FALLBACK=1 in there, but when I rerun I get the same NotImplementedError.
+Versions
+
+cc @kulinseth @albanD @malfet @DenisVieriu97 @razarmehr @abhudev
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+CI sometimes fails with the message:
+
+Example from #78164. When I rerun the issue did not appear.
+Looks like it could be related to #78490
+Versions
+N/A
+cc @seemethere @malfet @pytorch/pytorch-dev-infra
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+e.g. on https://github.com/pytorch/pytorch/actions/runs/4765183591/jobs/8471123603
+
+Versions
+master
+cc @soumith @msaroufim @wconstab @ngimel @bdhirsh
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+There is perhaps a large discrepancy (requiring atol being increased to 3e-4) between the before+after #102427 implementation of tan/tanh on CUDA with complex values.
+Repro:
+
+Before:
+
+After:
+
+I happened to observe this when debugging why some tan tests were failing when I added new sample inputs to the foreach tests in #109402 (comment).
+Versions
+trunk
+cc @ptrblck @mruberry @parth-desai @peterbell10
+

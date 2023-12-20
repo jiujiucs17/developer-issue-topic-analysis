@@ -1,0 +1,1102 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Hi,
+I am trying to build Pytorch from source with Oneapi MKL, but when use set DISTUTILS_USE_SDK=1, I am getting the error below. If it is set to 0 it continues. I didn't have a problem with mkl 2020 package.
+
+The script that I use for env variables:
+
+Error:
+Building wheel torch-1.11.0a0+git911d527
+-- Building version 1.11.0a0+git911d527
+cmake -GNinja -DBUILD_PYTHON=True -DBUILD_TEST=True -DCMAKE_BUILD_TYPE=Release -DCMAKE_GENERATOR=Ninja -DCMAKE_INSTALL_PREFIX=c:\virtualenvs\git-repos\pytorch\torch -DCMAKE_PREFIX_PATH=C:\virtualenvs\env\Lib\site-packages;C:\Program Files (x86)\Intel\oneAPI\vpl\latest;C:\Program Files (x86)\Intel\oneAPI\tbb\latest\env\..;C:\Program Files (x86)\Intel\oneAPI\dal\latest;C:\Program Files (x86)\Intel\oneAPI\compiler\latest\windows\IntelDPCPP; -DINSTALL_TEST=0 -DNUMPY_INCLUDE_DIR=C:\virtualenvs\env\lib\site-packages\numpy\core\include -DPYTHON_EXECUTABLE=C:\virtualenvs\env\Scripts\python.exe -DPYTHON_INCLUDE_DIR=C:\Users\onur\AppData\Local\Programs\Python\Python39\Include -DPYTHON_LIBRARY=C:\Users\onur\AppData\Local\Programs\Python\Python39/libs/python39.lib -DTORCH_BUILD_VERSION=1.11.0a0+git911d527 -DUSE_DISTRIBUTED=0 -DUSE_INTEL_LLVM=0 -DUSE_NUMPY=True c:\virtualenvs\git-repos\pytorch
+-- The CXX compiler identification is MSVC 19.29.30138.0
+-- The C compiler identification is MSVC 19.29.30138.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Not forcing any particular BLAS to be found
+CMake Warning (dev) at C:/Program Files/CMake/share/cmake-3.22/Modules/CMakeDependentOption.cmake:84 (message):
+  Policy CMP0127 is not set: cmake_dependent_option() supports full Condition
+  Syntax.  Run "cmake --help-policy CMP0127" for policy details.  Use the
+  cmake_policy command to set the policy and suppress this warning.
+Call Stack (most recent call first):
+  CMakeLists.txt:253 (cmake_dependent_option)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning at CMakeLists.txt:350 (message):
+  TensorPipe cannot be used on Windows.  Set it to OFF
+
+
+-- Performing Test COMPILER_WORKS
+-- Performing Test COMPILER_WORKS - Success
+-- Performing Test SUPPORT_GLIBCXX_USE_C99
+-- Performing Test SUPPORT_GLIBCXX_USE_C99 - Success
+-- Performing Test CAFFE2_EXCEPTION_PTR_SUPPORTED
+-- Performing Test CAFFE2_EXCEPTION_PTR_SUPPORTED - Success
+-- std::exception_ptr is supported.
+-- Performing Test CAFFE2_NEED_TO_TURN_OFF_DEPRECATION_WARNING
+-- Performing Test CAFFE2_NEED_TO_TURN_OFF_DEPRECATION_WARNING - Failed
+-- Performing Test C_HAS_AVX_1
+-- Performing Test C_HAS_AVX_1 - Success
+-- Performing Test C_HAS_AVX2_1
+-- Performing Test C_HAS_AVX2_1 - Success
+-- Performing Test C_HAS_AVX512_1
+-- Performing Test C_HAS_AVX512_1 - Success
+-- Performing Test CXX_HAS_AVX_1
+-- Performing Test CXX_HAS_AVX_1 - Success
+-- Performing Test CXX_HAS_AVX2_1
+-- Performing Test CXX_HAS_AVX2_1 - Success
+-- Performing Test CXX_HAS_AVX512_1
+-- Performing Test CXX_HAS_AVX512_1 - Success
+-- Current compiler supports avx2 extension. Will build perfkernels.
+-- Performing Test CAFFE2_COMPILER_SUPPORTS_AVX512_EXTENSIONS
+-- Performing Test CAFFE2_COMPILER_SUPPORTS_AVX512_EXTENSIONS - Success
+-- Current compiler supports avx512f extension. Will build fbgemm.
+-- Performing Test COMPILER_SUPPORTS_HIDDEN_VISIBILITY
+-- Performing Test COMPILER_SUPPORTS_HIDDEN_VISIBILITY - Failed
+-- Performing Test COMPILER_SUPPORTS_HIDDEN_INLINE_VISIBILITY
+-- Performing Test COMPILER_SUPPORTS_HIDDEN_INLINE_VISIBILITY - Failed
+-- Found CUDA: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.5 (found version "11.5")
+-- The CUDA compiler identification is NVIDIA 11.5.119
+-- Detecting CUDA compiler ABI info
+-- Detecting CUDA compiler ABI info - done
+-- Check for working CUDA compiler: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.5/bin/nvcc.exe - skipped
+-- Detecting CUDA compile features
+-- Detecting CUDA compile features - done
+-- Caffe2: CUDA detected: 11.5
+-- Caffe2: CUDA nvcc is: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.5/bin/nvcc.exe
+-- Caffe2: CUDA toolkit directory: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.5
+-- Caffe2: Header version is: 11.5
+-- Found CUDNN: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.5/lib/cudnn.lib
+-- Found cuDNN: v8.3.1  (include: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.5/include, library: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.5/lib/cudnn.lib)
+-- C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.5/lib/x64/nvrtc.lib shorthash is dd482e34
+-- Autodetected CUDA architecture(s):  7.5
+-- Added CUDA NVCC flags for: -gencode;arch=compute_75,code=sm_75
+-- Building using own protobuf under third_party per request.
+-- Use custom protobuf build.
+--
+-- 3.13.0.0
+-- Looking for pthread.h
+-- Looking for pthread.h - not found
+-- Found Threads: TRUE
+-- Caffe2 protobuf include directory: $<BUILD_INTERFACE:C:/virtualenvs/git-repos/pytorch/third_party/protobuf/src>$<INSTALL_INTERFACE:include>
+-- Trying to find preferred BLAS backend of choice: MKL
+-- MKL_THREADING = OMP
+-- Looking for sys/types.h
+-- Looking for sys/types.h - found
+-- Looking for stdint.h
+-- Looking for stdint.h - found
+-- Looking for stddef.h
+-- Looking for stddef.h - found
+-- Check size of void*
+-- Check size of void* - done
+-- Looking for cblas_sgemm
+-- Looking for cblas_sgemm - found
+-- MKL libraries: C:/Program Files (x86)/Intel/oneAPI/mkl/latest/lib/intel64/mkl_intel_lp64.lib;C:/Program Files (x86)/Intel/oneAPI/mkl/latest/lib/intel64/mkl_intel_thread.lib;C:/Program Files (x86)/Intel/oneAPI/mkl/latest/lib/intel64/mkl_core.lib;C:/Program Files (x86)/Intel/oneAPI/compiler/latest/windows/compiler/lib/intel64_win/libiomp5md.lib
+-- MKL include directory: C:/Program Files (x86)/Intel/oneAPI/mkl/latest/include
+-- MKL OpenMP type: Intel
+-- MKL OpenMP library: C:/Program Files (x86)/Intel/oneAPI/compiler/latest/windows/compiler/lib/intel64_win/libiomp5md.lib
+-- The ASM compiler identification is MSVC
+-- Found assembler: C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe
+-- Found Python: C:/virtualenvs/env/Scripts/python.exe (found version "3.9.9") found components: Interpreter
+-- Found Git: C:/Program Files/Git/cmd/git.exe (found version "2.34.1.windows.1")
+-- git version: v1.5.5 normalized to 1.5.5
+-- Version: 1.5.5
+-- Performing Test HAVE_STD_REGEX
+-- Performing Test HAVE_STD_REGEX
+-- Performing Test HAVE_STD_REGEX -- success
+-- Performing Test HAVE_GNU_POSIX_REGEX
+-- Performing Test HAVE_GNU_POSIX_REGEX
+-- Performing Test HAVE_GNU_POSIX_REGEX -- failed to compile
+-- Performing Test HAVE_POSIX_REGEX
+-- Performing Test HAVE_POSIX_REGEX
+-- Performing Test HAVE_POSIX_REGEX -- failed to compile
+-- Performing Test HAVE_STEADY_CLOCK
+-- Performing Test HAVE_STEADY_CLOCK
+-- Performing Test HAVE_STEADY_CLOCK -- success
+-- Found PythonInterp: C:/virtualenvs/env/Scripts/python.exe (found version "3.9.9")
+-- Performing Test COMPILER_SUPPORTS_AVX512
+-- Performing Test COMPILER_SUPPORTS_AVX512 - Success
+CMake Warning (dev) at C:/Program Files/CMake/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
+  The package name passed to `find_package_handle_standard_args` (OpenMP_C)
+  does not match the name of the calling package (OpenMP).  This can lead to
+  problems in calling code that expects `find_package` result variables
+  (e.g., `_FOUND`) to follow a certain pattern.
+Call Stack (most recent call first):
+  cmake/Modules/FindOpenMP.cmake:576 (find_package_handle_standard_args)
+  third_party/fbgemm/CMakeLists.txt:60 (find_package)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found OpenMP_C: -openmp:experimental -IC:/Program Files (x86)/Intel/oneAPI/compiler/latest/windows/compiler/include
+CMake Warning (dev) at C:/Program Files/CMake/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
+  The package name passed to `find_package_handle_standard_args` (OpenMP_CXX)
+  does not match the name of the calling package (OpenMP).  This can lead to
+  problems in calling code that expects `find_package` result variables
+  (e.g., `_FOUND`) to follow a certain pattern.
+Call Stack (most recent call first):
+  cmake/Modules/FindOpenMP.cmake:576 (find_package_handle_standard_args)
+  third_party/fbgemm/CMakeLists.txt:60 (find_package)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Could NOT find OpenMP_CXX (missing: OpenMP_CXX_FLAGS OpenMP_CXX_LIB_NAMES)
+-- Could NOT find OpenMP (missing: OpenMP_CXX_FOUND)
+CMake Warning at third_party/fbgemm/CMakeLists.txt:68 (message):
+  OpenMP is not supported by the compiler
+
+
+CMake Warning at third_party/fbgemm/CMakeLists.txt:142 (message):
+  ==========
+
+
+CMake Warning at third_party/fbgemm/CMakeLists.txt:143 (message):
+  CMAKE_BUILD_TYPE = Release
+
+
+CMake Warning at third_party/fbgemm/CMakeLists.txt:144 (message):
+  CMAKE_CXX_FLAGS_DEBUG is /MDd /Z7 /Ob0 /Od /RTC1 /w /bigobj
+
+
+CMake Warning at third_party/fbgemm/CMakeLists.txt:145 (message):
+  CMAKE_CXX_FLAGS_RELEASE is /MD /O2 /Ob2 /DNDEBUG /w /bigobj
+
+
+CMake Warning at third_party/fbgemm/CMakeLists.txt:146 (message):
+  ==========
+
+
+** AsmJit Summary **
+   ASMJIT_DIR=C:/virtualenvs/git-repos/pytorch/third_party/fbgemm/third_party/asmjit
+   ASMJIT_TEST=FALSE
+   ASMJIT_TARGET_TYPE=SHARED
+   ASMJIT_DEPS=
+   ASMJIT_LIBS=asmjit
+   ASMJIT_CFLAGS=
+   ASMJIT_PRIVATE_CFLAGS=-MP;-GF;-Zc:inline;-Zc:strictStrings;-Zc:threadSafeInit-;-W4
+   ASMJIT_PRIVATE_CFLAGS_DBG=-GS
+   ASMJIT_PRIVATE_CFLAGS_REL=-GS-;-O2;-Oi
+-- Using third party subdirectory Eigen.
+-- Found PythonInterp: C:/virtualenvs/env/Scripts/python.exe (found suitable version "3.9.9", minimum required is "3.0")
+-- Found PythonLibs: C:/Users/onur/AppData/Local/Programs/Python/Python39/libs/python39.lib (found suitable version "3.9.9", minimum required is "3.0")
+-- Using third_party/pybind11.
+-- pybind11 include dirs: C:/virtualenvs/git-repos/pytorch/cmake/../third_party/pybind11/include
+CMake Warning (dev) at C:/Program Files/CMake/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
+  The package name passed to `find_package_handle_standard_args` (OpenMP_C)
+  does not match the name of the calling package (OpenMP).  This can lead to
+  problems in calling code that expects `find_package` result variables
+  (e.g., `_FOUND`) to follow a certain pattern.
+Call Stack (most recent call first):
+  cmake/Modules/FindOpenMP.cmake:576 (find_package_handle_standard_args)
+  cmake/Dependencies.cmake:1189 (find_package)
+  CMakeLists.txt:669 (include)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at C:/Program Files/CMake/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
+  The package name passed to `find_package_handle_standard_args` (OpenMP_CXX)
+  does not match the name of the calling package (OpenMP).  This can lead to
+  problems in calling code that expects `find_package` result variables
+  (e.g., `_FOUND`) to follow a certain pattern.
+Call Stack (most recent call first):
+  cmake/Modules/FindOpenMP.cmake:576 (find_package_handle_standard_args)
+  cmake/Dependencies.cmake:1189 (find_package)
+  CMakeLists.txt:669 (include)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning at cmake/Dependencies.cmake:1207 (message):
+  Not compiling with OpenMP.  Suppress this warning with -DUSE_OPENMP=OFF
+Call Stack (most recent call first):
+  CMakeLists.txt:669 (include)
+
+
+-- Found CUB: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.5/include
+CMake Warning at cmake/Dependencies.cmake:1466 (message):
+  Metal is only used in ios builds.
+Call Stack (most recent call first):
+  CMakeLists.txt:669 (include)
+
+
+-- Found PythonInterp: C:/virtualenvs/env/Scripts/python.exe (found version "3.9.9")
+-- Found PythonLibs: C:/Users/onur/AppData/Local/Programs/Python/Python39/libs/python39.lib (found version "3.9.9")
+Generated: C:/virtualenvs/git-repos/pytorch/build/third_party/onnx/onnx/onnx_onnx_torch-ml.proto
+Generated: C:/virtualenvs/git-repos/pytorch/build/third_party/onnx/onnx/onnx-operators_onnx_torch-ml.proto
+Generated: C:/virtualenvs/git-repos/pytorch/build/third_party/onnx/onnx/onnx-data_onnx_torch.proto
+--
+-- ******** Summary ********
+--   CMake version             : 3.22.1
+--   CMake command             : C:/Program Files/CMake/bin/cmake.exe
+--   System                    : Windows
+--   C++ compiler              : C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe
+--   C++ compiler version      : 19.29.30138.0
+--   CXX flags                 : /DWIN32 /D_WINDOWS /GR /EHsc /w /bigobj -DUSE_PTHREADPOOL /EHsc /wd26812
+--   Build type                : Release
+--   Compile definitions       : WIN32_LEAN_AND_MEAN;_OPENMP_NOFORCE_MANIFEST;ONNX_ML=1;ONNXIFI_ENABLE_EXT=1
+--   CMAKE_PREFIX_PATH         : C:\virtualenvs\env\Lib\site-packages;C:\Program Files (x86)\Intel\oneAPI\vpl\latest;C:\Program Files (x86)\Intel\oneAPI\tbb\latest\env\..;C:\Program Files (x86)\Intel\oneAPI\dal\latest;C:\Program Files (x86)\Intel\oneAPI\compiler\latest\windows\IntelDPCPP;;C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.5
+--   CMAKE_INSTALL_PREFIX      : C:/virtualenvs/git-repos/pytorch/torch
+--   CMAKE_MODULE_PATH         : C:/virtualenvs/git-repos/pytorch/cmake/Modules;C:/virtualenvs/git-repos/pytorch/cmake/public/../Modules_CUDA_fix
+--
+--   ONNX version              : 1.10.1
+--   ONNX NAMESPACE            : onnx_torch
+--   ONNX_USE_LITE_PROTO       : OFF
+--   USE_PROTOBUF_SHARED_LIBS  : OFF
+--   Protobuf_USE_STATIC_LIBS  : ON
+--   ONNX_DISABLE_EXCEPTIONS   : OFF
+--   ONNX_WERROR               : OFF
+--   ONNX_BUILD_TESTS          : OFF
+--   ONNX_BUILD_BENCHMARKS     : OFF
+--   ONNXIFI_DUMMY_BACKEND     : OFF
+--   ONNXIFI_ENABLE_EXT        : OFF
+--
+--   Protobuf compiler         :
+--   Protobuf includes         :
+--   Protobuf libraries        :
+--   BUILD_ONNX_PYTHON         : OFF
+--
+-- ******** Summary ********
+--   CMake version         : 3.22.1
+--   CMake command         : C:/Program Files/CMake/bin/cmake.exe
+--   System                : Windows
+--   C++ compiler          : C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe
+--   C++ compiler version  : 19.29.30138.0
+--   CXX flags             : /DWIN32 /D_WINDOWS /GR /EHsc /w /bigobj -DUSE_PTHREADPOOL
+--   Build type            : Release
+--   Compile definitions   : WIN32_LEAN_AND_MEAN;_OPENMP_NOFORCE_MANIFEST;ONNX_ML=1;ONNXIFI_ENABLE_EXT=1
+--   CMAKE_PREFIX_PATH     : C:\virtualenvs\env\Lib\site-packages;C:\Program Files (x86)\Intel\oneAPI\vpl\latest;C:\Program Files (x86)\Intel\oneAPI\tbb\latest\env\..;C:\Program Files (x86)\Intel\oneAPI\dal\latest;C:\Program Files (x86)\Intel\oneAPI\compiler\latest\windows\IntelDPCPP;;C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.5
+--   CMAKE_INSTALL_PREFIX  : C:/virtualenvs/git-repos/pytorch/torch
+--   CMAKE_MODULE_PATH     : C:/virtualenvs/git-repos/pytorch/cmake/Modules;C:/virtualenvs/git-repos/pytorch/cmake/public/../Modules_CUDA_fix
+--
+--   ONNX version          : 1.4.1
+--   ONNX NAMESPACE        : onnx_torch
+--   ONNX_BUILD_TESTS      : OFF
+--   ONNX_BUILD_BENCHMARKS : OFF
+--   ONNX_USE_LITE_PROTO   : OFF
+--   ONNXIFI_DUMMY_BACKEND : OFF
+--
+--   Protobuf compiler     :
+--   Protobuf includes     :
+--   Protobuf libraries    :
+--   BUILD_ONNX_PYTHON     : OFF
+-- Found CUDA with FP16 support, compiling with torch.cuda.HalfTensor
+-- Adding -DNDEBUG to compile flags
+-- Checking prototype magma_get_sgeqrf_nb for MAGMA_V2
+-- Checking prototype magma_get_sgeqrf_nb for MAGMA_V2 - True
+-- Compiling with MAGMA support
+-- MAGMA INCLUDE DIRECTORIES: C:/virtualenvs/builds/library/magma/include
+-- MAGMA LIBRARIES: C:/virtualenvs/builds/library/magma/lib/magma.lib
+-- MAGMA V2 check: 1
+-- Could not find hardware support for NEON on this machine.
+-- No OMAP3 processor on this machine.
+-- No OMAP4 processor on this machine.
+-- Looking for cpuid.h
+-- Looking for cpuid.h - not found
+-- Performing Test NO_GCC_EBX_FPIC_BUG
+-- Performing Test NO_GCC_EBX_FPIC_BUG - Failed
+-- AVX compiler support found
+-- AVX2 compiler support found
+-- Found a library with LAPACK API (mkl).
+disabling ROCM because NOT USE_ROCM is set
+-- MIOpen not found. Compiling without MIOpen support
+-- MKLDNN_CPU_RUNTIME = OMP
+-- Intel MKL-DNN compat: set DNNL_ENABLE_CONCURRENT_EXEC to MKLDNN_ENABLE_CONCURRENT_EXEC with value `ON`
+-- Intel MKL-DNN compat: set DNNL_BUILD_EXAMPLES to MKLDNN_BUILD_EXAMPLES with value `FALSE`
+-- Intel MKL-DNN compat: set DNNL_BUILD_TESTS to MKLDNN_BUILD_TESTS with value `FALSE`
+-- Intel MKL-DNN compat: set DNNL_LIBRARY_TYPE to MKLDNN_LIBRARY_TYPE with value `STATIC`
+-- Intel MKL-DNN compat: set DNNL_ARCH_OPT_FLAGS to MKLDNN_ARCH_OPT_FLAGS with value ``
+-- Intel MKL-DNN compat: set DNNL_CPU_RUNTIME to MKLDNN_CPU_RUNTIME with value `OMP`
+CMake Warning (dev) at C:/Program Files/CMake/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
+  The package name passed to `find_package_handle_standard_args` (OpenMP_C)
+  does not match the name of the calling package (OpenMP).  This can lead to
+  problems in calling code that expects `find_package` result variables
+  (e.g., `_FOUND`) to follow a certain pattern.
+Call Stack (most recent call first):
+  cmake/Modules/FindOpenMP.cmake:576 (find_package_handle_standard_args)
+  third_party/ideep/mkl-dnn/third_party/oneDNN/cmake/OpenMP.cmake:69 (find_package)
+  third_party/ideep/mkl-dnn/third_party/oneDNN/CMakeLists.txt:126 (include)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Found OpenMP_C: -openmp:experimental -IC:/Program Files (x86)/Intel/oneAPI/compiler/latest/windows/compiler/include
+CMake Warning (dev) at C:/Program Files/CMake/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake:438 (message):
+  The package name passed to `find_package_handle_standard_args` (OpenMP_CXX)
+  does not match the name of the calling package (OpenMP).  This can lead to
+  problems in calling code that expects `find_package` result variables
+  (e.g., `_FOUND`) to follow a certain pattern.
+Call Stack (most recent call first):
+  cmake/Modules/FindOpenMP.cmake:576 (find_package_handle_standard_args)
+  third_party/ideep/mkl-dnn/third_party/oneDNN/cmake/OpenMP.cmake:69 (find_package)
+  third_party/ideep/mkl-dnn/third_party/oneDNN/CMakeLists.txt:126 (include)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+
+
+-- Configuring incomplete, errors occurred!
+See also "C:/virtualenvs/git-repos/pytorch/build/CMakeFiles/CMakeOutput.log".
+See also "C:/virtualenvs/git-repos/pytorch/build/CMakeFiles/CMakeError.log".
+
+
+PyTorch Version (e.g., 1.0): master
+OS (e.g., Linux): Windows 21H2
+How you installed PyTorch (conda, pip, source): source build in virtualenv
+Build command you used (if compiling from source): python setup.py install
+Python version: 3.9.9
+CUDA/cuDNN version: 11.5 / 8.3.1
+GPU models and configuration: rtx 2060
+Any other relevant information: MSVC 19.29, cmake 3.22.1
+
+Versions
+PyTorch version: 1.11.0a0+gitde4e7de
+Is debug build: False
+CUDA used to build PyTorch: 11.5
+ROCM used to build PyTorch: N/A
+OS: Microsoft Windows 11 Pro
+GCC version: Could not collect
+Clang version: Could not collect
+CMake version: version 3.22.1
+Libc version: N/A
+Python version: 3.9.9 (tags/v3.9.9:ccb0e6a, Nov 15 2021, 18:08:50) [MSC v.1929 64 bit (AMD64)] (64-bit runtime)
+Python platform: Windows-10-10.0.22000-SP0
+Is CUDA available: True
+CUDA runtime version: 11.5.119
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 2060
+Nvidia driver version: 497.29
+cuDNN version: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.5\bin\cudnn_ops_train64_8.dll
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] adabelief-pytorch==0.2.1
+[pip3] numpy==1.21.4+mkl
+[pip3] pytorch-lightning==1.5.7
+[pip3] torch==1.11.0a0+gitde4e7de
+[pip3] torch-tb-profiler==0.3.1
+[pip3] torchaudio==0.10.1+cu113
+[pip3] torchfile==0.1.0
+[pip3] torchmetrics==0.6.2
+[pip3] torchvision==0.11.2+cu113
+[conda] Could not collect
+CMakeError.log
+CMakeOutput.log
+cc @malfet @seemethere @peterjc123 @mszhanyi @skyline75489 @nbcsm
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Using the model below, the results could be wrong if I use optimize_for_inference to optimize the model.
+
+Versions
+Collecting environment information...
+PyTorch version: 1.12.1+cu116
+Is debug build: False
+CUDA used to build PyTorch: 11.6
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 22.04.1 LTS (x86_64)
+GCC version: (Ubuntu 11.2.0-19ubuntu1) 11.2.0
+Clang version: Could not collect
+CMake version: version 3.22.1
+Libc version: glibc-2.35
+Python version: 3.9.13 (main, Aug 25 2022, 23:26:10)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-48-generic-x86_64-with-glibc2.35
+Is CUDA available: True
+CUDA runtime version: 11.6.124
+GPU models and configuration:
+GPU 0: NVIDIA GeForce RTX 3090
+GPU 1: NVIDIA GeForce RTX 3090
+GPU 2: NVIDIA GeForce RTX 3090
+Nvidia driver version: 515.65.01
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.23.3
+[pip3] torch==1.12.1+cu116
+[pip3] torchaudio==0.12.1+cu116
+[pip3] torchvision==0.13.1+cu116
+[conda] numpy                     1.23.3                   pypi_0    pypi
+[conda] torch                     1.12.1+cu116             pypi_0    pypi
+[conda] torchaudio                0.12.1+cu116             pypi_0    pypi
+[conda] torchvision               0.13.1+cu116             pypi_0    pypi
+cc @jerryzh168 @jianyuh @raghuramank100 @jamesr66a @vkuzo
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+🐛 Describe the bug
+You can reproduce the bug using the follow scripts.
+`
+import torch
+import matplotlib.pyplot as plt
+def imshow(x, **kwargs):
+if isinstance(x, torch.Tensor):
+x = x.cpu().detach()
+plt.imshow(x, aspect='auto', origin='lower', **kwargs)
+w_1 = torch.nn.Conv1d(
+256,
+1024,
+3,
+stride=1,
+padding="valid",
+padding_mode="reflect",
+bias=False,
+)
+w_1.eval()
+xs = torch.rand(32, 25, 256)
+xss = xs.transpose(-1,-2)
+x1 = xss[:1].clone()
+x2 = xss[:20].clone()
+_x1 = w_1(x1)
+_x2 = w_1(x2)
+print(_x1.shape, _x2.shape)
+imshow(_x1[0] - _x2[0])
+print(abs(_x1[0] - _x2[0]).max())
+plt.colorbar()
+`
+Result:
+torch.Size([1, 1024, 23]) torch.Size([20, 1024, 23])
+tensor(8.9407e-07)   # this error should be zero
+
+Versions
+PyTorch version: 1.13.0
+Is debug build: False
+CUDA used to build PyTorch: 11.7
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.6 LTS (x86_64)
+GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+Clang version: Could not collect
+CMake version: version 3.14.7
+Libc version: glibc-2.27
+Python version: 3.8.15 | packaged by conda-forge | (default, Nov 22 2022, 08:49:35)  [GCC 10.4.0] (64-bit runtime)
+Python platform: Linux-5.4.0-135-generic-x86_64-with-glibc2.10
+Is CUDA available: True
+CUDA runtime version: 11.6.55
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration:
+GPU 0: NVIDIA GeForce RTX 3090
+GPU 1: NVIDIA GeForce RTX 3090
+GPU 2: NVIDIA GeForce RTX 3090
+GPU 3: NVIDIA GeForce RTX 3090
+Nvidia driver version: 515.65.01
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.23.4
+[pip3] torch==1.13.0
+[pip3] torchaudio==0.13.0
+[pip3] torchvision==0.14.0
+[conda] blas                      1.0                         mkl
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] mkl                       2021.4.0           h06a4308_640
+[conda] mkl-service               2.4.0            py38h95df7f1_0    conda-forge
+[conda] mkl_fft                   1.3.1            py38h8666266_1    conda-forge
+[conda] mkl_random                1.2.2            py38h1abd341_0    conda-forge
+[conda] numpy                     1.23.4           py38h14f4228_0
+[conda] numpy-base                1.23.4           py38h31eccc5_0
+[conda] pytorch                   1.13.0          py3.8_cuda11.7_cudnn8.5.0_0    pytorch
+[conda] pytorch-cuda              11.7                 h67b0de4_0    pytorch
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torchaudio                0.13.0               py38_cu117    pytorch
+[conda] torchvision               0.14.0               py38_cu117    pytorch
+cc @albanD @mruberry @jbschlosser @walterddr @kshitij12345 @saketh-are
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Description
+When training the model, I'm getting this error on the second run of the Validation set.
+
+I'm using PytorchLightning and before the first Epoch I go through the whole validation set once with num_sanity_val_steps=-1
+Then after successfully going through the first Epoch, the second time the validation set is executed I run into this error.
+I really don't know how to proceed because the hint that it gives has to do with C++ code.
+Versions
+Collecting environment information...
+PyTorch version: 1.10.1+cu102
+Is debug build: False
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.1 LTS (x86_64)
+GCC version: (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+Clang version: 10.0.0-4ubuntu1
+CMake version: version 3.18.4
+Libc version: glibc-2.31
+Python version: 3.8.10 (default, Sep 28 2021, 16:10:42)  [GCC 9.3.0] (64-bit runtime)
+Python platform: Linux-5.4.0-71-generic-x86_64-with-glibc2.29
+Is CUDA available: True
+CUDA runtime version: 11.5.119
+GPU models and configuration:
+GPU 0: NVIDIA GeForce RTX 2080 Ti
+GPU 1: NVIDIA GeForce RTX 2080 Ti
+GPU 2: NVIDIA GeForce RTX 2080 Ti
+GPU 3: NVIDIA GeForce RTX 2080 Ti
+GPU 4: NVIDIA GeForce RTX 2080 Ti
+GPU 5: NVIDIA GeForce RTX 2080 Ti
+GPU 6: NVIDIA GeForce RTX 2080 Ti
+GPU 7: NVIDIA GeForce RTX 2080 Ti
+GPU 8: NVIDIA GeForce RTX 2080 Ti
+GPU 9: NVIDIA GeForce RTX 2080 Ti
+Nvidia driver version: 495.29.05
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.3.1
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.3.1
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.3.1
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.3.1
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.3.1
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.3.1
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.3.1
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.22.1
+[pip3] pytorch-lightning==1.5.9
+[pip3] torch==1.10.1
+[pip3] torchaudio==0.10.1
+[pip3] torchmetrics==0.7.0
+[conda] Could not collect
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+As per title, using torch.load(..., map_location="cuda:0") allocates memory on CPU while I think it should not.
+Reproduce:
+
+Then:
+
+prints:
+
+and you can check with nvidia-smi that memory is reserved as well on GPU.
+Versions
+PyTorch version: 1.13.1+cu117
+Is debug build: False
+CUDA used to build PyTorch: 11.7
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 22.04.1 LTS (x86_64)
+GCC version: (Ubuntu 11.3.0-1ubuntu1~22.04) 11.3.0
+Clang version: 14.0.0-1ubuntu1
+CMake version: version 3.25.0
+Libc version: glibc-2.35
+Python version: 3.9.12 (main, Apr  5 2022, 06:56:58)  [GCC 7.5.0] (64-bit runtime)
+Python platform: Linux-5.15.0-57-generic-x86_64-with-glibc2.35
+Is CUDA available: True
+CUDA runtime version: 11.7.99
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 3060 Laptop GPU
+Nvidia driver version: 515.86.01
+cuDNN version: Probably one of the following:
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.7.0
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.22.4
+[pip3] torch==1.13.1
+[pip3] torch-model-archiver==0.6.1
+[pip3] torch-tb-profiler==0.4.0
+[pip3] torch-workflow-archiver==0.2.5
+[pip3] torchaudio==0.13.0
+[pip3] torchinfo==1.7.0
+[pip3] torchserve==0.6.1
+[pip3] torchtriton==2.0.0+0d7e753227
+[pip3] torchvision==0.14.0
+[conda] cudatoolkit               11.3.1               h2bc3f7f_2    anaconda
+[conda] numpy                     1.22.4                   pypi_0    pypi
+[conda] torch                     1.13.1                   pypi_0    pypi
+[conda] torch-model-archiver      0.6.1                    pypi_0    pypi
+[conda] torch-tb-profiler         0.4.0                     dev_0    
+[conda] torch-workflow-archiver   0.2.5                    pypi_0    pypi
+[conda] torchaudio                0.13.0                   pypi_0    pypi
+[conda] torchinfo                 1.7.0                    pypi_0    pypi
+[conda] torchserve                0.6.1                    pypi_0    pypi
+[conda] torchtriton               2.0.0+0d7e753227          pypi_0    pypi
+[conda] torchvision               0.14.0                   pypi_0    pypi
+cc @mruberry @albanD
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+It looks like there is a bug when exporting a pytorch model to onnx format with torch1.12.0. I found that the bias is not contained in the Conv node, the structure visualized by Netron is as follows:
+
+The bias of Conv_19 is actually Identity_15. By the way, I tried with torch1.13.1 but got the same result as torch1.12.0
+Then I test with torch1.9.0, the result looks like correct as follows:
+
+The code I use to export onnx model is:
+
+How can I solve this problem?
+Versions
+PyTorch version: 1.13.1+cu117
+Is debug build: False
+CUDA used to build PyTorch: 11.7
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.6 LTS (x86_64)
+GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+Clang version: Could not collect
+CMake version: Could not collect
+Libc version: glibc-2.17
+Python version: 3.7.16 (default, Jan 17 2023, 22:20:44)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.10.16.3-microsoft-standard-WSL2-x86_64-with-debian-buster-sid
+Is CUDA available: True
+CUDA runtime version: Could not collect
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 3060
+Nvidia driver version: 516.94
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.21.6
+[pip3] torch==1.13.1
+[pip3] torchaudio==0.9.0
+[pip3] torchdynamo==1.13.0
+[pip3] torchvision==0.10.0+cu102
+[conda] cudatoolkit               10.2.89              hfd86e86_1
+[conda] numpy                     1.21.6                   pypi_0    pypi
+[conda] torch                     1.13.1                   pypi_0    pypi
+[conda] torchaudio                0.9.0                    pypi_0    pypi
+[conda] torchdynamo               1.13.0                   pypi_0    pypi
+[conda] torchvision               0.10.0+cu102             pypi_0    pypi
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+This code can run normally on the gpu without using compile, but adding compile will cause the following error:
+
+Error logs
+/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/site-packages/torch/_inductor/compile_fx.py:89: UserWarning: TensorFloat32 tensor cores for float32 matrix multiplication available but not enabled. Consider setting torch.set_float32_matmul_precision('high') for better performance.
+warnings.warn(
+/usr/bin/ld: cannot find -lcuda
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lcuda
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lcuda
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lcuda
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lcuda
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lcuda
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lcuda
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lcuda
+collect2: error: ld returned 1 exit status
+//usrusr//binbin/ld: /cannotld :find  cannot- lcudafind
+-lcuda
+collect2: error: ld returned 1 exit status
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lcuda
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lcuda
+/collect2: error: ld returned 1 exit status
+usr/bin/ld: cannot find -lcuda
+collect2: error: ld returned 1 exit status
+/usr/bin/ld: cannot find -lcuda
+collect2: error: ld returned 1 exit status
+concurrent.futures.process._RemoteTraceback:
+"""
+Traceback (most recent call last):
+File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/concurrent/futures/process.py", line 239, in _process_worker
+r = call_item.fn(*call_item.args, **call_item.kwargs)
+File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/site-packages/torch/_inductor/codecache.py", line 548, in _worker_compile
+kernel.precompile(warm_cache_only_with_cc=cc)
+File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/site-packages/torch/_inductor/triton_ops/autotune.py", line 67, in precompile
+self.launchers = [
+File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/site-packages/torch/_inductor/triton_ops/autotune.py", line 68, in 
+self._precompile_config(c, warm_cache_only_with_cc)
+File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/site-packages/torch/_inductor/triton_ops/autotune.py", line 81, in _precompile_config
+triton.compile(
+File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/site-packages/triton/compiler.py", line 1239, in compile
+so = _build(fn.name, src_path, tmpdir)
+File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/site-packages/triton/compiler.py", line 1169, in build
+ret = subprocess.check_call(cc_cmd)
+File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/subprocess.py", line 364, in check_call
+raise CalledProcessError(retcode, cmd)
+subprocess.CalledProcessError: Command '['/usr/bin/gcc', '/tmp/tmpg5k_52zd/main.c', '-O3', '-I/usr/local/cuda/include', '-I/mnt/data2/wwh/anaconda3/envs/wwh/include/python3.8', '-I/tmp/tmpg5k_52zd', '-shared', '-fPIC', '-lcuda', '-o', '/tmp/tmpg5k_52zd/triton.cpython-38-x86_64-linux-gnu.so']' returned non-zero exit status 1.
+"""
+Minified repro
+No response
+Versions
+PyTorch version: 2.0.0.dev20230210+cu117
+Is debug build: False
+CUDA used to build PyTorch: 11.7
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.1 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+Clang version: Could not collect
+CMake version: version 3.25.0
+Libc version: glibc-2.31
+Python version: 3.8.15 (default, Nov 24 2022, 15:19:38)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.4.0-51-generic-x86_64-with-glibc2.17
+Is CUDA available: True
+CUDA runtime version: Could not collect
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration:
+GPU 0: NVIDIA A100-SXM4-40GB
+GPU 1: NVIDIA A100-SXM4-40GB
+GPU 2: NVIDIA A100-SXM4-40GB
+GPU 3: NVIDIA A100-SXM4-40GB
+GPU 4: NVIDIA A100-SXM4-40GB
+GPU 5: NVIDIA A100-SXM4-40GB
+GPU 6: NVIDIA A100-SXM4-40GB
+GPU 7: NVIDIA A100-SXM4-40GB
+Nvidia driver version: 515.65.01
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   40 bits physical, 57 bits virtual
+CPU(s):                          124
+On-line CPU(s) list:             0-123
+Thread(s) per core:              1
+Core(s) per socket:              1
+Socket(s):                       124
+NUMA node(s):                    1
+Vendor ID:                       GenuineIntel
+CPU family:                      6
+Model:                           134
+Model name:                      Intel Xeon Processor (Icelake)
+Stepping:                        0
+CPU MHz:                         2593.894
+BogoMIPS:                        5187.78
+Hypervisor vendor:               KVM
+Virtualization type:             full
+L1d cache:                       3.9 MiB
+L1i cache:                       3.9 MiB
+L2 cache:                        496 MiB
+L3 cache:                        2 GiB
+NUMA node0 CPU(s):               0-123
+Vulnerability Itlb multihit:     Not affected
+Vulnerability L1tf:              Mitigation; PTE Inversion
+Vulnerability Mds:               Vulnerable; SMT Host state unknown
+Vulnerability Meltdown:          Vulnerable
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Full generic retpoline, IBPB conditional, IBRS_FW, STIBP disabled, RSB filling
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch cpuid_fault invpcid_single ssbd ibrs ibpb fsgsbase bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 wbnoinvd arat avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq
+Versions of relevant libraries:
+[pip3] numpy==1.24.1
+[pip3] pytorch-lightning==1.9.0
+[pip3] pytorch-triton==2.0.0+0d7e753227
+[pip3] torch==2.0.0.dev20230210+cu117
+[pip3] torchaudio==2.0.0.dev20230209+cu117
+[pip3] torchmetrics==0.11.1
+[pip3] torchvision==0.15.0.dev20230209+cu117
+[conda] numpy                     1.24.1                   pypi_0    pypi
+[conda] pytorch-lightning         1.9.0                    pypi_0    pypi
+[conda] pytorch-triton            2.0.0+0d7e753227          pypi_0    pypi
+[conda] torch                     2.0.0.dev20230210+cu117          pypi_0    pypi
+[conda] torchaudio                2.0.0.dev20230209+cu117          pypi_0    pypi
+[conda] torchmetrics              0.11.1                   pypi_0    pypi
+[conda] torchvision               0.15.0.dev20230209+cu117          pypi_0    pypi
+cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+When I use torch>=1.9,  it uses torch.distributed.elastic and says torch.distributed.launch is deprecated. However the training of my programs will easily get the following error and shut down. However, it is not always happening, just with a not low probability. I tried on different machines, and the error can happen frequently with torch==1.11 torch.distributed.elastic but never with torch==1.8 torch.distributed.launch.
+For example, I use the official training scripts provided by torchvision (https://github.com/pytorch/vision/blob/main/references/classification/train.py) and only changes the model initialization to train my model, i.e., the only change is
+
+and I use the official running scripts:
+
+The error log is:
+
+I also find that if the runtime of one epoch is increasing before this error happens (from 10mins/epoch to 17 mins/epoch).
+I have encountered this problem many times on different tasks with and without torchvision. If the version of torch is >= 1.9, this problem can happen frequently while the problem never happens if I use torch<=1.8.1 without changing the codes.
+Versions
+Here is the version information. I have tried torch==1.10, 1.11 and 1.12. The error can happen regardless of the version .
+Collecting environment information...
+PyTorch version: 1.12.0.dev20220502
+Is debug build: False
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.6 LTS (x86_64)
+GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+Clang version: Could not collect
+CMake version: version 3.10.2
+Libc version: glibc-2.17
+Python version: 3.7.13 (default, Mar 29 2022, 02:18:16)  [GCC 7.5.0] (64-bit runtime)
+Python platform: Linux-4.15.0-167-generic-x86_64-with-debian-buster-sid
+Is CUDA available: True
+CUDA runtime version: 10.1.105
+GPU models and configuration:
+GPU 0: NVIDIA TITAN RTX
+GPU 1: NVIDIA TITAN RTX
+GPU 2: NVIDIA TITAN RTX
+GPU 3: NVIDIA TITAN RTX
+GPU 4: NVIDIA TITAN RTX
+GPU 5: NVIDIA TITAN RTX
+GPU 6: NVIDIA TITAN RTX
+GPU 7: NVIDIA TITAN RTX
+Nvidia driver version: 470.103.01
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.21.5
+[pip3] torch==1.12.0.dev20220502
+[pip3] torchvision==0.13.0.dev20220502
+[conda] blas                      1.0                         mkl
+[conda] cudatoolkit               10.2.89              hfd86e86_1
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] mkl                       2021.4.0           h06a4308_640
+[conda] mkl-service               2.4.0            py37h7f8727e_0
+[conda] mkl_fft                   1.3.1            py37hd3c417c_0
+[conda] mkl_random                1.2.2            py37h51133e4_0
+[conda] numpy                     1.21.5           py37he7a7128_1
+[conda] numpy-base                1.21.5           py37hf524024_1
+[conda] pytorch                   1.12.0.dev20220502 py3.7_cuda10.2_cudnn7.6.5_0    pytorch-nightly
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torchvision               0.13.0.dev20220502      py37_cu102    pytorch-nightly
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @SciPioneer @H-Huang
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Models like Background_Matting can have different number of inputs once converted to compiler backends like onnxrt and tvm due to the fact that those backends could perform aggressive graph-level optimization to remove inputs if they don't attribute the evaluation of outputs. For example, input_3 of Background_Matting is removed after onnxrt conversion.
+my repro on onnxrt
+
+my repro on tvm
+
+Versions
+PyTorch version: 2.0.0a0+gite0c24ec
+Is debug build: False
+CUDA used to build PyTorch: 11.6
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.5 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+Clang version: Could not collect
+CMake version: version 3.25.0
+Libc version: glibc-2.31
+Python version: 3.8.15 (default, Nov 24 2022, 15:19:38)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-56-generic-x86_64-with-glibc2.17
+Is CUDA available: True
+CUDA runtime version: 11.6.124
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 3070
+Nvidia driver version: 510.108.03
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.6.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.6.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.6.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.6.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.6.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.6.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.6.0
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn.so.8.4.1
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.4.1
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.4.1
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.4.1
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.4.1
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.4.1
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.4.1
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   48 bits physical, 48 bits virtual
+CPU(s):                          24
+On-line CPU(s) list:             0-23
+Thread(s) per core:              2
+Core(s) per socket:              12
+Socket(s):                       1
+NUMA node(s):                    1
+Vendor ID:                       AuthenticAMD
+CPU family:                      25
+Model:                           33
+Model name:                      AMD Ryzen 9 5900X 12-Core Processor
+Stepping:                        0
+Frequency boost:                 enabled
+CPU MHz:                         4190.657
+CPU max MHz:                     4950.1948
+CPU min MHz:                     2200.0000
+BogoMIPS:                        7400.08
+Virtualization:                  AMD-V
+L1d cache:                       384 KiB
+L1i cache:                       384 KiB
+L2 cache:                        6 MiB
+L3 cache:                        64 MiB
+NUMA node0 CPU(s):               0-23
+Vulnerability Itlb multihit:     Not affected
+Vulnerability L1tf:              Not affected
+Vulnerability Mds:               Not affected
+Vulnerability Meltdown:          Not affected
+Vulnerability Mmio stale data:   Not affected
+Vulnerability Retbleed:          Not affected
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP always-on, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+Versions of relevant libraries:
+[pip3] bert-pytorch==0.0.1a4
+[pip3] clip-anytorch==2.5.0
+[pip3] CoCa-pytorch==0.0.7
+[pip3] dalle2-pytorch==1.10.5
+[pip3] ema-pytorch==0.1.4
+[pip3] functorch==1.14.0a0+408bcf1
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.23.5
+[pip3] pytorch-transformers==1.2.0
+[pip3] pytorch-triton==2.0.0+0d7e753227
+[pip3] pytorch-warmup==0.1.1
+[pip3] rotary-embedding-torch==0.2.1
+[pip3] torch==2.0.0a0+gite0c24ec
+[pip3] torch-fidelity==0.3.0
+[pip3] torch-struct==0.5
+[pip3] torchaudio==2.0.0a0+9368f33
+[pip3] torchdata==0.7.0a0+f083d52
+[pip3] torchmetrics==0.11.0
+[pip3] torchrec-nightly==2023.1.25
+[pip3] torchtext==0.15.0a0+bb0efcd
+[pip3] torchvision==0.15.0a0+85983a5
+[pip3] torchx==0.4.0
+[pip3] vector-quantize-pytorch==0.10.15
+[conda] bert-pytorch              0.0.1a4                   dev_0    
+[conda] clip-anytorch             2.5.0                    pypi_0    pypi
+[conda] coca-pytorch              0.0.7                    pypi_0    pypi
+[conda] dalle2-pytorch            1.10.5                   pypi_0    pypi
+[conda] ema-pytorch               0.1.4                    pypi_0    pypi
+[conda] functorch                 1.14.0a0+408bcf1          pypi_0    pypi
+[conda] numpy                     1.23.5                   pypi_0    pypi
+[conda] pytorch-transformers      1.2.0                    pypi_0    pypi
+[conda] pytorch-triton            2.0.0+0d7e753227          pypi_0    pypi
+[conda] pytorch-warmup            0.1.1                    pypi_0    pypi
+[conda] rotary-embedding-torch    0.2.1                    pypi_0    pypi
+[conda] torch                     2.0.0a0+gite0c24ec           dev_0    
+[conda] torch-fidelity            0.3.0                    pypi_0    pypi
+[conda] torch-struct              0.5                      pypi_0    pypi
+[conda] torchaudio                2.0.0a0+9368f33          pypi_0    pypi
+[conda] torchdata                 0.7.0a0+f083d52          pypi_0    pypi
+[conda] torchmetrics              0.11.0                   pypi_0    pypi
+[conda] torchrec-nightly          2023.1.25                pypi_0    pypi
+[conda] torchtext                 0.15.0a0+bb0efcd          pypi_0    pypi
+[conda] torchvision               0.15.0a0+85983a5          pypi_0    pypi
+[conda] torchx                    0.4.0                    pypi_0    pypi
+[conda] vector-quantize-pytorch   0.10.15                  pypi_0    pypi
+cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+For some reason, torch compile changes model output. I checked multiple transformer models, here is one example:
+
+Same orders of magnitude in difference for CPU and any other precisions (float16, bfloat16) with/without torch.cuda.amp.autocast decorator.
+Transformers versions:
+
+Related huggingface issue: huggingface/transformers#25155
+Versions
+PyTorch version: 2.0.0+cu117
+Is debug build: False
+CUDA used to build PyTorch: 11.7
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.6 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+Clang version: Could not collect
+CMake version: version 3.26.4
+Libc version: glibc-2.31
+Python version: 3.8.10 (default, Mar 13 2023, 10:26:41)  [GCC 9.4.0] (64-bit runtime)
+Python platform: Linux-5.15.0-1034-oracle-x86_64-with-glibc2.29
+Is CUDA available: True
+CUDA runtime version: Could not collect
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration:
+GPU 0: NVIDIA A100-SXM4-80GB
+GPU 1: NVIDIA A100-SXM4-80GB
+GPU 2: NVIDIA A100-SXM4-80GB
+GPU 3: NVIDIA A100-SXM4-80GB
+GPU 4: NVIDIA A100-SXM4-80GB
+GPU 5: NVIDIA A100-SXM4-80GB
+GPU 6: NVIDIA A100-SXM4-80GB
+GPU 7: NVIDIA A100-SXM4-80GB
+Nvidia driver version: 515.105.01
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.9.0
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   48 bits physical, 48 bits virtual
+CPU(s):                          256
+On-line CPU(s) list:             0-254
+Off-line CPU(s) list:            255
+Thread(s) per core:              1
+Core(s) per socket:              64
+Socket(s):                       2
+NUMA node(s):                    8
+Vendor ID:                       AuthenticAMD
+CPU family:                      25
+Model:                           1
+Model name:                      AMD EPYC 7J13 64-Core Processor
+Stepping:                        1
+Frequency boost:                 enabled
+CPU MHz:                         2550.000
+CPU max MHz:                     3673.0950
+CPU min MHz:                     1500.0000
+BogoMIPS:                        4900.11
+Virtualization:                  AMD-V
+L1d cache:                       2 MiB
+L1i cache:                       2 MiB
+L2 cache:                        32 MiB
+L3 cache:                        256 MiB
+NUMA node0 CPU(s):               0-15,128-143
+NUMA node1 CPU(s):               16-31,144-159
+NUMA node2 CPU(s):               32-47,160-175
+NUMA node3 CPU(s):               48-63,176-191
+NUMA node4 CPU(s):               64-79,192-207
+NUMA node5 CPU(s):               80-95,208-223
+NUMA node6 CPU(s):               96-111,224-239
+NUMA node7 CPU(s):               112-127,240-254
+Vulnerability Itlb multihit:     Not affected
+Vulnerability L1tf:              Not affected
+Vulnerability Mds:               Not affected
+Vulnerability Meltdown:          Not affected
+Vulnerability Mmio stale data:   Not affected
+Vulnerability Retbleed:          Not affected
+Vulnerability Spec store bypass: Vulnerable
+Vulnerability Spectre v1:        Vulnerable: __user pointer sanitization and usercopy barriers only; no swapgs barriers
+Vulnerability Spectre v2:        Vulnerable, IBPB: disabled, STIBP: disabled, PBRSB-eIBRS: Not affected
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 invpcid_single hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd amd_ppin arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+Versions of relevant libraries:
+[pip3] mypy==1.4.1
+[pip3] mypy-extensions==1.0.0
+[pip3] numpy==1.24.4
+[pip3] pytorch-lightning==2.0.4
+[pip3] torch==2.0.0
+[pip3] torchmetrics==0.11.4
+[pip3] triton==2.0.0
+[conda] Could not collect
+cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305
+

@@ -1,0 +1,349 @@
+----------------------------------------Comment 1----------------------------------------
+
+https://app.circleci.com/pipelines/github/pytorch/pytorch/355664/workflows/804d3268-23c9-4afb-a2e1-b3045431c349/jobs/14993819
+Needs to be skipped when torchvision is not available
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @agolynski @SciPioneer @H-Huang @mrzzd @cbalioglu @gcramer23
+
+----------------------------------------Comment 1----------------------------------------
+
+🚀 Enhancement
+There are a couple of different rpc options when we initialize model parallel right now, such as number of send/recv threads and the timeout for RPCs. It is likely that this list will grow, so it would be good to consolidate this into an options class RpcOptions. This can be implemented in rpc_agent.h since the arguments should be applicable for all rpc agents.
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @xush6528
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+When running elastic training with C10d backend and multiple nodes, the workers need to be restarted in case of a down-scale event. If this does not happen, as right now, the remaining workers get stuck in NCCL operations and wait by default 30 minutes until they finish with a timeout error.
+Expected Behaviour
+If a worker misses its heartbeat/leaves the rendevous, a new rendevous should happen.
+Minimal Example
+There are two scripts for the master worker and a faulty worker
+master
+
+faulty
+
+The minimal example enables debug logging to highlight the problematic area.
+It does the following:
+master runs normally, while faulty simulates a forceful termination after 10 seconds.
+Both ranks print start when a new generation is started.
+Run first master and then faulty script.
+The output
+
+Expected would now be that after the missing heartbeat and removal of faulty the rendezvous process should be started again, as is also documented in rdzv_doc also the init.py mention a restart in such a case.
+Versions
+
+cc @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @H-Huang @kwen2501 @awgu @penguinwu
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I wrote a context manager that allows me to only save specific modules when module.state_dict:
+
+However, this seems to violate an FSDP assumption:
+
+Repro code:
+
+I'd appreciate advice on either how to make the context manager work with FSDP or if FSDP could be updated to support this sort of behavior
+Thank you!
+Versions
+pytorch-triton          2.1.0+7d1a95b046
+torch                   2.1.0.dev20230505+cu118
+cc @zhaojuanmao @mrshenli @rohan-varma @awgu
+
+----------------------------------------Comment 1----------------------------------------
+
+Platforms: linux
+This test was disabled because it is failing in CI. See recent examples and the most recent trunk workflow logs.
+Over the past 3 hours, it has been determined flaky in 1 workflow(s) with 2 red and 3 green.
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @SciPioneer @H-Huang @kwen2501
+
+----------------------------------------Comment 1----------------------------------------
+
+📚 Documentation
+There is error in Google Colab
+INFO:lightning:GPU available: True, used: True
+INFO:lightning:CUDA_VISIBLE_DEVICES: [0]
+Traceback (most recent call last):
+File "/content/gdrive/My Drive/Google_Colab_Notebooks/2020-CURT/fastMRI-playground-29Apr20/models/unet/train_unet.py", line 229, in 
+main()
+File "/content/gdrive/My Drive/Google_Colab_Notebooks/2020-CURT/fastMRI-playground-29Apr20/models/unet/train_unet.py", line 226, in main
+run(args)
+File "/content/gdrive/My Drive/Google_Colab_Notebooks/2020-CURT/fastMRI-playground-29Apr20/models/unet/train_unet.py", line 205, in run
+trainer.test(model)
+File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/trainer.py", line 954, in test
+self.check_testing_model_configuration(model if model else self.model)
+File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/trainer/trainer.py", line 1029, in check_testing_model_configuration
+gave_test_loader = hasattr(model, 'test_dataloader') and model.test_dataloader()
+File "/usr/local/lib/python3.6/dist-packages/pytorch_lightning/core/decorators.py", line 13, in inner_fx
+return fn(self)
+File "/content/gdrive/My Drive/Google_Colab_Notebooks/2020-CURT/fastMRI-playground-29Apr20/models/unet/models/mri_model.py", line 84, in test_dataloader
+return self._create_data_loader(self.test_data_transform(), data_partition=self.hparams.mode, sample_rate=1.)
+File "/content/gdrive/My Drive/Google_Colab_Notebooks/2020-CURT/fastMRI-playground-29Apr20/models/unet/models/mri_model.py", line 55, in _create_data_loader
+sampler = DistributedSampler(dataset)
+File "/usr/local/lib/python3.6/dist-packages/torch/utils/data/distributed.py", line 43, in init
+num_replicas = dist.get_world_size()
+File "/usr/local/lib/python3.6/dist-packages/torch/distributed/distributed_c10d.py", line 582, in get_world_size
+return _get_group_size(group)
+File "/usr/local/lib/python3.6/dist-packages/torch/distributed/distributed_c10d.py", line 196, in _get_group_size
+_check_default_pg()
+File "/usr/local/lib/python3.6/dist-packages/torch/distributed/distributed_c10d.py", line 187, in _check_default_pg
+"Default process group is not initialized"
+AssertionError: Default process group is not initialized
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @xush6528 @osalpekar
+
+----------------------------------------Comment 1----------------------------------------
+
+🚀 Feature
+PyTorch 1.8 introduces CUDA-support in RPC. This is done by simply specifying device mappings between workers.
+However, device maps can only be defined between CUDA devices:
+
+
+
+pytorch/torch/distributed/rpc/options.py
+
+
+        Lines 103 to 109
+      in
+      215950e
+
+
+
+
+
+
+ k, v = torch.device(k), torch.device(v) 
+
+
+
+ if k.type != 'cuda' or v.type != 'cuda': 
+
+
+
+ raise ValueError( 
+
+
+
+ "`set_device_map` only supports CUDA devices, " 
+
+
+
+ f"but got device pair {k}: {v}" 
+
+
+
+ 
+
+
+
+     ) 
+
+
+
+
+
+I would like to request support for defining device maps between CUDA devices and CPU.
+Motivation
+I'm trying to implement a CPU parameter server. The workers compute gradients using GPUs and then send them to the parameter server. The parameter server computes the updated parameters (on CPU) and sends them back to the worker.
+Supporting GPU/CPU communication directly could provide speed improvements by saving time on copying.
+Pitch
+Defining a device map from a GPU to CPU or vice-versa should be supported. For example (based on the one provided in the documentation):
+
+Alternatives
+Currently, the only way I'm aware of to send from a GPU to a CPU using RPC is by first copying the GPU tensors to the CPU and then send them over, e.g.:
+
+Of course, copying can be performed beforehand, preferably in a non-blocking way.
+Additional context
+Follow up to #53501
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @gqchen @aazzolini @rohan-varma @jjlilley @osalpekar @jiayisuse @mrzzd @lw @beauby @agolynski @SciPioneer @H-Huang @cbalioglu
+
+----------------------------------------Comment 1----------------------------------------
+
+🚀 Feature
+In our current RPC APIs (rpc_sync, async, rpc.remote), we first serialize (pickle) the function, argument, and kwargs being sent to the destination worker, and pass this serialized representation as a string in C++ to construct our notion of a SerializedPyObj. This is done so that we can send these bytes across the network and reconstruct the needed information on the remote end.
+We have noticed some slowness in this python serialization, namely in use cases with a large number of remote trainers being set up as an RRef on a master/parameter server node. In setups like these, the following pattern is quite common:
+
+Note that in the loop while the dst worker is different, the function and arguments being serialized are the same. This may mean that caching the serialized representation from call to call could be useful, speeding up the end to end latency. For speeding up individual calls, we can look into parallelizing the serialization, which will be more complex than simple caching as the parallelization would have to be implemented in the C++ layer.
+A very basic demo can be found here: #49910, where we test the caching hypothesis on a workload where serialization is quite expensive. We see about a 50% reduction in overall latency in this basic sample case.
+Motivation
+In some training workloads, we have noticed serialization taking up a large portion of time when initializing the setup discussed above. Since many of these workloads follow the pattern above, caching/parallelization should be a good candidate to speed this up.
+Pitch
+Implement caching similar to the demo here: #49910 and evaluate its impact on the above described workloads. If parallelization across arguments in individual calls also sounds like it makes sense and is likely to result in a speedup, we can discuss a concrete implementation plan to move the pickling into C++ to take advantage of multiple cores.
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @gqchen @aazzolini @rohan-varma @jjlilley @osalpekar @jiayisuse @agolynski @SciPioneer @H-Huang @mrzzd
+
+----------------------------------------Comment 1----------------------------------------
+
+📚 Documentation
+Every time there is a group argument in https://pytorch.org/docs/stable/distributed.html, it currently shows: group=<object object> in the function signature,
+e.g.:
+
+a few dozen of those.
+the default value should be group.WORLD but the doc creator turns it into object object. This is probably unintentional, since what can a user do with the default object object.
+Thanks.
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @agolynski @SciPioneer @H-Huang @mrzzd
+
+----------------------------------------Comment 1----------------------------------------
+
+As we add more and more message types, the request/response type check function needs to go through more and more comparisons. I wonder if we should organize bits to simplify it. E.g., we can have the lowest 8 bits representing the message type, and then the next 8 bits serve as flags. And have a kIsRequestMask=0x10 mask. In this case SCRIPT_CALL will be kIsRequestMask | 0, etc. Then the isRequest function can simply be return kIsRequestMask & type_;.
+
+
+
+pytorch/torch/csrc/distributed/rpc/message.cpp
+
+
+        Lines 78 to 113
+      in
+      cb4b633
+
+
+
+
+
+
+ bool Message::isRequest() const { 
+
+
+
+ return MessageType::SCRIPT_CALL == type_ || // dist.rpc on builtin ops 
+
+
+
+       MessageType::PYTHON_CALL == type_ || // dist.rpc on Python UDFs 
+
+
+
+       MessageType::SCRIPT_REMOTE_CALL == type_ || // dist.remote on builtin ops 
+
+
+
+       MessageType::PYTHON_REMOTE_CALL == type_ || // dist.remote on Python UDFs 
+
+
+
+ // RRef related internal messages 
+
+
+
+       MessageType::SCRIPT_RREF_FETCH_CALL == type_ || 
+
+
+
+       MessageType::PYTHON_RREF_FETCH_CALL == type_ || 
+
+
+
+       MessageType::RREF_USER_DELETE == type_ || 
+
+
+
+       MessageType::RREF_CHILD_ACCEPT == type_ || 
+
+
+
+       MessageType::RREF_FORK_REQUEST == type_ || 
+
+
+
+ // Autograd message 
+
+
+
+       MessageType::BACKWARD_AUTOGRAD_REQ == type_ || 
+
+
+
+       MessageType::FORWARD_AUTOGRAD_REQ == type_ || 
+
+
+
+ // Cleanup Autograd context request 
+
+
+
+       MessageType::CLEANUP_AUTOGRAD_CONTEXT_REQ == type_ || 
+
+
+
+ // Run with profiling request 
+
+
+
+       MessageType::RUN_WITH_PROFILING_REQ == type_; 
+
+
+
+ } 
+
+
+
+ 
+
+
+
+ bool Message::isResponse() const { 
+
+
+
+ return MessageType::SCRIPT_RET == type_ || // ret of dist.rpc on builtin ops 
+
+
+
+       MessageType::PYTHON_RET == type_ || // ret of dist.rpc on Python UDFs 
+
+
+
+       MessageType::REMOTE_RET == type_ || // ret of dist.remote 
+
+
+
+       MessageType::SCRIPT_RREF_FETCH_RET == type_ || // ret on RRef::toHere() 
+
+
+
+       MessageType::PYTHON_RREF_FETCH_RET == type_ || // ret on RRef::toHere() 
+
+
+
+       MessageType::EXCEPTION == type_ || // propagate back exceptions 
+
+
+
+       MessageType::RREF_ACK == type_ || // ret of other types 
+
+
+
+ // Autograd response 
+
+
+
+       MessageType::BACKWARD_AUTOGRAD_RESP == type_ || 
+
+
+
+       MessageType::FORWARD_AUTOGRAD_RESP == type_ || 
+
+
+
+ // Cleanup autograd context response 
+
+
+
+       MessageType::CLEANUP_AUTOGRAD_CONTEXT_RESP == type_ || 
+
+
+
+ // Run with profiling response 
+
+
+
+       MessageType::RUN_WITH_PROFILING_RESP == type_; 
+
+
+
+ } 
+
+
+
+
+
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @gqchen @aazzolini @rohan-varma @xush6528 @jjlilley @osalpekar @jiayisuse @agolynski
+

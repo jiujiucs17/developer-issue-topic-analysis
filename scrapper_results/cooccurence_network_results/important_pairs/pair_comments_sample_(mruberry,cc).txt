@@ -1,0 +1,271 @@
+----------------------------------------Comment 1----------------------------------------
+
+The links to LAPACK functions seem to be broken. See for example the links in:
+https://pytorch.org/docs/stable/generated/torch.geqrf.html
+In torch.orgqr and torch.ormqr, it directly points to the main Intel page, but I guess it would be better to point to the actual documentation of the methods:
+https://pytorch.org/docs/stable/generated/torch.orgqr.html
+https://pytorch.org/docs/stable/generated/torch.ormqr.html
+cc @jlin27 @mruberry @jianyuh @nikitaved @pearu @heitorschueroff @walterddr @IvanYashchuk
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Backward hooks don't fire when a module returns List or Dict objects but they do fire when a module returns Tuple. Here's a repro script:
+
+Here's the output from the above script:
+
+It produces the same output when the return [x, x] version is run instead. When the return x, x version is run, we get the correct output:
+
+All three should produce the same output -- with the hook triggering.
+Versions
+
+cc @albanD @mruberry @jbschlosser @walterddr @kshitij12345 @saketh-are
+
+----------------------------------------Comment 1----------------------------------------
+
+See
+
+
+
+pytorch/torch/nn/modules/activation.py
+
+
+        Lines 909 to 910
+      in
+      0fbc471
+
+
+
+
+
+
+ def __init__(self, embed_dim, num_heads, dropout=0., bias=True, add_bias_kv=False, add_zero_attn=False, 
+
+
+
+ kdim=None, vdim=None, batch_first=False, device=None, dtype=None) -> None: 
+
+
+
+
+
+The constructor says key and value can have their own dimensions kdim and vdim.
+But the forward function writes
+
+
+
+pytorch/torch/nn/modules/activation.py
+
+
+        Lines 992 to 995
+      in
+      0fbc471
+
+
+
+
+
+
+         - key: :math:`(S, N, E)`, where S is the source sequence length, N is the batch size, E is 
+
+
+
+           the embedding dimension. :math:`(N, S, E)` if ``batch_first`` is ``True``. 
+
+
+
+         - value: :math:`(S, N, E)` where S is the source sequence length, N is the batch size, E is 
+
+
+
+           the embedding dimension. :math:`(N, S, E)` if ``batch_first`` is ``True``. 
+
+
+
+
+
+key and value in the forward function are always E, i.e., the embed_dim.
+cc @brianjo @mruberry @jbschlosser @bhosmer @cpuhrsch
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I have use the sample process to load model to GPU. But the memory on CPU keep extend 5 GB while GPU take 2GB
+
+Versions
+pytorch 1.10 CUDA 11.3
+cc @albanD @mruberry @jbschlosser @walterddr @mikaylagawarecki
+
+----------------------------------------Comment 1----------------------------------------
+
+🚀 Feature
+Follow up from #47112
+A NumPy-like from_buffer function for creating a tensor without copying data.
+Alternatives
+Apparently, people were using Storage.from_buffer and passing it to the constructor instead. There are two problems with it, though:
+
+When the legacy constructor is deprecated, so will be the means to create a tensor from a Storage object.
+As far as I can tell, Storage.from_buffer does copy the data.
+
+Code in torchvision:
+
+That said, it's possible to do it through NumPy, by using the torch.from_numpy function.
+cc @mruberry @rgommers @heitorschueroff @ezyang
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+To Reproduce
+
+
+Expected behavior
+Group norm seems to reshape the input tensor and then use batch norm internally based on [these lines]:(
+
+
+pytorch/aten/src/ATen/native/Normalization.cpp
+
+
+         Line 465
+      in
+      7157be8
+
+
+
+
+
+
+ auto input_reshaped = input.contiguous().view({1, b * num_groups, -1}); 
+
+
+
+
+)
+
+I am able to train models that have batch norms in mix precision with Nvidia's apex, so I guess it should work for group morns.
+Environment
+PyTorch version: 1.0.1
+Is debug build: No
+CUDA used to build PyTorch: 10.0
+OS: Microsoft Windows 10 Home
+GCC version: (GCC) 7.3.0
+CMake version: version 3.12.18081601-MSVC_2
+Python version: 3.7
+Is CUDA available: Yes
+CUDA runtime version: 10.0.130
+cc @nairbv @mruberry
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+
+fails with
+
+Curiously, exchanging the order of calls, i.e. making it
+
+works fine and produces the correct result. Removing the numpy from the equation --- chaging all np. to torch. also works fine and produces the correct result.
+Versions
+main
+cc @mruberry @rgommers @voznesenskym @penguinwu @EikanWang @jgong5 @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @wenzhe-nrv @jiayisunx @chenyang78 @aakhundov @kadeng
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+torch.nn.LayerNorm() throws an error when using the GPU
+
+Error message:
+
+Versions
+PyTorch version: 1.13.0.dev20220527
+Is debug build: False
+CUDA used to build PyTorch: None
+ROCM used to build PyTorch: N/A
+OS: macOS 12.3.1 (arm64)
+GCC version: Could not collect
+Clang version: 13.1.6 (clang-1316.0.21.2.3)
+CMake version: version 3.23.0-rc3
+Libc version: N/A
+Python version: 3.8.13 | packaged by conda-forge | (default, Mar 25 2022, 06:04:14)  [Clang 12.0.1 ] (64-bit runtime)
+Python platform: macOS-12.3.1-arm64-arm-64bit
+Is CUDA available: False
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.22.3
+[pip3] torch==1.13.0.dev20220527
+[pip3] torchaudio==0.11.0
+[pip3] torchvision==0.12.0
+[pip3] vit-pytorch==0.35.2
+[conda] numpy                     1.22.3           py38h4084d66_2    conda-forge
+[conda] torch                     1.13.0.dev20220527          pypi_0    pypi
+[conda] torchaudio                0.11.0                   pypi_0    pypi
+[conda] torchvision               0.12.0                   pypi_0    pypi
+[conda] vit-pytorch               0.35.2                   pypi_0    pypi
+cc @albanD @mruberry @jbschlosser @walterddr @kshitij12345
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+torch.max_pool(1d, 2d, 3d) doesn't take return_indices as an argument, as seen in torch/__init__.pyi (while torch.nn.functional.max_pool(1d, 2d, 3d,) and torch._max_pool(1d, 2d, 3d) do) .
+However, the signature reported in torch/overrides.py/get_testing_overrides() includes return_indices as an argument.
+To Reproduce
+Compare the two files mentioned above.
+Expected behavior
+The signature should match.
+Environment
+Applies both to 1.6.0 (_overrides.py) and current master (overrides.py).
+Additional context
+Nothing.
+cc @mruberry @rgommers @VitalyFedyunin @ezyang @bhosmer @smessmer @ljk53 @bdhirsh @ailzhang
+
+----------------------------------------Comment 1----------------------------------------
+
+The following functions and classes are not documented correctly: they are part of the public API but do not show up on the docs website
+This means that we want to do either:
+
+Add a docstring and make sure it is properly added to a .rst file so that it appears on the docs website
+Make it private by prepending a _ to the function name
+Remove it from the public API by deleting it from your __init__.py file (like here)
+
+torch.cuda
+Functions:
+
+check_error
+cudart
+is_bf16_supported
+
+Classes:
+
+BFloat16Storage
+BFloat16Tensor
+BoolStorage
+BoolTensor
+ByteStorage
+ByteTensor
+CharStorage
+CharTensor
+ComplexDoubleStorage
+ComplexFloatStorage
+CudaError
+DeferredCudaCallError
+DoubleStorage
+DoubleTensor
+FloatStorage
+FloatTensor
+HalfStorage
+HalfTensor
+IntStorage
+IntTensor
+LongStorage
+LongTensor
+ShortStorage
+ShortTensor
+UntypedStorage
+cudaStatus
+
+cc @brianjo @mruberry @ngimel
+

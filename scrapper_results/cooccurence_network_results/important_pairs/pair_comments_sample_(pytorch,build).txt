@@ -1,0 +1,562 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+To Reproduce
+Steps to reproduce the behavior:
+
+Set up a module inherited from LazyModuleMixin
+After module initialization, hook a function as hook_function(module, input)
+run the forward function of the module.
+Got the runtime error as "RuntimeError: OrderedDict mutated during iteration"
+
+Example code to reproduce the runtime error:
+
+Expected behavior
+Extra function should be used as forward_pre_hook function beside _infer_parameters.
+The previous example of code should be executed without error with expected output as:
+
+Environment
+
+
+PyTorch version: 1.9.0.dev20210603+cpu
+
+
+Is debug build: False
+
+
+CUDA used to build PyTorch: None
+
+
+ROCM used to build PyTorch: N/A
+
+
+OS: CentOS Stream 8 (x86_64)
+
+
+GCC version: (GCC) 8.4.1 20200928 (Red Hat 8.4.1-1)
+
+
+Clang version: Could not collect
+
+
+CMake version: Could not collect
+
+
+Libc version: glibc-2.3.4
+
+
+Python version: 3.6 (64-bit runtime)
+
+
+Python platform: Linux-5.2.9-240_fbk16_hardened_4245_g53e65cc15fc6-x86_64-with-centos-8
+
+
+Is CUDA available: False
+
+
+CUDA runtime version: No CUDA
+
+
+GPU models and configuration: No CUDA
+
+
+Nvidia driver version: No CUDA
+
+
+cuDNN version: No CUDA
+
+
+Additional context
+The fix is on the module.py with one line change. Will submit a fix shortly.
+cc @albanD @mruberry @jbschlosser
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+The torch.special.sinc function fails to compile when using the torch.compile optimized mode. However, the same code runs successfully in eager execution mode. I believe this discrepancy indicates a bug.
+To reproduce
+
+Error messages and stack trace
+please refer gist
+Versions
+PyTorch version: 2.2.0.dev20230921+cu118
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 22.04.3 LTS (x86_64)
+GCC version: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
+Clang version: Could not collect
+CMake version: version 3.22.1
+Libc version: glibc-2.35
+Python version: 3.9.17 (main, Jul 5 2023, 20:41:20) [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-86-generic-x86_64-with-glibc2.35
+Is CUDA available: True
+CUDA runtime version: 12.1.105
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration:
+GPU 0: NVIDIA GeForce RTX 2070
+GPU 1: NVIDIA GeForce RTX 2070
+GPU 2: NVIDIA GeForce RTX 2070
+GPU 3: NVIDIA GeForce RTX 2070
+Nvidia driver version: 535.104.12
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture: x86_64
+CPU op-mode(s): 32-bit, 64-bit
+Address sizes: 46 bits physical, 48 bits virtual
+Byte Order: Little Endian
+CPU(s): 32
+On-line CPU(s) list: 0-31
+Vendor ID: GenuineIntel
+Model name: Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz
+CPU family: 6
+Model: 63
+Thread(s) per core: 2
+Core(s) per socket: 8
+Socket(s): 2
+Stepping: 2
+CPU max MHz: 3200.0000
+CPU min MHz: 1200.0000
+BogoMIPS: 4794.64
+Flags: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm cpuid_fault epb invpcid_single pti ssbd ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm xsaveopt cqm_llc cqm_occup_llc dtherm ida arat pln pts md_clear flush_l1d
+Virtualization: VT-x
+L1d cache: 512 KiB (16 instances)
+L1i cache: 512 KiB (16 instances)
+L2 cache: 4 MiB (16 instances)
+L3 cache: 40 MiB (2 instances)
+NUMA node(s): 2
+NUMA node0 CPU(s): 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30
+NUMA node1 CPU(s): 1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31
+Vulnerability Gather data sampling: Not affected
+Vulnerability Itlb multihit: KVM: Mitigation: VMX disabled
+Vulnerability L1tf: Mitigation; PTE Inversion; VMX conditional cache flushes, SMT vulnerable
+Vulnerability Mds: Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Meltdown: Mitigation; PTI
+Vulnerability Mmio stale data: Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Retbleed: Not affected
+Vulnerability Spec rstack overflow: Not affected
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1: Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2: Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP conditional, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds: Not affected
+Vulnerability Tsx async abort: Not affected
+Versions of relevant libraries:
+[pip3] numpy==1.24.3
+[pip3] pytorch-triton==2.1.0+6e4932cda8
+[pip3] torch==2.2.0.dev20230921+cu118
+[pip3] torchaudio==2.2.0.dev20230921+cu118
+[pip3] torchvision==0.17.0.dev20230921+cu118
+[conda] cudatoolkit 11.8.0 h6a678d5_0 defaults
+[conda] numpy 1.24.3 pypi_0 pypi
+[conda] pytorch-triton 2.1.0+6e4932cda8 pypi_0 pypi
+[conda] torch 2.2.0.dev20230921+cu118 pypi_0 pypi
+[conda] torchaudio 2.2.0.dev20230921+cu118 pypi_0 pypi
+[conda] torchvision 0.17.0.dev20230921+cu118 pypi_0 pypi
+cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @zou3519
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Using the pytorch 1.7.1 conda binary, the same operation gives me the correct answer when using cuda 10.2, but gives all zeros when using cuda 11.0.
+To Reproduce
+Steps to reproduce the behavior:
+
+Unzip attached file: failing_tensors.zip, which will become failing_tensors.pt
+Load the tensors with q, k = torch.load("failing_tensors.pt")
+Perform the matrix multiplication: torch.bmm(q, k.transpose(1, 2))
+
+Step 3. succeeds when using cuda 10.2, but provides either all zeros or all nans when using cuda 11.0.
+Environment
+PyTorch version: 1.7.1
+Is debug build: False
+CUDA used to build PyTorch: 11.0
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.5 LTS (x86_64)
+GCC version: (Ubuntu 8.4.0-1ubuntu1~18.04) 8.4.0
+Clang version: Could not collect
+CMake version: version 3.19.0-rc1
+Python version: 3.8 (64-bit runtime)
+Is CUDA available: True
+CUDA runtime version: 11.0.194
+GPU models and configuration:
+GPU 0: TITAN Xp
+GPU 1: TITAN Xp
+Nvidia driver version: 450.51.05
+cuDNN version: /usr/local/cuda-10.1/targets/x86_64-linux/lib/libcudnn.so.7
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.19.2
+[pip3] torch==1.7.1
+[conda] blas                      1.0                         mkl
+[conda] cudatoolkit               11.0.221             h6bb024c_0
+[conda] mkl                       2020.2                      256
+[conda] mkl-service               2.3.0            py38he904b0f_0
+[conda] mkl_fft                   1.2.1            py38h54f3939_0
+[conda] mkl_random                1.1.1            py38h0573a6f_0
+[conda] numpy                     1.19.2           py38h54aff64_0
+[conda] numpy-base                1.19.2           py38hfa32c7d_0
+[conda] pytorch                   1.7.1           py3.8_cuda11.0.221_cudnn8.0.5_0    pytorch
+cc @csarofeen @ptrblck @xwang233 @ngimel
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I found interesting behavior when using reshape and view without clone - hopefully it is documented somewhere, although if it is, I have missed it.
+When I reshape a Tensor x and save the result to a different Tensor ywithout calling clone, later operations on y can affect x. Calling clone when doing the reshape fixes this.
+MWE:
+
+Output:
+
+Versions
+Collecting environment information...
+PyTorch version: 2.0.0+cu117
+Is debug build: False
+CUDA used to build PyTorch: 11.7
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.5 LTS (x86_64)
+GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+Clang version: Could not collect
+CMake version: version 3.26.3
+Libc version: glibc-2.27
+Python version: 3.8.16 (default, Mar  2 2023, 03:21:46)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-4.15.0-176-generic-x86_64-with-glibc2.17
+Versions of relevant libraries:
+[pip3] numpy==1.24.3
+[pip3] pytorch-lightning==1.7.7
+[pip3] torch==2.0.0
+[pip3] torchdata==0.6.0
+[pip3] torchmetrics==0.11.4
+[pip3] torchvision==0.15.1
+[pip3] triton==2.0.0
+[conda] numpy                     1.24.3                   pypi_0    pypi
+[conda] pytorch-lightning         1.7.7                    pypi_0    pypi
+[conda] torch                     2.0.0                    pypi_0    pypi
+[conda] torchdata                 0.6.0                    pypi_0    pypi
+[conda] torchmetrics              0.11.4                   pypi_0    pypi
+[conda] torchvision               0.15.1                   pypi_0    pypi
+[conda] triton                    2.0.0                    pypi_0    pypi
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I'm developing a C++ & CUDA extension (as part of the phytorch package), and I had written a function std::isnan(c10::complex<T>). However, since v2.0.0, torch includes a similar function in c10/util/complex_utils.h (link).
+My problem is that, unlike most other functions that relate to c10:complex<T>, isnan is not declared with __host__ __device__, and I cannot use it in CUDA code, but I also cannot overwrite it in my code (or can I?), so the compiler now throws an error. Therefore, I'm left with either having to rename my function (or move it to a different namespace), or (instruct my users to) patch the torch headers, which is very undesirable.
+Will it be possible to add C10_HOST_DEVICE to isnan in complex_utils.h? Or would you recommend some other way of "using" it in GPU code? Thanks!
+Versions
+Collecting environment information...
+PyTorch version: 2.0.0
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Rocky Linux release 8.8 (Green Obsidian) (x86_64)
+GCC version: (conda-forge gcc 11.3.0-19) 11.3.0
+Clang version: Could not collect
+CMake version: version 3.20.2
+Libc version: glibc-2.28
+Python version: 3.10.10 | packaged by conda-forge | (main, Mar 24 2023, 20:08:06) [GCC 11.3.0] (64-bit runtime)
+Python platform: Linux-4.18.0-425.19.2.el8_7.x86_64-x86_64-with-glibc2.28
+Is CUDA available: True
+CUDA runtime version: 11.8.89
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: NVIDIA A100-PCIE-40GB
+Nvidia driver version: 525.89.02
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:        x86_64
+CPU op-mode(s):      32-bit, 64-bit
+Byte Order:          Little Endian
+CPU(s):              112
+On-line CPU(s) list: 0-111
+Thread(s) per core:  2
+Core(s) per socket:  28
+Socket(s):           2
+NUMA node(s):        2
+Vendor ID:           GenuineIntel
+CPU family:          6
+Model:               85
+Model name:          Intel(R) Xeon(R) Gold 6238R CPU @ 2.20GHz
+Stepping:            7
+CPU MHz:             2200.000
+BogoMIPS:            4400.00
+Virtualization:      VT-x
+L1d cache:           32K
+L1i cache:           32K
+L2 cache:            1024K
+L3 cache:            39424K
+NUMA node0 CPU(s):   0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,78,80,82,84,86,88,90,92,94,96,98,100,102,104,106,108,110
+NUMA node1 CPU(s):   1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,69,71,73,75,77,79,81,83,85,87,89,91,93,95,97,99,101,103,105,107,109,111
+Flags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 cdp_l3 invpcid_single intel_ppin ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm mpx rdt_a avx512f avx512dq rdseed adx smap clflushopt clwb intel_pt avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local dtherm ida arat pln pts pku ospke avx512_vnni md_clear flush_l1d arch_capabilities
+Versions of relevant libraries:
+[pip3] numpy==1.24.2
+[pip3] phytorch==0.0.post1.dev91+gd60c96f.d20230407
+[pip3] phytorchx==0.1.post1.dev0+ge54312c.d20230816
+[pip3] pytorch-lightning==2.0.1
+[pip3] torch==2.0.0
+[pip3] torch-scatter==2.1.1+pt20cu118
+[pip3] torchdiffeq==0.2.2
+[pip3] torchmetrics==0.11.4
+[pip3] torchviz==0.0.2
+[pip3] triton==2.0.0
+[conda] blas                      2.116                       mkl    conda-forge
+[conda] blas-devel                3.9.0            16_linux64_mkl    conda-forge
+[conda] cudatoolkit               11.7.0              hd8887f6_10    nvidia
+[conda] libblas                   3.9.0            16_linux64_mkl    conda-forge
+[conda] libcblas                  3.9.0            16_linux64_mkl    conda-forge
+[conda] liblapack                 3.9.0            16_linux64_mkl    conda-forge
+[conda] liblapacke                3.9.0            16_linux64_mkl    conda-forge
+[conda] mkl                       2022.1.0           h84fe81f_915    conda-forge
+[conda] mkl-devel                 2022.1.0           ha770c72_916    conda-forge
+[conda] mkl-include               2022.1.0           h84fe81f_915    conda-forge
+[conda] numpy                     1.24.2          py310h8deb116_0    conda-forge
+[conda] phytorch                  0.0.post1.dev91+gd60c96f.d20230407          pypi_0    pypi
+[conda] phytorchx                 0.1.post1.dev0+ge54312c.d20230816          pypi_0    pypi
+[conda] pytorch                   2.0.0           py3.10_cuda11.8_cudnn8.7.0_0    pytorch
+[conda] pytorch-cuda              11.8                 h7e8668a_3    pytorch
+[conda] pytorch-lightning         2.0.1              pyhd8ed1ab_0    conda-forge
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torch-scatter             2.1.1+pt20cu118          pypi_0    pypi
+[conda] torchdiffeq               0.2.2              pyhd8ed1ab_0    conda-forge
+[conda] torchmetrics              0.11.4             pyhd8ed1ab_0    conda-forge
+[conda] torchtriton               2.0.0                     py310    pytorch
+[conda] torchviz                  0.0.2                    pypi_0    pypi
+cc @ptrblck
+
+----------------------------------------Comment 1----------------------------------------
+
+I need to build pytorch from source without conda (there is a compelling reason for not using conda).  All the prerequisites are satisfied and the build runs successfully.
+However, import fails:
+
+
+
+import torch
+...
+from torch._C import *
+ImportError: dynamic module does not define module export function (PyInit__C)
+
+
+
+Build environment: python 3.8.0 with required packages, no CUDA, gcc 8.3.0, mkl/2019.5.281, fftw/3.3.8, ffmpeg/4.1.3, cmake 3.12.3, pytorch 1.4.0.a0 git commit 36d17f4
+The C extension is build with commands (according to the  output from build):
+building 'torch._C' extension
+creating build/temp.linux-x86_64-3.7
+creating build/temp.linux-x86_64-3.7/torch
+creating build/temp.linux-x86_64-3.7/torch/csrc
+/opt/apps/gcc/8.3.0/bin/gcc -Wno-unused-result -Wsign-compare -DNDEBUG -g -fwrapv -O3 -Wall -I/opt/apps/fftw/3.3.8/include -I -fPIC -I/opt/apps/python/3.7.6/include/python3.7m -c torch/csrc/stub.cpp -o build/temp.linux-x86_64-3.7/torch/csrc/stub.o -std=c++14 -Wall -Wextra -Wno-strict-overflow -Wno-unused-parameter -Wno-missing-field-initializers -Wno-write-strings -Wno-unknown-pragmas -Wno-deprecated-declarations -fno-strict-aliasing -Wno-missing-braces
+/opt/apps/gcc/8.3.0/bin/g++ -pthread -shared -L/opt/apps/fftw/3.3.8/lib -Wl,-rpath,/opt/apps/fftw/3.3.8/lib -L/opt/intel/compilers_and_libraries_2019.5.281/linux/mkl/lib/intel64 -L/opt/apps/gcc/8.3.0/lib64 -Wl,-rpath,/opt/apps/gcc/8.3.0/lib64 -I/opt/apps/fftw/3.3.8/include -I build/temp.linux-x86_64-3.7/torch/csrc/stub.o -L/export/repositories/pytorch-admix/yamlspecs/pytorch-1.4.0.a0/torch/lib -L/opt/apps/python/3.7.6/lib -lshm -ltorch_python -lpython3.7m -o build/lib.linux-x86_64-3.7/torch/_C.cpython-37m-x86_64-linux-gnu.so -Wl,-rpath,$ORIGIN/lib
+The extension library is on PYTHONPATH and is installed in a default python 3.8.0 location. The installation is per  "python setup.py install".
+I would appreciate any advice on fixing the import error.
+Regards
+nadya
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Hello,
+I am very new to pytorch.
+I build pytorch 1.10.0 and install on the aarch64 machine.
+When I execute python script below. I found the output tensor that contain zero value.
+On the x86 machine, I got the output tensor that is whole one value.
+I want to know what is the reason.
+Thanks for the suggestions.
+code:
+
+output:
+
+In addition to this, I found that the default tensor type is float.
+When I change the default tensor type. I found the output tensor that is expected right value.
+code:
+
+output:
+
+Versions
+Collecting environment information...
+PyTorch version: 1.10.0a0+git36449ea
+Is debug build: False
+CUDA used to build PyTorch: None
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.6 LTS (aarch64)
+GCC version: (Ubuntu/Linaro 7.5.0-3ubuntu1~18.04) 7.5.0
+Clang version: Could not collect
+CMake version: version 3.10.2
+Libc version: glibc-2.17
+Python version: 3.7.4 (default, Mar 22 2022, 08:04:39)  [GCC 7.5.0] (64-bit runtime)
+Python platform: Linux-4.19.90-24.4.v2101.ky10.aarch64-aarch64-with-debian-buster-sid
+Is CUDA available: False
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.18.4
+[pip3] torch==1.10.0a0+git36449ea
+[pip3] torchaudio==0.7.0
+[pip3] torchvision==0.8.1
+[conda] Could not collect
+cc @ezyang @gchanan @zou3519 @malfet
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+The torch.floor function fails to compile when using the torch.compile optimized mode. However, the same code runs successfully in eager execution mode. I believe this discrepancy indicates a bug.
+To reproduce
+
+Error messages and stack trace
+
+Versions
+PyTorch version: 2.2.0.dev20230921+cu118
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 22.04.3 LTS (x86_64)
+GCC version: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
+Clang version: Could not collect
+CMake version: version 3.22.1
+Libc version: glibc-2.35
+Python version: 3.9.17 (main, Jul 5 2023, 20:41:20) [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-86-generic-x86_64-with-glibc2.35
+Is CUDA available: True
+CUDA runtime version: 12.1.105
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration:
+GPU 0: NVIDIA GeForce RTX 2070
+GPU 1: NVIDIA GeForce RTX 2070
+GPU 2: NVIDIA GeForce RTX 2070
+GPU 3: NVIDIA GeForce RTX 2070
+Nvidia driver version: 535.104.12
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture: x86_64
+CPU op-mode(s): 32-bit, 64-bit
+Address sizes: 46 bits physical, 48 bits virtual
+Byte Order: Little Endian
+CPU(s): 32
+On-line CPU(s) list: 0-31
+Vendor ID: GenuineIntel
+Model name: Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz
+CPU family: 6
+Model: 63
+Thread(s) per core: 2
+Core(s) per socket: 8
+Socket(s): 2
+Stepping: 2
+CPU max MHz: 3200.0000
+CPU min MHz: 1200.0000
+BogoMIPS: 4794.64
+Flags: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm cpuid_fault epb invpcid_single pti ssbd ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm xsaveopt cqm_llc cqm_occup_llc dtherm ida arat pln pts md_clear flush_l1d
+Virtualization: VT-x
+L1d cache: 512 KiB (16 instances)
+L1i cache: 512 KiB (16 instances)
+L2 cache: 4 MiB (16 instances)
+L3 cache: 40 MiB (2 instances)
+NUMA node(s): 2
+NUMA node0 CPU(s): 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30
+NUMA node1 CPU(s): 1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31
+Vulnerability Gather data sampling: Not affected
+Vulnerability Itlb multihit: KVM: Mitigation: VMX disabled
+Vulnerability L1tf: Mitigation; PTE Inversion; VMX conditional cache flushes, SMT vulnerable
+Vulnerability Mds: Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Meltdown: Mitigation; PTI
+Vulnerability Mmio stale data: Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Retbleed: Not affected
+Vulnerability Spec rstack overflow: Not affected
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1: Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2: Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP conditional, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds: Not affected
+Vulnerability Tsx async abort: Not affected
+Versions of relevant libraries:
+[pip3] numpy==1.24.3
+[pip3] pytorch-triton==2.1.0+6e4932cda8
+[pip3] torch==2.2.0.dev20230921+cu118
+[pip3] torchaudio==2.2.0.dev20230921+cu118
+[pip3] torchvision==0.17.0.dev20230921+cu118
+[conda] cudatoolkit 11.8.0 h6a678d5_0 defaults
+[conda] numpy 1.24.3 pypi_0 pypi
+[conda] pytorch-triton 2.1.0+6e4932cda8 pypi_0 pypi
+[conda] torch 2.2.0.dev20230921+cu118 pypi_0 pypi
+[conda] torchaudio 2.2.0.dev20230921+cu118 pypi_0 pypi
+[conda] torchvision 0.17.0.dev20230921+cu118 pypi_0 pypi
+cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @zou3519
+
+----------------------------------------Comment 1----------------------------------------
+
+I am trying to build PyTorch on Ubuntu 18.04 without using Conda. I am trying to do that because of this issue with Nvidia Video Processing Framework integration ( NVIDIA/VideoProcessingFramework#250 (comment) ), and its suggested solution ( NVIDIA/VideoProcessingFramework#36 (comment) ).
+It seems that to build PyTorch, I need to install magma. While in conda this is a simple conda install -c pytorch magma-cuda110, it seems that the only way to install magma without conda is to build it.
+I tried to do that with:
+
+But it results in the error:
+
+I am running Ubuntu 18.04 on a AWS EC2 instance with a T4.
+My questions are:
+
+Is there a way to build PyTorch without conda? If it really gets so complicated, I might end up using conda, but for now I'd rather not
+Do I really need magma? I want to use Cuda.
+Is there a simpler way to install magma?
+
+cc @brianjo @mruberry @malfet @seemethere @ngimel
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+While trying to run the tests under pytorch/test/ using pytest's boxing option "--forked" (to isolate some tests crashing), I see that many tests hang with --forked.
+To Reproduce
+python -u  -m pytest test_ops.py --forked -svk test_out_cos_cpu_float32
+Steps to reproduce the behavior:
+
+Install pytest package along with the packages pytest-xdist and pytest-forked
+From pytorch/test/ run: python -u  -m pytest test_ops.py --forked -svk test_out_cos_cpu_float32
+The test should hang unless we kill the process (On Linux 'ps' would still show the python process running after ^C)
+
+Expected behavior
+I am expecting that there is some option given to run the tests under boxed option with pytest.
+Tests shouldn't hang with pytest's --forked option.
+Environment
+Collecting environment information...
+PyTorch version: 1.9.0a0+git09dfd6d
+Is debug build: False
+CUDA used to build PyTorch: None
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.6 LTS (x86_64)
+GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+Clang version: Could not collect
+CMake version: version 3.19.6
+Libc version: glibc-2.17
+Python version: 3.7 (64-bit runtime)
+Python platform: Linux-4.15.0-145-generic-x86_64-with-debian-buster-sid
+Is CUDA available: False
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] torch==1.0.0+767d490.dirty
+[pip3] torch-dataloader==1.0.0+767d490.dirty
+[pip3] numpy==1.21.2
+[pip3] torch==1.9.0a0+git09dfd6d
+[conda] torch              1.0.0+767d490.dirty          pypi_0    pypi
+[conda] torch-dataloader   1.0.0+767d490.dirty          pypi_0    pypi
+[conda] mkl                       2019.0                      118
+[conda] mkl-include               2019.0                      118
+[conda] numpy                     1.21.2                   pypi_0    pypi
+[conda] numpy-base                1.20.3           py37h39b7dee_0
+[conda] torch                     1.9.0a0+git09dfd6d          pypi_0    pypi
+Additional context
+I tried a first level triaging of the issue. The problem seem to trigger from the handling of "noncontiguous" tensors in make_tensor() utility (torch/testing/_creation.py on latest, but in torch/testing/_internal/common_utils.py in 1.9.0).
+"noncontiguous" tensors have a conditional additional call to torch.repeat_interleave(result, 2, dim=-1). The kernel implementation of "repeat_interleave" in aten/src/ATen/native/Repeat.cpp uses at::parallel_for() which can use multiple threads in the execution. My guess is that this usage of repeat_interleave for "noncontiguous" causes the hang when used with pytest's "--forked" option.
+cc @mruberry
+

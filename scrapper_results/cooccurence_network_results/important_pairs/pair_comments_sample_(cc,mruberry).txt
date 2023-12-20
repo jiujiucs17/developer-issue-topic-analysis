@@ -1,0 +1,204 @@
+----------------------------------------Comment 1----------------------------------------
+
+📚 The doc issue
+https://pytorch.org/docs/stable/generated/torch.Tensor.register_hook.html
+Clicking the "source" link redirects to https://pytorch.org/docs/stable/_modules/torch/_tensor.html#Tensor.register_hook, which does not exist.
+This is true in the master docs as well: https://pytorch.org/docs/master/generated/torch.Tensor.register_hook.html
+Suggest a potential alternative/fix
+Fix the link.
+cc @brianjo @mruberry
+
+----------------------------------------Comment 1----------------------------------------
+
+📚 Documentation
+after #50998 I couldn't checkout any commit that still uses github.com/seemethere/pybind11.git because the actual third_party commit lives on @seemethere 's personal fork.
+the instruction on CONTRIBUTING.md to clean the repo doesn't work for this scenario when .gitmodules file was changed with a different repository.
+cc @jlin27 @mruberry
+
+----------------------------------------Comment 1----------------------------------------
+
+📚 Documentation
+https://pytorch.org/docs/stable/generated/torch.nn.KLDivLoss.html#torch.nn.KLDivLoss
+l_n should be y_n * (log(y_n) - log(x_n)) instead of y_n * (log(y_n) - x_n)
+cc @brianjo @mruberry @albanD @jbschlosser @walterddr @kshitij12345
+
+----------------------------------------Comment 1----------------------------------------
+
+Apply the following patch (with pip install psutil) to get resident memory information:
+
+Then run the test:
+
+That's 10G!!! This is on an eight GPU box. This number is on a DEBUG build. Commit b181b59
+CC @apaszke
+cc @mruberry @VitalyFedyunin
+
+----------------------------------------Comment 1----------------------------------------
+
+🚀 Feature
+torch.bincount along specified dimension(s).
+cc @mruberry @rgommers @heitorschueroff
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+According to https://pytorch.org/docs/stable/generated/torch.nn.Conv3d.html, padding_mode has 4 choices including  'zeros', 'reflect', 'replicate' or 'circular'. However, currently reflect mode is not supported.
+To Reproduce
+
+It throws the following exception:
+
+Expected behavior
+It would be better if the reflect mode for padding can be supported.
+Otherwise, this mode should be eliminated from the documentation.
+Environment
+PyTorch Version (e.g., 1.0): Nightly build
+OS (e.g., Linux): Linux
+How you installed PyTorch (conda, pip, source): pip
+Python version: 3.6.6
+CUDA/cuDNN version: cuDNN 11.1
+GPU models and configuration: A100
+Additional context
+cc @brianjo @mruberry
+
+----------------------------------------Comment 1----------------------------------------
+
+📚 Documentation
+The module form of nn.GLU is missing from the torch.nn docs (the functional form is in the docs).
+cc @brianjo @mruberry @albanD @jbschlosser
+
+----------------------------------------Comment 1----------------------------------------
+
+Keyword arguments should be put into a separate section Keyword Arguments instead of inside Parameters, just like:
+
+instead of
+
+I have three PRs fixing this issue: #43583 #43586 #43589
+But some of them can not be fixed due to #43669: List of ops remaining to be fixed:
+
+torch.eye
+torch.bmm
+torch.gather
+torch.linspace
+torch.logspace
+torch.ones
+torch.ones_like
+The entire Fix docs for kwargs, q-z #43589
+
+cc @jlin27 @mruberry
+
+----------------------------------------Comment 1----------------------------------------
+
+📚 Documentation
+Hi,I think the docstring of class Flatten is a little confusing.
+
+
+
+pytorch/torch/nn/modules/flatten.py
+
+
+        Lines 10 to 30
+      in
+      fae1c0a
+
+
+
+
+
+
+     Flattens a contiguous range of dims into a tensor. For use with :class:`~nn.Sequential`. 
+
+
+
+  
+
+
+
+     Shape: 
+
+
+
+         - Input: :math:`(*, S_{\text{start}},..., S_{i}, ..., S_{\text{end}}, *)`,' 
+
+
+
+           where :math:`S_{i}` is the size at dimension :math:`i` and :math:`*` means any 
+
+
+
+           number of dimensions including none. 
+
+
+
+         - Output: :math:`(*, \prod_{i=\text{start}}^{\text{end}} S_{i}, *)`. 
+
+
+
+  
+
+
+
+     Args: 
+
+
+
+         start_dim: first dim to flatten (default = 1). 
+
+
+
+         end_dim: last dim to flatten (default = -1). 
+
+
+
+  
+
+
+
+     Examples:: 
+
+
+
+         >>> input = torch.randn(32, 1, 5, 5) 
+
+
+
+         >>> m = nn.Sequential( 
+
+
+
+         >>>     nn.Conv2d(1, 32, 5, 1, 1), 
+
+
+
+         >>>     nn.Flatten() 
+
+
+
+         >>> ) 
+
+
+
+         >>> output = m(input) 
+
+
+
+         >>> output.size() 
+
+
+
+         torch.Size([32, 288]) 
+
+
+
+
+
+As a beginner, it's not that clear how [32, 288] is calculated according to the output shape mentioned above.
+Maybe a simpler example would be better.
+cc @brianjo @mruberry @albanD @jbschlosser @walterddr
+
+----------------------------------------Comment 1----------------------------------------
+
+📚 Documentation
+Docs of torch.Tensor.permute refer to docs of torch.permute for which do not exist
+Functional implementation is present though.
+https://pytorch.org/docs/stable/generated/torch.Tensor.permute.html?highlight=torch%20permute#torch.Tensor.permute
+cc @brianjo @mruberry
+

@@ -1,0 +1,455 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 describe the bug
+unable to train nanogpt on my new nvidia a6000 ada card (sm89)
+possible to remove the guard-rails around this: "flash attention currently doesn't support training with head_dim greater than 64 on sm86 or newer."
+docker image: nvcr.io/nvidia/pytorch:23.04-py3
+used the latest pytorch nightly:
+
+pytorch version: 2.1.0.dev20230429+cu121
+relevant stacktrace:
+
+relevant code snippet:
+
+versions
+collecting environment information...
+cpu family:                      6
+model:                           85
+model name:                      intel(r) core(tm) i9-10980xe cpu @ 3.00ghz
+stepping:                        7
+cpu mhz:                         3000.000
+cpu max mhz:                     4800.0000
+cpu min mhz:                     1200.0000
+bogomips:                        6000.00
+virtualization:                  vt-x
+l1d cache:                       576 kib
+l1i cache:                       576 kib
+l2 cache:                        18 mib
+l3 cache:                        24.8 mib
+numa node0 cpu(s):               0-35
+vulnerability itlb multihit:     kvm: mitigation: vmx disabled
+vulnerability l1tf:              not affected
+vulnerability mds:               not affected
+vulnerability meltdown:          not affected
+vulnerability mmio stale data:   mitigation; clear cpu buffers; smt vulnerable
+vulnerability retbleed:          mitigation; enhanced ibrs
+vulnerability spec store bypass: mitigation; speculative store bypass disabled via prctl and seccomp
+vulnerability spectre v1:        mitigation; usercopy/swapgs barriers and __user pointer sanitization
+vulnerability spectre v2:        mitigation; enhanced ibrs, ibpb conditional, rsb filling, pbrsb-eibrs sw sequence
+vulnerability srbds:             not affected
+vulnerability tsx async abort:   mitigation; tsx disabled
+flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 cdp_l3 invpcid_single ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm mpx rdt_a avx512f avx512dq rdseed adx smap clflushopt clwb intel_pt avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local dtherm ida arat pln pts hwp hwp_act_window hwp_epp hwp_pkg_req avx512_vnni md_clear flush_l1d arch_capabilities
+versions of relevant libraries:
+[pip3] numpy==1.22.2
+[pip3] pytorch-quantization==2.1.2
+[pip3] pytorch-triton==2.1.0+7d1a95b046
+[pip3] torch==2.1.0.dev20230429+cu121
+[pip3] torch-tensorrt==1.4.0.dev0
+[pip3] torchtext==0.13.0a0+fae8e8c
+[pip3] torchvision==0.15.0a0
+[pip3] triton==2.0.0
+cc @jbschlosser @bhosmer @cpuhrsch @erichan1 @drisspg
+ pip3 install --pre torch --force-reinstall --index-url https://download.pytorch.org/whl/nightly/cu121
+
+
+
+/root/src/gpt/casual_self_attention_sdpa.py:105: userwarning: memory efficient kernel not used because: (triggered internally at ../aten/src/aten/native/transformers/cuda/sdp_utils.cpp:672.)
+  y = f.scaled_dot_product_attention(
+/root/src/gpt/casual_self_attention_sdpa.py:105: userwarning: memory efficient attention has been runtime disabled. (triggered internally at ../aten/src/aten/native/transformers/cuda/sdp_utils.cpp:459.)
+  y = f.scaled_dot_product_attention(
+/root/src/gpt/casual_self_attention_sdpa.py:105: userwarning: flash attention kernel not used because: (triggered internally at ../aten/src/aten/native/transformers/cuda/sdp_utils.cpp:674.)
+  y = f.scaled_dot_product_attention(
+/root/src/gpt/casual_self_attention_sdpa.py:105: userwarning: flash attention currently doesn't support training with head_dim greater than 64 on sm86 or newer. (triggered internally at ../aten/src/aten/native/transformers/cuda/sdp_utils.cpp:530.)
+  y = f.scaled_dot_product_attention(
+
+
+from torch.nn import functional as f
+from torch.backends.cuda import sdp_kernel, sdpbackend
+
+backend_map = {
+    sdpbackend.math: {
+        "enable_math": true,
+        "enable_flash": false,
+        "enable_mem_efficient": false,
+    },
+    sdpbackend.flash_attention: {
+        "enable_math": false,
+        "enable_flash": true,
+        "enable_mem_efficient": false,
+    },
+    sdpbackend.efficient_attention: {
+        "enable_math": false,
+        "enable_flash": false,
+        "enable_mem_efficient": true,
+    },
+}
+
+        with sdp_kernel(**backend_map[sdpbackend.flash_attention]):
+            y = f.scaled_dot_product_attention(
+                query=q,
+                key=k,
+                value=v,
+                attn_mask=none,
+                dropout_p=self.attn_pdrop,
+                is_causal=true,
+            )
+
+
+
+----------------------------------------Comment 2----------------------------------------
+
+🐛 describe the bug
+when running the explicit dispatcher control tutorial code, encountered this error on a cpu only device.
+
+code in question is this
+
+note:
+
+changing  dtype from torch.float16 to torch.float32 does not generate the error.
+the "hardware dependence" section of the tutorial does not mention any limitation of hardware other than run-time duration.
+as i understand this page dtype torch.float16 is supported for the cpu device.
+
+i with expecting the tutorial code would run successfully on a cpu only device.
+versions
+the physical runtime environment is a
+
+macbook pro (16-inch, 2019)
+macos: 12.6.1
+docker desktop for mac: 4.9.1
+
+the failing code is executed in a docker container...
+
+cc @jgong5 @mingfeima @xiaobingsuper @sanchitintel @ashokei @jingxu10
+ traceback (most recent call last):
+  file "/opt/project/sandbox/flash_attention/flash_attention_testbed.py", line 32, in <module>
+    print(f"the default implementation runs in {benchmark_torch_function_in_microseconds(f.scaled_dot_product_attention, query, key, value):,.3f} microseconds")
+  file "/opt/project/sandbox/flash_attention/flash_attention_testbed.py", line 18, in benchmark_torch_function_in_microseconds
+    return t0.blocked_autorange().mean * 1e6
+  file "/home/ray/anaconda3/lib/python3.8/site-packages/torch/utils/benchmark/utils/timer.py", line 394, in blocked_autorange
+    number = self._estimate_block_size(min_run_time)
+  file "/home/ray/anaconda3/lib/python3.8/site-packages/torch/utils/benchmark/utils/timer.py", line 311, in _estimate_block_size
+    time_taken = self._timeit(number)
+  file "/home/ray/anaconda3/lib/python3.8/site-packages/torch/utils/benchmark/utils/timer.py", line 256, in _timeit
+    return max(self._timer.timeit(number), 1e-9)
+  file "/home/ray/anaconda3/lib/python3.8/timeit.py", line 177, in timeit
+    timing = self.inner(it, self.timer)
+  file "<timeit-src>", line 6, in inner
+runtimeerror: "baddbmm_with_gemm" not implemented for 'half'
+
+
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as f
+
+# lets define a helpful benchmarking function:
+import torch.utils.benchmark as benchmark
+def benchmark_torch_function_in_microseconds(f, *args, **kwargs):
+    t0 = benchmark.timer(
+        stmt="f(*args, **kwargs)", globals={"args": args, "kwargs": kwargs, "f": f}
+    )
+    return t0.blocked_autorange().mean * 1e6
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# lets define the hyper-parameters of our input
+batch_size = 32
+max_sequence_len = 1024
+num_heads = 32
+embed_dimension = 32
+
+dtype = torch.float16
+
+query = torch.rand(batch_size, num_heads, max_sequence_len, embed_dimension, device=device, dtype=dtype)
+key = torch.rand(batch_size, num_heads, max_sequence_len, embed_dimension, device=device, dtype=dtype)
+value = torch.rand(batch_size, num_heads, max_sequence_len, embed_dimension, device=device, dtype=dtype)
+
+print(f"the default implementation runs in {benchmark_torch_function_in_microseconds(f.scaled_dot_product_attention, query, key, value):.3f} microseconds")
+
+# lets explore the speed of each of the 3 implementations
+from torch.backends.cuda import sdp_kernel, sdpbackend
+
+# helpful arguments mapper
+backend_map = {
+    sdpbackend.math: {"enable_math": true, "enable_flash": false, "enable_mem_efficient": false},
+    sdpbackend.flash_attention: {"enable_math": false, "enable_flash": true, "enable_mem_efficient": false},
+    sdpbackend.efficient_attention: {
+        "enable_math": false, "enable_flash": false, "enable_mem_efficient": true}
+}
+
+with sdp_kernel(**backend_map[sdpbackend.math]):
+    print(f"the math implementation runs in {benchmark_torch_function_in_microseconds(f.scaled_dot_product_attention, query, key, value):.3f} microseconds")
+
+
+with sdp_kernel(**backend_map[sdpbackend.flash_attention]):
+    try:
+        print(f"the flash attention implementation runs in {benchmark_torch_function_in_microseconds(f.scaled_dot_product_attention, query, key, value):.3f} microseconds")
+    except runtimeerror:
+        print("flashattention is not supported. see warnings for reasons.")
+
+with sdp_kernel(**backend_map[sdpbackend.efficient_attention]):
+    try:
+        print(f"the memory efficient implementation runs in {benchmark_torch_function_in_microseconds(f.scaled_dot_product_attention, query, key, value):.3f} microseconds")
+    except runtimeerror:
+        print("efficientattention is not supported. see warnings for reasons.")
+
+
+
+collecting environment information...
+pytorch version: 2.0.0+cpu
+is debug build: false
+cuda used to build pytorch: none
+rocm used to build pytorch: n/a
+
+os: ubuntu 20.04.6 lts (x86_64)
+gcc version: (ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+clang version: could not collect
+cmake version: version 3.16.3
+libc version: glibc-2.31
+
+python version: 3.8.13 (default, oct 21 2022, 23:50:54)  [gcc 11.2.0] (64-bit runtime)
+python platform: linux-5.10.104-linuxkit-x86_64-with-glibc2.17
+is cuda available: false
+cuda runtime version: no cuda
+cuda_module_loading set to: n/a
+gpu models and configuration: no cuda
+nvidia driver version: no cuda
+cudnn version: no cuda
+hip runtime version: n/a
+miopen runtime version: n/a
+is xnnpack available: true
+
+cpu:
+architecture:                    x86_64
+cpu op-mode(s):                  32-bit, 64-bit
+byte order:                      little endian
+address sizes:                   39 bits physical, 48 bits virtual
+cpu(s):                          8
+on-line cpu(s) list:             0-7
+thread(s) per core:              1
+core(s) per socket:              1
+socket(s):                       8
+vendor id:                       genuineintel
+cpu family:                      6
+model:                           158
+model name:                      intel(r) core(tm) i9-9880h cpu @ 2.30ghz
+stepping:                        13
+cpu mhz:                         2300.000
+bogomips:                        4600.00
+l1d cache:                       256 kib
+l1i cache:                       256 kib
+l2 cache:                        2 mib
+l3 cache:                        128 mib
+vulnerability itlb multihit:     kvm: mitigation: vmx unsupported
+vulnerability l1tf:              mitigation; pte inversion
+vulnerability mds:               vulnerable; smt host state unknown
+vulnerability meltdown:          vulnerable
+vulnerability spec store bypass: vulnerable
+vulnerability spectre v1:        vulnerable: __user pointer sanitization and usercopy barriers only; no swapgs barriers
+vulnerability spectre v2:        vulnerable, stibp: disabled
+vulnerability srbds:             unknown: dependent on hypervisor status
+vulnerability tsx async abort:   not affected
+flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht pbe syscall nx pdpe1gb lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid pni pclmulqdq dtes64 ds_cpl ssse3 sdbg fma cx16 xtpr pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch fsgsbase bmi1 avx2 bmi2 erms xsaveopt arat
+
+versions of relevant libraries:
+[pip3] botorch==0.8.5
+[pip3] gpytorch==1.10
+[pip3] mypy-extensions==1.0.0
+[pip3] numpy==1.24.2
+[pip3] torch==2.0.0+cpu
+[pip3] torchaudio==2.0.1+cpu
+[pip3] torchdata==0.6.0
+[pip3] torchinfo==1.7.2
+[pip3] torchmetrics==0.11.4
+[pip3] torchtest==0.5
+[pip3] torchtext==0.15.1+cpu
+[pip3] torchvision==0.15.1+cpu
+[pip3] torchviz==0.0.2
+[conda] botorch                   0.8.5                    pypi_0    pypi
+[conda] gpytorch                  1.10                     pypi_0    pypi
+[conda] numpy                     1.24.2                   pypi_0    pypi
+[conda] torch                     2.0.0+cpu                pypi_0    pypi
+[conda] torchaudio                2.0.1+cpu                pypi_0    pypi
+[conda] torchdata                 0.6.0                    pypi_0    pypi
+[conda] torchinfo                 1.7.2                    pypi_0    pypi
+[conda] torchmetrics              0.11.4                   pypi_0    pypi
+[conda] torchtest                 0.5                      pypi_0    pypi
+[conda] torchtext                 0.15.1+cpu               pypi_0    pypi
+[conda] torchvision               0.15.1+cpu               pypi_0    pypi
+[conda] torchviz                  0.0.2                    pypi_0    pypi
+
+
+
+
+
+----------------------------------------Comment 3----------------------------------------
+
+summary
+for certain mask patterns the memory_efficeint_attention kernel which is called via sdpa is producing nans.
+reproducing script
+i was able to validate this on an a100 on nightly
+
+problem
+the attn_mask being used for this input is a certain pattern of 0 and "-inf".  my suspicion is that a block is being completely masked and this is causing nans. i have observed this behavior when working with the triton implementation of flashattn.
+i have verified this not the same issue as having a completely masked out row.  as well contiguous on the inputs does not have any effect.
+this is hitting the cause where we pad and slice, since the seq_len is not a multiple of 16: 
+
+
+pytorch/aten/src/aten/native/transformers/attention.cpp
+
+
+        lines 487 to 504
+      in
+      5d5990f
+
+
+
+
+
+
+ // memory efficient attention requires a padded attn mask bias 
+
+
+
+ // this function pads the attn_mask bias to be a multiple of 16 
+
+
+
+ // then slices the padded bias to the original size 
+
+
+
+ // we apply this function to the top level sdpa so that 
+
+
+
+ // if padding is done it will be tracked for backward automatically 
+
+
+
+ 
+
+
+
+ template <int alignment> 
+
+
+
+ bool is_aligned(const symint& size){ 
+
+
+
+ return size % alignment == 0; 
+
+
+
+ } 
+
+
+
+ 
+
+
+
+ template <int alignment> 
+
+
+
+ at::tensor pad_bias(const at::tensor& attn_bias) { 
+
+
+
+ auto last_dim_size = attn_bias.sym_size(-1); 
+
+
+
+ auto pad_count = alignment - (last_dim_size % alignment); 
+
+
+
+ auto padded_bias = at::pad_symint(attn_bias, {c10::symint(0), pad_count}); 
+
+
+
+ return padded_bias.slice_symint(-1, 0, last_dim_size); 
+
+
+
+ } 
+
+
+
+
+
+cc @alband @mruberry @jbschlosser @walterddr @mikaylagawarecki
+ import torch
+
+
+from torch.backends.cuda import sdp_kernel
+
+def from_file():
+    load_dct = torch.load('/home/drisspg/meta/scripts/sdp_tests/w.pt')
+    q = load_dct['query'].contiguous()
+    k = load_dct['key'].contiguous()
+    v = load_dct['value'].contiguous()
+    mask = load_dct['attn_mask'].contiguous()
+    print(f"max mask value: {mask.max()}")
+    print(f"min mask value: {mask.min()}")
+    return q,k,v,mask
+
+def from_sizes():
+    seq_len_size = 441
+    shape = (32, 12, seq_len_size, 64)
+    mask_shape = (32, 12, seq_len_size, seq_len_size)
+    q = torch.randn(shape, device='cuda')
+    k = torch.randn(shape, device='cuda')
+    v = torch.randn(shape, device='cuda')
+    mask = torch.zeros(mask_shape, device='cuda')
+    mask[0:,0:,0:,0:128] = torch.finfo(torch.float32).min
+    return q,k,v,mask
+
+
+def main():
+    q,k,v,mask = from_file()
+    # q,k,v,mask = from_sizes()
+
+    q_mem,k_mem,v_mem = q.detach().clone(),k.detach().clone(),v.detach().clone()
+    mask_mem = mask.detach().clone()
+
+    q.requires_grad_(true)
+    k.requires_grad_(true)
+    v.requires_grad_(true)
+    mask.requires_grad_(true)
+
+    q_mem.requires_grad_(true)
+    k_mem.requires_grad_(true)
+    v_mem.requires_grad_(true)
+    mask_mem.requires_grad_(true)
+
+    out_grad = torch.rand_like(q_mem)
+    with sdp_kernel(enable_mem_efficient=false):
+        out_math = torch.nn.functional.scaled_dot_product_attention(q,k,v,attn_mask=mask)
+        out_math.backward(out_grad)
+    with sdp_kernel(enable_mem_efficient=true):
+        out_mem = torch.nn.functional.scaled_dot_product_attention(q_mem,k_mem,v_mem,attn_mask=mask_mem)
+        out_mem.backward(out_grad)
+
+    assert not torch.any(torch.isnan(out_math)), "math output contains nan"
+    assert not torch.any(torch.isnan(out_mem)), "memeff output contains nan"
+
+    torch.testing.assert_close(out_math, out_mem)
+    torch.testing.assert_close(q.grad, q_mem.grad)
+    torch.testing.assert_close(k.grad, k_mem.grad)
+    torch.testing.assert_close(v.grad, v_mem.grad)
+    torch.testing.assert_close(mask.grad, mask_mem.grad)
+
+    print(f"max diff out = {torch.max(torch.abs(out_math - out_mem))}")
+    print(f"max diff q = {torch.max(torch.abs(q.grad - q_mem.grad))}")
+    print(f"max diff k = {torch.max(torch.abs(k.grad - k_mem.grad))}")
+    print(f"max diff v = {torch.max(torch.abs(v.grad - v_mem.grad))}")
+    print(f"max diff mask = {torch.max(torch.abs(mask.grad - mask_mem.grad))}")
+if __name__ == "__main__":
+    main()
+
+
+

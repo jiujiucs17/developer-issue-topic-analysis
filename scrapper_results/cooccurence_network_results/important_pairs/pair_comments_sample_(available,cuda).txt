@@ -1,0 +1,492 @@
+----------------------------------------Comment 1----------------------------------------
+
+Potential 🐛 Bug
+When a dynamic network containing distributed operations such as distributed.all_reduce is executed with DistributedDataParallel, the distributed operations will fail after the first forward / backward pass.
+When the back-end is gloo, this will take the form of an 'gloo::EnforceNotMet' error being thrown, while with nccl there will be a deadlock.
+To Reproduce
+
+Here TestFunction is a simple function that performs all_reduce both in the forward and the backward. This function is then wrapped into TestModule. TestNet contains two convolutions and a TestModule, but the second convolution is only called from the process with rank == 0. The network is wrapped in DistributedDataParallel, and the default process group is initialized as per pytorch documentation. The loop at the end of the script performs forward / backward passes with random input data.
+To reproduce the issue simply launch the script with:
+python -m torch.distributed.launch --nproc_per_node=2 test.py
+This will print:
+
+then, depending on the back-end it will either remain stuck in a deadlock (nccl) or print an error message and crash (gloo).
+Note that this can be reproduced with any number of nproc_per_node (we tested from 2 to 8).
+Expected behavior
+The distributed operations should be able to complete properly, since they are always called by all processes, in the same order and with the same input data shapes.
+The fact that the rest of the network being different has an effect on all_reduce is definitely unexpected and doesn't seem to be documented anywhere.
+Environment
+PyTorch version: 1.0.0
+Is debug build: No
+CUDA used to build PyTorch: 9.0.176
+OS: Ubuntu 18.04.1 LTS
+GCC version: (Ubuntu 7.3.0-16ubuntu3) 7.3.0
+CMake version: Could not collect
+Python version: 3.7
+Is CUDA available: Yes
+CUDA runtime version: 9.2.148
+GPU models and configuration:
+GPU 0: Tesla V100-SXM2-32GB
+GPU 1: Tesla V100-SXM2-32GB
+GPU 2: Tesla V100-SXM2-32GB
+GPU 3: Tesla V100-SXM2-32GB
+GPU 4: Tesla V100-SXM2-32GB
+GPU 5: Tesla V100-SXM2-32GB
+GPU 6: Tesla V100-SXM2-32GB
+GPU 7: Tesla V100-SXM2-32GB
+Nvidia driver version: 396.37
+cuDNN version: Probably one of the following:
+/usr/local/cuda-9.2/lib64/libcudnn.so.7.2.1
+/usr/local/cuda-9.2/lib64/libcudnn_static.a
+Versions of relevant libraries:
+[pip] Could not collect
+[conda] blas                      1.0                         mkl
+[conda] cuda92                    1.0                           0    pytorch
+[conda] mkl                       2018.0.3                      1
+[conda] mkl_fft                   1.0.6            py37h7dd41cf_0
+[conda] mkl_random                1.0.1            py37h4414c95_1
+[conda] pytorch                   1.0.0           py3.7_cuda9.0.176_cudnn7.4.1_1    pytorch
+[conda] torchvision               0.2.1                      py_2    pytorch
+
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+I seem not able to import torch together with caffe2 in the same process.
+Code example
+
+or
+
+System Info
+Collecting environment information...
+PyTorch version: 0.5.0a0+08daed4
+Is debug build: No
+CUDA used to build PyTorch: 9.0.176
+OS: Ubuntu 16.04.4 LTS
+GCC version: (Ubuntu 5.4.0-6ubuntu1~16.04.10) 5.4.0 20160609
+CMake version: version 3.5.1
+Python version: 2.7
+Is CUDA available: Yes
+CUDA runtime version: Could not collect
+GPU models and configuration:
+GPU 0: GeForce GTX 1080 Ti
+GPU 1: GeForce GTX 1080 Ti
+GPU 2: GeForce GTX 1080 Ti
+GPU 3: GeForce GTX 1080 Ti
+GPU 4: GeForce GTX 1080 Ti
+GPU 5: GeForce GTX 1080 Ti
+GPU 6: GeForce GTX 1080 Ti
+GPU 7: GeForce GTX 1080 Ti
+Nvidia driver version: 384.81
+cuDNN version: Probably one of the following:
+/usr/local/cuda-9.0/lib64/libcudnn.so.7.0.5
+/usr/local/cuda-9.0/lib64/libcudnn_static.a
+Versions of relevant libraries:
+[pip] numpy (1.14.5)
+[pip] torch (0.5.0a0-08daed4)
+[pip] torchsample (0.1.3)
+[pip] torchvision (0.2.1)
+[conda] Could not collect
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Expected behavior
+When running forward for a language model with a large batch (700 instances per gpu), a tensor storing prediction scores is created with the size of about 700 (batch size) * 128 (sequence length) * 30000 (vocabulary size), and then it reports the following error:
+
+However, it's probably not the out-of-memory error because it's still below the gpu memory capacity.
+Environment
+
+
+item PyTorch version: 1.0.1.post2
+
+
+Is debug build: No
+
+
+CUDA used to build PyTorch: 10.0.130
+
+
+OS: Ubuntu 18.04.2 LTS
+
+
+GCC version: (Ubuntu 7.3.0-27ubuntu1~18.04) 7.3.0
+
+
+CMake version: version 3.10.2
+
+
+Python version: 3.6
+
+
+Is CUDA available: Yes
+
+
+CUDA runtime version: Could not collect
+
+
+GPU models and configuration:
+GPU 0: Tesla V100-SXM2-32GB
+GPU 1: Tesla V100-SXM2-32GB
+GPU 2: Tesla V100-SXM2-32GB
+GPU 3: Tesla V100-SXM2-32GB
+
+
+Nvidia driver version: 418.67
+
+
+cuDNN version: /usr/lib/x86_64-linux-gnu/libcudnn.so.7.5.0
+
+
+Additional context
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+The output dtypes of arithmetic operators between a single-element tensor and a multi-element tensor, and that of arithmetic operators between two multi-element tensors, are inconsistent.
+To Reproduce
+Steps to reproduce the behavior:
+
+Note that the dtypes on lines 4 and 6 are different.
+Environment
+PyTorch version: 1.7.0a0+ed44269
+Is debug build: Yes
+CUDA used to build PyTorch: Could not collect
+OS: Debian GNU/Linux 10 (buster)
+GCC version: (Debian 8.3.0-6) 8.3.0
+CMake version: version 3.16.3
+Python version: 3.7
+Is CUDA available: No
+CUDA runtime version: 10.1.243
+GPU models and configuration: GPU 0: Quadro P400
+Nvidia driver version: 440.100
+cuDNN version: Could not collect
+Versions of relevant libraries:
+[pip3] numpy==1.18.1
+[pip3] pytorch-sphinx-theme==0.0.24
+[pip3] torch==1.7.0a0+ed44269
+[conda] Could not collect
+cc @nairbv
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I am training a RNN and find that there are huge elements in the training data Tensor of MNIST dataset. However, they cannot be printed. I test it with these codes using VS Code. The output just don't make sense. These huge numbers will be 'printable' after some matmul, and cause errors in my program.
+
+The output:
+
+I'm certain that I have normalized those data. Full version of the test codes are as below.
+
+Versions
+PyTorch version: 1.10.0
+Is debug build: False
+CUDA used to build PyTorch: 11.3
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.3 LTS (x86_64)
+GCC version: (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+Clang version: Could not collect
+CMake version: Could not collect
+Libc version: glibc-2.31
+Python version: 3.8.12 (default, Oct 12 2021, 13:49:34) [GCC 7.5.0] (64-bit runtime)
+Python platform: Linux-5.11.0-27-generic-x86_64-with-glibc2.17
+Is CUDA available: True
+CUDA runtime version: 11.3.109
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 2080 Ti
+Nvidia driver version: 465.19.01
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.21.4
+[pip3] numpydoc==1.1.0
+[pip3] torch==1.10.0
+[pip3] torchattacks==3.2.2
+[pip3] torchaudio==0.10.0
+[pip3] torchtext==0.11.0
+[pip3] torchvision==0.11.1
+[conda] blas 1.0 mkl
+[conda] cudatoolkit 11.3.1 h2bc3f7f_2 https://mirrors.bfsu.edu.cn/anaconda/pkgs/main
+[conda] mkl 2021.4.0 h06a4308_640
+[conda] mkl-service 2.4.0 py38h7f8727e_0
+[conda] mkl_fft 1.3.1 py38hd3c417c_0
+[conda] mkl_random 1.2.2 py38h51133e4_0
+[conda] mypy_extensions 0.4.3 py38_0
+[conda] numpy 1.21.4 pypi_0 pypi
+[conda] numpy-base 1.21.2 py38h79a1101_0
+[conda] numpydoc 1.1.0 pyhd3eb1b0_1
+[conda] pytorch 1.10.0 py3.8_cuda11.3_cudnn8.2.0_0 https://mirrors.bfsu.edu.cn/anaconda/cloud/pytorch
+[conda] pytorch-mutex 1.0 cuda https://mirrors.bfsu.edu.cn/anaconda/cloud/pytorch
+[conda] torchattacks 3.2.2 pypi_0 pypi
+[conda] torchaudio 0.10.0 py38_cu113 https://mirrors.bfsu.edu.cn/anaconda/cloud/pytorch
+[conda] torchtext 0.11.0 pypi_0 pypi
+[conda] torchvision 0.11.1 py38_cu113 https://mirrors.bfsu.edu.cn/anaconda/cloud/pytorch
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+masked_select is about x3 slower than index select of the corresponding nonzero'ed mask
+(this is true for nightly, I have not checked with stable)
+To Reproduce
+
+On my system this takes 140.64 us for masked_select, and 57.36 us for the equivalent index_select.
+If the initial sizes are different but broadcastable and "broadcast_tensors" is used before index_select, a comparable slowdown is observed. This can be easily checked with a few modifications of the script.
+If instead of Size([100, 100, 100]), Size([1000 ** 3]) is used, then this prints 59.90 us for masked_select, and 56.86 us us for index_select, so index_select is still faster, but the difference is much smaller.
+Expected behavior
+Since masked_select is a more specific operator than the hand made implementation with index select, it should be faster. I couldn't find any use case where masked_select was faster.
+Environment
+Collecting environment information...
+PyTorch version: 1.9.0.dev20210223
+Is debug build: False
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.2 LTS (x86_64)
+GCC version: (Ubuntu 8.4.0-3ubuntu2) 8.4.0
+Clang version: 10.0.0-4ubuntu1
+CMake version: version 3.16.3
+Python version: 3.7 (64-bit runtime)
+Is CUDA available: True
+CUDA runtime version: 10.2.89
+GPU models and configuration: GPU 0: Quadro RTX 6000
+Nvidia driver version: 460.32.03
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.18.1
+[pip3] pytorch-memlab==0.2.2
+[pip3] torch==1.9.0.dev20210223
+[pip3] torchaudio==0.9.0.dev20210415
+[pip3] torchvision==0.10.0.dev20210415
+[conda] blas                      1.0                         mkl
+[conda] cudatoolkit               11.0.221             h6bb024c_0
+[conda] mkl                       2020.1                      217
+[conda] mkl-service               2.3.0            py37he8ac12f_0
+[conda] mkl_fft                   1.2.0            py37h23d657b_0
+[conda] mkl_random                1.1.1            py37h0573a6f_0
+[conda] numpy                     1.18.1                   pypi_0    pypi
+[conda] numpy-base                1.19.2           py37hfa32c7d_0
+[conda] pytorch-memlab            0.2.2                    pypi_0    pypi
+[conda] torch                     1.9.0.dev20210223          pypi_0    pypi
+[conda] torchaudio                0.9.0.dev20210415          pypi_0    pypi
+[conda] torchvision               0.10.0.dev20210415          pypi_0    pypi
+Additional context
+Suggestion: if masked_select is slower in all cases then maybe it should just be implemented under the hood as
+
+to prevent unintentional slowdown in code.
+I run into this issue when I replaced some calls to something like the above code with masked_select since I
+realized it was essentially doing the same thing, but I suffered a dramatic slowdown after this.
+cc @VitalyFedyunin @ngimel
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Code to reproduce:
+
+The error (some directory information omitted):
+
+It works fine when device = torch.device('cpu').
+Note the 2nd line of the error, where it seems the underlying MPS operation was working with a tensor of size <100x36> (i.e the dimensions of emb_36_a and emb_36_b's underlying weights), but I'd expect it to be <100x48> (the dims of emb_48's weights).
+Versions
+PyTorch version: 2.0.1
+Is debug build: False
+CUDA used to build PyTorch: None
+ROCM used to build PyTorch: N/A
+OS: macOS 12.6 (arm64)
+GCC version: Could not collect
+Clang version: 14.0.0 (clang-1400.0.29.202)
+CMake version: version 3.22.2
+Libc version: N/A
+Python version: 3.8.11 (default, Feb 22 2022, 14:24:07)  [Clang 13.0.0 (clang-1300.0.27.3)] (64-bit runtime)
+Python platform: macOS-12.6-arm64-arm-64bit
+Is CUDA available: False
+CUDA runtime version: No CUDA
+CUDA_MODULE_LOADING set to: N/A
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Apple M1 Pro
+Versions of relevant libraries:
+[pip3] numpy==1.24.3
+[pip3] torch==2.0.1
+[conda] No relevant packages
+cc @kulinseth @albanD @malfet @DenisVieriu97 @razarmehr @abhudev
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+When indexing using an indexing tensor (or list), it is possible to read or write outside the valid range of the tensor.
+Minimal example:
+
+This code should raise an IndexError and leave x unchanged, but it instead gives -1.
+In this example, the overflow reaches a known memory location, but perhaps in general it can reach arbitrary memory on the GPU.
+Versions
+Collecting environment information...
+PyTorch version: 2.1.0
+Is debug build: False
+CUDA used to build PyTorch: None
+ROCM used to build PyTorch: N/A
+OS: macOS 13.5.2 (arm64)
+GCC version: Could not collect
+Clang version: 15.0.0 (clang-1500.0.40.1)
+CMake version: version 3.27.7
+Libc version: N/A
+Python version: 3.10.8 (main, Nov 24 2022, 08:08:27) [Clang 14.0.6 ] (64-bit runtime)
+Python platform: macOS-13.5.2-arm64-arm-64bit
+Is CUDA available: False
+CUDA runtime version: No CUDA
+CUDA_MODULE_LOADING set to: N/A
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Apple M2 Pro
+Versions of relevant libraries:
+[pip3] flake8==6.1.0
+[pip3] mypy-extensions==1.0.0
+[pip3] numpy==1.26.1
+[pip3] torch==2.1.0
+[conda] numpy                     1.26.1                   pypi_0    pypi
+[conda] torch                     2.1.0                    pypi_0    pypi
+cc @kulinseth @albanD @malfet @DenisVieriu97 @razarmehr @abhudev
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+
+The desired result should be close to:
+
+but the out of sum(xs) is
+
+Versions
+PyTorch version: 1.11.0+cu102
+Is debug build: False
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.3 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+Clang version: 10.0.0-4ubuntu1
+CMake version: Could not collect
+Libc version: glibc-2.31
+Python version: 3.9.7 | packaged by conda-forge | (default, Sep 29 2021, 19:20:46)  [GCC 9.4.0] (64-bit runtime)
+Python platform: Linux-4.15.0-159-generic-x86_64-with-glibc2.31
+Is CUDA available: False
+CUDA runtime version: No CUDA
+CUDA_MODULE_LOADING set to: N/A
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   46 bits physical, 48 bits virtual
+CPU(s):                          4
+On-line CPU(s) list:             0-3
+Thread(s) per core:              1
+Core(s) per socket:              4
+Socket(s):                       1
+NUMA node(s):                    1
+Vendor ID:                       GenuineIntel
+CPU family:                      6
+Model:                           94
+Model name:                      Intel(R) Xeon(R) Gold 6148 CPU @ 2.40GHz
+Stepping:                        3
+CPU MHz:                         2394.356
+BogoMIPS:                        4788.71
+Hypervisor vendor:               KVM
+Virtualization type:             full
+L1d cache:                       128 KiB
+L1i cache:                       128 KiB
+L2 cache:                        16 MiB
+L3 cache:                        27.5 MiB
+NUMA node0 CPU(s):               0-3
+Vulnerability Itlb multihit:     KVM: Vulnerable
+Vulnerability L1tf:              Mitigation; PTE Inversion
+Vulnerability Mds:               Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state unknown
+Vulnerability Meltdown:          Mitigation; PTI
+Vulnerability Spec store bypass: Vulnerable
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Full generic retpoline, STIBP disabled, RSB filling
+Vulnerability Srbds:             Unknown: Dependent on hypervisor status
+Vulnerability Tsx async abort:   Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state unknown
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch invpcid_single pti fsgsbase bmi1 hle avx2 smep bmi2 erms invpcid rtm mpx avx512f avx512dq rdseed adx smap clflushopt avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 arat
+Versions of relevant libraries:
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.21.5
+[pip3] torch==1.11.0
+[pip3] torchaudio==0.11.0
+[pip3] torchvision==0.12.0
+[conda] nomkl                     1.0                  h5ca1d4c_0    conda-forge
+[conda] numpy                     1.21.5           py39haac66dc_0    conda-forge
+[conda] torch                     1.11.0                   pypi_0    pypi
+[conda] torchaudio                0.11.0                   pypi_0    pypi
+[conda] torchvision               0.12.0                   pypi_0    pypi
+cc @albanD @mruberry @jbschlosser @walterddr @mikaylagawarecki
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+When transposing a nested tensor and doing a matrix multiplication, the backward pass requires the tensor to be contiguous. I'm guessing this issue has to do with transpose causing tensors to be non-contiguous after the operation which is fine with the forward pass, but the backward pass may have a bug for nested tensors when going through the backward transpose operation.
+
+
+Versions
+Collecting environment information...
+PyTorch version: 2.0.1+cu118
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Microsoft Windows 11 Pro
+GCC version: (Rev6, Built by MSYS2 project) 13.1.0
+Clang version: Could not collect
+CMake version: Could not collect
+Libc version: N/A
+Python version: 3.10.10 (tags/v3.10.10:aad5f6a, Feb  7 2023, 17:20:36) [MSC v.1929 64 bit (AMD64)] (64-bit runtime)
+Python platform: Windows-10-10.0.22621-SP0
+Is CUDA available: True
+CUDA runtime version: 11.8.89
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 3050 Ti Laptop GPU
+Nvidia driver version: 537.42
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture=9
+CurrentClockSpeed=2500
+DeviceID=CPU0
+Family=207
+L2CacheSize=11776
+L2CacheSpeed=
+Manufacturer=GenuineIntel
+MaxClockSpeed=2500
+Name=12th Gen Intel(R) Core(TM) i9-12900HK
+ProcessorType=3
+Revision=
+Versions of relevant libraries:
+[pip3] clip-anytorch==2.5.2
+[pip3] mypy-extensions==1.0.0
+[pip3] numpy==1.24.1
+[pip3] torch==2.0.1+cu118
+[pip3] torch-geometric==2.3.1
+[pip3] torchaudio==2.0.2+cu118
+[pip3] torchdata==0.6.1
+[pip3] torchdiffeq==0.2.3
+[pip3] torchsde==0.2.5
+[pip3] torchtext==0.6.0
+[pip3] torchvision==0.15.2+cu118
+[pip3] vector-quantize-pytorch==1.6.19
+[conda] Could not collect
+cc @cpuhrsch @jbschlosser @bhosmer @drisspg @soulitzer
+

@@ -1,0 +1,19 @@
+
+
+
+------------------ Report ------------------
+
+date of scrapping: 2023-11-21 17:32:53.970426
+
+length of list_of_links: 34
+
+length of list_of_num_of_links_each_page: 2
+
+sum_num_of_links: 34
+
+scrapped pages: 2
+
+time spent: 00 Minutes, 09 Seconds
+
+--------------------------------------------
+

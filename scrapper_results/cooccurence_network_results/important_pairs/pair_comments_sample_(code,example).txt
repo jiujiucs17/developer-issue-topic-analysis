@@ -1,0 +1,319 @@
+----------------------------------------Comment 1----------------------------------------
+
+If you have a question or would like help and support, please ask at our
+forums.
+If you are submitting a feature request, please preface the title with [feature request].
+If you are submitting a bug report, please fill in the following details.
+Issue description
+Provide a short description.
+Code example
+Please try to provide a minimal example to repro the bug.
+Error messages and stack traces are also helpful.
+System Info
+Please copy and paste the output from our
+environment collection script
+(or fill out the checklist below manually).
+You can get the script and run it with:
+
+
+PyTorch or Caffe2:
+How you installed PyTorch (conda, pip, source):
+Build command you used (if compiling from source):
+OS:
+PyTorch version:
+Python version:
+CUDA/cuDNN version:
+GPU models and configuration:
+GCC version (if compiling from source):
+CMake version:
+Versions of any other relevant libraries:
+
+
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+As in the title.
+Code example
+
+The expected result is
+
+In place addition produces garbage as well:
+
+System Info
+
+PyTorch: master
+
+cc @alexsamardzic @nikitaved @cpuhrsch @amjames @bhosmer
+
+----------------------------------------Comment 1----------------------------------------
+
+🚀 Feature
+Add the ability to subclass torch.Tensor so that you can use isinstance(tensor, CustomTensor) to determine the "context" of the data stored in the subclass object. I think #9515 describes the need for dtype promotion logic, but this proposal is for python type promotion logic.
+The array__wrap method already exists in numpy and ensures that the following ufunc preserves the custom tensor type:
+
+The tensor_wrap method does not exist. As a result, the custom type information is easily lost:
+custom_tensor = CustomTensor(torch.tensor([1, 2, 3, 4])
+new_tensor = custom_tensor.add(1.0) -> Tensor
+isinstance(new_tensor, CustomTensor) #  returns False
+Motivation
+The torch.Tensor class provides a dynamically typed wrapper of statically typed Torch Classes (FloatTensor, DoubleTensor, HalfTensor, etc) using the numpy dtype. While this should save us from ever wanting to subclass the Tensor class, it would be nice to use the subclass of a Tensor to provide custom methods specific to the context of the data.
+For example:
+
+
+
+Pitch
+Custom subclassing is already utilized by the torch.nn.Parameter Class, so most of the heavy lifting is already done. Note that performing a math operation on a Parameter also downcasts the Parameter to a Tensor.
+Alternatives
+Numpy provides the following methods for customizing the output behaviour of a ufunc.
+
+
+def array_wrap(self, array):
+A subclass can override what happens when executing numpy ufuncs after the ufunc is called.
+
+
+def array_ufunc(ufunc, method, *inputs, **kwargs):
+A subclass can override what happens when executing numpy ufuncs before and after the ufunc is called. New in version 1.13.
+
+
+def array_finalize(self, obj):
+The ability to insert any kind of custom attributes, events, io, etc.  This may not work on GPU because this would open up the ability to define highly customized data containers.
+a. explicit constructor call (obj = MySubClass(params)).
+b. View casting
+c. Creating new from template
+
+
+Do Nothing:
+Revert to functional implementation. Simply replace all custom_tensor.method(*args, **kwargs) with method(custom_tensor, *args, **kwargs).
+
+
+The array_wrap method is sufficient for this problem because we want to cast the tensor after the function has been performed. The array_ufunc would also work but could result in compatibility  problems with older versions of numpy. The __array_finalize method may add too much customization that could create a wide range of gotchas and incompatibility between CPU and GPU.
+Example
+Sample code that partially works for add(custom_tensor, other):
+
+Sample Results:
+
+Conclusions
+The above example demonstrates how numpy goes beyond binary operator overloading to ensure that all operations return the highest derived subclass of the ndarray. This is not how pytorch is organized. I think #9515 describes the need for dtype promotion logic, but this proposal is for python type promotion logic.
+
+----------------------------------------Comment 1----------------------------------------
+
+❓ Questions
+For the following example code, the printed graph in torch 1.4.0 is very different from that in torch 1.3.1. I am wondering is this expected? because many useful fields are removed in torch 1.4.0.
+
+output in torch 1.3.1:
+
+output in torch 1.4.0:
+
+cc @suo
+
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+I think there might be an issue masked_select_. It doesn't seem to work on some source tensors.
+Code example
+
+I get the following error.
+ Traceback (most recent call last): File "Untitled.py", line 17, in <module> assert n[i] == n_[i] AssertionError
+This doesn't happen if source is torch.ones(t_size)
+System Info
+
+PyTorch or Caffe2: pytorch
+How you installed PyTorch (conda, pip, source): conda, pip
+Build command you used (if compiling from source): none
+OS: Mac OSX 10.13.5
+PyTorch version: 0.4.0
+Python version: 3.6
+CUDA/cuDNN version: no
+GPU models and configuration: no
+GCC version (if compiling from source): no
+CMake version: 3.11.3
+Versions of any other relevant libraries: numpy 1.14.4
+
+
+----------------------------------------Comment 1----------------------------------------
+
+Editorial note: See #10375 (comment) for the real problem
+Issue description
+I can not get the tensor from queue.
+Code example
+
+I executed this code, and only get and put printed, no end. I use ctrl-c to interrupt it, I find it blocks in result = queue.get(). Any idea?
+System Info
+Collecting environment information...
+PyTorch version: 0.4.0a0+200fb22
+Is debug build: No
+CUDA used to build PyTorch: Could not collect
+OS: Arch Linux
+GCC version: (GCC) 8.1.1 20180531
+CMake version: version 3.11.4
+Python version: 2.7
+Is CUDA available: No
+CUDA runtime version: 9.2.148
+GPU models and configuration: GPU 0: GeForce GTX 1080
+Nvidia driver version: 396.45
+cuDNN version: Could not collect
+Versions of relevant libraries:
+[pip] numpy (1.14.3)
+[pip] torch (0.4.1)
+[pip] torchvision (0.2.1)
+[conda] Could not collect
+cc @ngimel
+
+----------------------------------------Comment 1----------------------------------------
+
+in the blog https://pytorch.org/blog/scaling-vision-model-training-platforms-with-pytorch/
+
+how to Wrap normalization layers like LayerNorm in FP32 when use FSDP, do we have a example code?
+cc @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @H-Huang @kwen2501 @awgu
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+It looks like gradient checkpointing (activation checkpointing) it is not allowed if used with torch.compile. For example this code:
+
+gives the following error:
+
+Versions
+
+cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh
+
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+Calling an Embedding moved to cuda fails.
+The same code on CPU works.
+Code example
+import torch
+import torch.nn as nn
+e = nn.Embedding(17,50)
+dev = torch.device('cuda')
+e.to(dev, torch.float)
+idx=torch.tensor([1,2,3])
+e(idx)
+Traceback (most recent call last):
+File "", line 1, in 
+File "/usr/local/lib/python3.5/dist-packages/torch/nn/modules/module.py", line  491, in call
+result = self.forward(*input, **kwargs)
+File "/usr/local/lib/python3.5/dist-packages/torch/nn/modules/sparse.py", line  108, in forward
+self.norm_type, self.scale_grad_by_freq, self.sparse)
+File "/usr/local/lib/python3.5/dist-packages/torch/nn/functional.py", line 107 6, in embedding
+return torch.embedding(weight, input, padding_idx, scale_grad_by_freq, spars e)
+RuntimeError: Expected object of type torch.cuda.LongTensor but found type torch .LongTensor for argument #3 'index'
+System Info
+PyTorch version: 0.4.0
+Is debug build: No
+CUDA used to build PyTorch: 9.1.85
+OS: Ubuntu 16.04.4 LTS
+GCC version: (Ubuntu 5.4.0-6ubuntu1~16.04.9) 5.4.0 20160609
+CMake version: version 3.5.1
+Python version: 3.5
+Is CUDA available: Yes
+CUDA runtime version: 8.0.61
+GPU models and configuration:
+GPU 0: Tesla P100-PCIE-16GB
+GPU 1: Tesla P100-PCIE-16GB
+GPU 2: Tesla P100-PCIE-16GB
+GPU 3: Tesla P100-PCIE-16GB
+Nvidia driver version: 390.30
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.6.0.21
+/usr/lib/x86_64-linux-gnu/libcudnn.so.7.0.5
+/usr/lib/x86_64-linux-gnu/libcudnn_static_v7.a
+/usr/local/MATLAB/R2017a/bin/glnxa64/libcudnn.so.5.1.5
+Versions of relevant libraries:
+[pip3] numpy (1.14.0)
+[pip3] torch (0.4.0)
+[pip3] torchvision (0.2.1)
+
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+torch.distributions.uniform.Uniform.cdf() can return negative values or values above one because it does not do a range check like log_prob() in the same class does.
+Relevant code in cdf():
+
+
+
+pytorch/torch/distributions/uniform.py
+
+
+        Lines 70 to 74
+      in
+      825c3ca
+
+
+
+
+
+
+ def cdf(self, value): 
+
+
+
+ if self._validate_args: 
+
+
+
+ self._validate_sample(value) 
+
+
+
+ result = (value - self.low) / (self.high - self.low) 
+
+
+
+ return result 
+
+
+
+
+
+Range checking in log_prob():
+
+
+
+pytorch/torch/distributions/uniform.py
+
+
+        Lines 63 to 68
+      in
+      825c3ca
+
+
+
+
+
+
+ def log_prob(self, value): 
+
+
+
+ if self._validate_args: 
+
+
+
+ self._validate_sample(value) 
+
+
+
+ lb = value.ge(self.low).type_as(self.low) 
+
+
+
+ ub = value.lt(self.high).type_as(self.low) 
+
+
+
+ return torch.log(lb.mul(ub)) - torch.log(self.high - self.low) 
+
+
+
+
+
+I can provide a pull request based on the range checking as done in the log_prob() method of the same class (although log_prob() throws an exception with scalar arguments because of these range checks while cdf() accepts scalar arguments).
+Code example
+
+will give
+
+System Info
+
+

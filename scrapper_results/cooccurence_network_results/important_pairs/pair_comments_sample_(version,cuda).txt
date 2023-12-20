@@ -1,0 +1,609 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+With our pre-Trained CNN model, we have input of different sizes.
+We use torch::jit::load(model_file); to load the model. And do inference with libtorch on GPU.
+This works fine on libtorch v1.6.
+But inference turns out very slow on v1.8.1.
+Upon further investigation, we found that only the first 21 loops were abnormal.
+the detail is shown below: (abnormal loops cost more than 3 seconds)
+
+To Reproduce
+Steps to reproduce the behavior:
+
+sample code:
+
+
+
+
+Related model is attached.
+Kirky@v2.zip
+
+
+Be aware of the variable size. It's changed in every loop.
+
+
+If the value of size is fixed, output goes like this：(only the 2nd loop is slow, the subsequent loops become faster than 1st loop)
+
+Expected behavior
+It seems that libtorch is doing some auto-optimization on those slower loops.
+This will help speed things up later.
+But this feature doesn't fit our usage scenario, and hurts our program performance.
+3 seconds for 20 loops  = more than 60 seconds. This is not acceptable for our application.
+Environment
+
+libTorch Version (e.g., 1.0): 1.8.1
+OS: Ubuntu 18.04.5 LTS (x86_64)
+GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+CMake version: version 3.20.1
+CUDA runtime version: 11.1.105
+GPU models and configuration:
+--  GPU 0: GeForce RTX 3060
+-- GPU 1: GeForce RTX 3060
+Nvidia driver version: 460.67
+
+cc @VitalyFedyunin @ngimel @gmagogsfm
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+A Segmentation Fault can be trigerred in torch.nn.utils.rnn.pack_padded_sequence with the following code:
+
+Output:
+
+Versions
+Collecting environment information...
+PyTorch version: 1.13.1+cu117
+Is debug build: False
+CUDA used to build PyTorch: 11.7
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.5 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu120.04.1) 9.4.0
+Clang version: 11.0.0-2ubuntu20.04.1
+CMake version: version 3.16.3
+Libc version: glibc-2.31
+Python version: 3.10.6 (main, Oct 24 2022, 16:07:47) [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-57-generic-x86_64-with-glibc2.31
+Is CUDA available: True
+CUDA runtime version: 11.8.89
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: Tesla V100-PCIE-16GB
+Nvidia driver version: 520.61.05
+cuDNN version: Probably one of the following:
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn.so.8.1.1
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.1.1
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.1.1
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.1.1
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.1.1
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.1.1
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.1.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn.so.8.2.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.2.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.2.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.2.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.2.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.2.1
+/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.2.1
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   46 bits physical, 48 bits virtual
+CPU(s):                          48
+On-line CPU(s) list:             0-47
+Thread(s) per core:              2
+Core(s) per socket:              12
+Socket(s):                       2
+NUMA node(s):                    2
+Vendor ID:                       GenuineIntel
+CPU family:                      6
+Model:                           85
+Model name:                      Intel(R) Xeon(R) Silver 4214 CPU @ 2.20GHz
+Stepping:                        7
+CPU MHz:                         2200.000
+BogoMIPS:                        4400.00
+Virtualization:                  VT-x
+L1d cache:                       768 KiB
+L1i cache:                       768 KiB
+L2 cache:                        24 MiB
+L3 cache:                        33 MiB
+NUMA node0 CPU(s):               0-11,24-35
+NUMA node1 CPU(s):               12-23,36-47
+Vulnerability Itlb multihit:     KVM: Mitigation: VMX disabled
+Vulnerability L1tf:              Not affected
+Vulnerability Mds:               Not affected
+Vulnerability Meltdown:          Not affected
+Vulnerability Mmio stale data:   Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Retbleed:          Mitigation; Enhanced IBRS
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Enhanced IBRS, IBPB conditional, RSB filling, PBRSB-eIBRS SW sequence
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Mitigation; TSX disabled
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 cdp_l3 invpcid_single intel_ppin ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm mpx rdt_a avx512f avx512dq rdseed adx smap clflushopt clwb intel_pt avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local dtherm ida arat pln pts hwp_epp pku ospke avx512_vnni md_clear flush_l1d arch_capabilities
+Versions of relevant libraries:
+[pip3] numpy==1.23.4
+[pip3] torch==1.13.1
+[conda] numpy                     1.23.4                   pypi_0    pypi
+[conda] torch                     1.13.1                   pypi_0    pypi
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+torch.fmod throws a floating point exception when the parameter out is False and input is a tensor of integer numbers.
+To Reproduce
+Steps to reproduce the behavior:
+
+Expected behavior
+No floating point exception with proper error handling.
+Environment
+PyTorch version: 1.5.0
+Is debug build: No
+CUDA used to build PyTorch: 10.1
+OS: Ubuntu 18.04.4 LTS
+GCC version: Could not collect
+CMake version: version 3.14.0
+Python version: 3.7
+Is CUDA available: No
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+Versions of relevant libraries:
+[pip] numpy==1.18.1
+[pip] torch==1.5.0
+[pip] torchvision==0.6.0a0+82fd1c8
+[conda] blas 1.0 mkl
+[conda] cudatoolkit 10.1.243 h6bb024c_0
+[conda] mkl 2020.1 217
+[conda] mkl-include 2020.1 217
+[conda] mkl-service 2.3.0 py37he904b0f_0
+[conda] mkl_fft 1.0.15 py37ha843d7b_0
+[conda] mkl_random 1.1.0 py37hd6b4f25_0
+[conda] numpy 1.18.1 py37h4f9e942_0
+[conda] numpy-base 1.18.1 py37hde5b4d6_1
+[conda] pytorch 1.5.0 py3.7_cuda10.1.243_cudnn7.6.3_0 pytorch
+[conda] torchvision 0.6.0 py37_cu101 pytorch
+cc @ezyang @gchanan @zou3519
+
+----------------------------------------Comment 1----------------------------------------
+
+Trying to count many unique integers on an M2 Max fails. When trying to reproduce, it starts failing for me somewhere between half a million and about a million (unsorted) integers.
+Whether it fails is not deterministic. Sometimes large tensors will work (even within the same session), but at least on my machine, for 1M elements it fails much more often than it works.
+Reproduce:
+
+Output:
+
+The resulting counting tensor may have a few correct values at the beginning, and then too few for the rest of the elements, or (incorrect) zero values.
+Adding sorted=True does not fix the issue.
+Test to find the failure point:
+
+I've seen it failing at 2^19, 2^20 and 2^21 elements.
+Versions
+I can reproduce the bug on this machine (Mac Studio / M2 Max / 32 GB) on 2.1.0 and on current nightly.
+2.1.0
+Collecting environment information...
+PyTorch version: 2.1.0
+Is debug build: False
+CUDA used to build PyTorch: None
+ROCM used to build PyTorch: N/A
+OS: macOS 14.0 (arm64)
+GCC version: Could not collect
+Clang version: 15.0.0 (clang-1500.0.40.1)
+CMake version: version 3.27.4
+Libc version: N/A
+Python version: 3.10.13 (main, Sep 11 2023, 08:24:56) [Clang 14.0.6 ] (64-bit runtime)
+Python platform: macOS-14.0-arm64-arm-64bit
+Is CUDA available: False
+CUDA runtime version: No CUDA
+CUDA_MODULE_LOADING set to: N/A
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Apple M2 Max
+Versions of relevant libraries:
+[pip3] numpy==1.26.0
+[pip3] torch==2.1.0
+[pip3] torchvision==0.15.2a0
+[conda] Could not collect
+
+Nightly
+Collecting environment information...
+PyTorch version: 2.2.0.dev20231012
+Is debug build: False
+CUDA used to build PyTorch: None
+ROCM used to build PyTorch: N/A
+OS: macOS 14.0 (arm64)
+GCC version: Could not collect
+Clang version: 15.0.0 (clang-1500.0.40.1)
+CMake version: version 3.27.4
+Libc version: N/A
+Python version: 3.10.13 (main, Sep 11 2023, 08:24:56) [Clang 14.0.6 ] (64-bit runtime)
+Python platform: macOS-14.0-arm64-arm-64bit
+Is CUDA available: False
+CUDA runtime version: No CUDA
+CUDA_MODULE_LOADING set to: N/A
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Apple M2 Max
+Versions of relevant libraries:
+[pip3] numpy==1.24.1
+[pip3] torch==2.2.0.dev20231012
+[pip3] torchaudio==2.2.0.dev20231012
+[pip3] torchvision==0.17.0.dev20231012
+[conda] Could not collect
+cc @kulinseth @albanD @malfet @DenisVieriu97 @razarmehr @abhudev
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+When backward with mvlgamma, and error occurred:
+
+To Reproduce
+Steps to reproduce the behavior:
+a = torch.tensor([0.1, 0.2], requires_grad=True)
+b = torch.mvlgamma(a, 1).sum()
+b.backward()
+---------------------------------------------------------------------------
+RuntimeError                              Traceback (most recent call last)
+<ipython-input-43-a721975e1357> in <module>()
+----> 1 b.backward()
+
+~/anaconda3/lib/python3.6/site-packages/torch/tensor.py in backward(self, gradient, retain_graph, create_graph)
+    100                 products. Defaults to ``False``.
+    101         """
+--> 102         torch.autograd.backward(self, gradient, retain_graph, create_graph)
+    103
+    104     def register_hook(self, hook):
+
+~/anaconda3/lib/python3.6/site-packages/torch/autograd/__init__.py in backward(tensors, grad_tensors, retain_graph, create_graph, grad_variables)
+     88     Variable._execution_engine.run_backward(
+     89         tensors, grad_tensors, retain_graph, create_graph,
+---> 90         allow_unreachable=True)  # allow_unreachable flag
+     91
+     92
+
+Environment
+PyTorch version: 1.0.0
+Is debug build: No
+CUDA used to build PyTorch: None
+OS: Mac OSX 10.14.1
+GCC version: Could not collect
+CMake version: version 3.5.2
+Python version: 3.6
+Is CUDA available: No
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+Versions of relevant libraries:
+[pip] numpy (1.14.2)
+[pip] numpydoc (0.7.0)
+[pip] torch (1.0.0)
+[pip] torchvision (0.2.1)
+[conda] blas                      1.0                         mkl
+[conda] faiss-cpu                 1.2.1            py36_cuda0.0_1    pytorch
+[conda] mkl                       2018.0.1             hfbd8650_4
+[conda] mkl-service               1.1.2            py36h7ea6df4_4
+[conda] pytorch                   1.0.0                   py3.6_1    pytorch
+[conda] torchvision               0.2.1                      py_2    pytorch
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Scripted function occasionally sets tensor requires_grad to True without in tensor with requires_grad is False and no code is setting it. The same function in eager mode has always requieres_grad to False.
+To Reproduce
+I had trouble isolation the code. I found this problem when after torch.empty_like or torch.zeros_like. However, in isolation, the bug doesn't show up.
+
+The bug shows up calling friendly_ts_xywh2xyxy. However, it didn't appear if I call it directly.
+
+Calling friendly_ts_xywh2xyxy returns:
+
+Expected behavior
+Torchscript doesn't change required_grad value. In my particular case, I need to use torch.no_grad to be able to run scripted code.
+Environment
+PyTorch version: 1.6.0
+Is debug build: No
+CUDA used to build PyTorch: None
+OS: Mac OSX 10.14.6
+GCC version: Could not collect
+CMake version: Could not collect
+Python version: 3.7
+Is CUDA available: No
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+Versions of relevant libraries:
+[pip3] numpy==1.16.4
+[conda] _pytorch_select 0.1 cpu_0
+[conda] _tflow_select 2.3.0 mkl
+[conda] blas 1.0 mkl
+[conda] mkl 2019.4 233
+[conda] mkl-service 2.0.2 py37h1de35cc_0
+[conda] mkl_fft 1.0.14 py37h5e564d8_0
+[conda] mkl_random 1.0.2 py37h27c97d8_0
+[conda] msgpack-numpy 0.4.3.2 py37_0
+[conda] numpy 1.18.1 py37h7241aed_0
+[conda] numpy-base 1.18.1 py37h6575580_1
+[conda] numpydoc 0.9.2 py_0
+[conda] pytorch 1.6.0 py3.7_0 pytorch
+[conda] pytorch-lightning 0.8.5 pypi_0 pypi
+[conda] tensorflow 1.15.0 mkl_py37hb249377_0
+[conda] tensorflow-base 1.15.0 mkl_py37h032239d_0
+[conda] torchsummary 1.5.1 pypi_0 pypi
+[conda] torchvision 0.7.0 py37_cpu pytorch
+Additional context
+I have another code that this happens when using torch.empty_like(x, dtype=torch.bool) right after torch.empty_like(x) assignments. Commenting torch.empty_like(x, dtype=torch.bool) out solves the problem with requires_grad set to True.  As before, it works fine if I isolate the call and I couldn't pinpoint the case
+EDIT: it seems that someone has faced a similar problem (16-01-2020) before although with torch.clamp as posted in the forum.
+cc @ezyang @gchanan @zou3519 @gmagogsfm @suo
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I have a two layer network. The input is a 2D array of token ids, first layer is an embedding layer that replaces each pixel the respective embedding, the second layer does a convolution. Find the network definition below.
+
+For batch sizes of 4 and 8, inference with mixed precision, forward pass runs smoothly. But for batch size 16, forward becomes ~1000 times slower.  Batch size 16 does not fit in the memory without mixed precision. Forward pass is timed with the following code.
+
+The output of the function for batch sizes 4,8,16.
+
+Interestingly, when I measure just one layer i.e only embedding or only convolution, they are not slow, this effect is seen only when they are called together in a forward pass. GPU is A100 40GB.
+Versions
+PyTorch version: 2.0.0+cu117
+Is debug build: False
+CUDA used to build PyTorch: 11.7
+ROCM used to build PyTorch: N/A
+OS: Red Hat Enterprise Linux 8.4 (Ootpa) (x86_64)
+GCC version: (GCC) 8.5.0 20210514 (Red Hat 8.5.0-18)
+Clang version: Could not collect
+CMake version: version 3.26.3
+Libc version: glibc-2.28
+Python version: 3.10.10 (main, Mar 21 2023, 18:45:11) [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-4.18.0-305.19.1.el8_4.x86_64-x86_64-with-glibc2.28
+Is CUDA available: True
+CUDA runtime version: 11.0.221
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: NVIDIA A100-PCIE-40GB
+Nvidia driver version: 495.29.05
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:        x86_64
+CPU op-mode(s):      32-bit, 64-bit
+Byte Order:          Little Endian
+CPU(s):              128
+On-line CPU(s) list: 0-127
+Thread(s) per core:  2
+Core(s) per socket:  32
+Socket(s):           2
+NUMA node(s):        2
+Vendor ID:           AuthenticAMD
+CPU family:          25
+Model:               1
+Model name:          AMD EPYC 7543 32-Core Processor
+Stepping:            1
+CPU MHz:             1638.617
+CPU max MHz:         2800.0000
+CPU min MHz:         1500.0000
+BogoMIPS:            5589.65
+Virtualization:      AMD-V
+L1d cache:           32K
+L1i cache:           32K
+L2 cache:            512K
+L3 cache:            32768K
+NUMA node0 CPU(s):   0-31,64-95
+NUMA node1 CPU(s):   32-63,96-127
+Flags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf pni pclmulqdq monitor ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 invpcid_single hw_pstate sme ssbd mba sev ibrs ibpb stibp vmmcall sev_es fsgsbase bmi1 avx2 smep bmi2 invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr wbnoinvd amd_ppin arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload vgif umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca
+Versions of relevant libraries:
+[pip3] numpy==1.23.5
+[pip3] torch==2.0.0
+[pip3] torchvision==0.15.2
+[pip3] triton==2.0.0
+[conda] numpy                     1.23.5                   pypi_0    pypi
+[conda] torch                     2.0.0                    pypi_0    pypi
+[conda] torchvision               0.15.2                   pypi_0    pypi
+[conda] triton                    2.0.0                    pypi_0    pypi
+cc @csarofeen @ptrblck @xwang233 @albanD @mruberry @jbschlosser @walterddr @mikaylagawarecki
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+The vectorization test vec_test_all_types_AVX2 and vec_test_all_types_AVX512 has failed cases on division when dtype is complex float or complex double.
+Log:
+
+Versions
+PyTorch version: 2.1.0a0+git048a975
+Is debug build: False
+CUDA used to build PyTorch: None
+ROCM used to build PyTorch: N/A
+OS: CentOS Linux 7 (Core) (x86_64)
+GCC version: (GCC) 9.3.1 20200408 (Red Hat 9.3.1-2)
+Clang version: Could not collect
+CMake version: version 3.26.3
+Libc version: glibc-2.17
+Python version: 3.8.16 (default, Jan 17 2023, 23:13:24)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-3.10.0-693.el7.x86_64-x86_64-with-glibc2.17
+Is CUDA available: False
+CUDA runtime version: No CUDA
+CUDA_MODULE_LOADING set to: N/A
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:          x86_64
+CPU op-mode(s):        32-bit, 64-bit
+Byte Order:            Little Endian
+CPU(s):                80
+On-line CPU(s) list:   0-79
+Thread(s) per core:    2
+Core(s) per socket:    20
+Socket(s):             2
+NUMA node(s):          2
+Vendor ID:             GenuineIntel
+CPU family:            6
+Model:                 85
+Model name:            Intel(R) Xeon(R) Gold 6248 CPU @ 2.50GHz
+Stepping:              7
+CPU MHz:               3202.636
+CPU max MHz:           3900.0000
+CPU min MHz:           1000.0000
+BogoMIPS:              5000.00
+Virtualization:        VT-x
+L1d cache:             32K
+L1i cache:             32K
+L2 cache:              1024K
+L3 cache:              28160K
+NUMA node0 CPU(s):     0-19,40-59
+NUMA node1 CPU(s):     20-39,60-79
+Flags:                 fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch epb cat_l3 cdp_l3 intel_pt tpr_shadow vnmi flexpriority ept vpid fsgsbase tsc_adjust bmi1 hle avx2 smep bmi2 erms invpcid rtm cqm mpx rdt_a avx512f avx512dq rdseed adx smap clflushopt clwb avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local dtherm ida arat pln pts hwp hwp_act_window hwp_epp hwp_pkg_req
+Versions of relevant libraries:
+[pip3] bert-pytorch==0.0.1a4
+[pip3] clip-anytorch==2.5.2
+[pip3] CoCa-pytorch==0.0.7
+[pip3] dalle2-pytorch==1.14.2
+[pip3] ema-pytorch==0.2.3
+[pip3] functorch==1.14.0a0+b71aa0b
+[pip3] mypy-extensions==1.0.0
+[pip3] numpy==1.21.2
+[pip3] open-clip-torch==2.20.0
+[pip3] pytorch-warmup==0.1.1
+[pip3] rotary-embedding-torch==0.2.3
+[pip3] torch==2.1.0a0+gitfc85124
+[pip3] torch-fidelity==0.3.0
+[pip3] torch_geometric==2.4.0
+[pip3] torch-sparse==0.6.17
+[pip3] torch-struct==0.5
+[pip3] torchaudio==2.0.2
+[pip3] torchdata==0.6.1
+[pip3] torchmetrics==0.11.4
+[pip3] torchrec-nightly==2023.5.28
+[pip3] torchtext==0.15.2
+[pip3] torchvision==0.15.2
+[pip3] triton==2.0.0
+[pip3] vector-quantize-pytorch==1.6.6
+[conda] bert-pytorch              0.0.1a4                   dev_0    
+[conda] blas                      1.0                         mkl
+[conda] clip-anytorch             2.5.2                    pypi_0    pypi
+[conda] coca-pytorch              0.0.7                    pypi_0    pypi
+[conda] dalle2-pytorch            1.14.2                   pypi_0    pypi
+[conda] ema-pytorch               0.2.3                    pypi_0    pypi
+[conda] functorch                 1.14.0a0+b71aa0b          pypi_0    pypi
+[conda] mkl                       2021.4.0           h06a4308_640
+[conda] mkl-include               2022.1.0           h06a4308_224
+[conda] mkl-service               2.4.0            py38h7f8727e_0
+[conda] mkl_fft                   1.3.1            py38hd3c417c_0
+[conda] mkl_random                1.2.2            py38h51133e4_0
+[conda] numpy                     1.21.2                   pypi_0    pypi
+[conda] open-clip-torch           2.20.0                   pypi_0    pypi
+[conda] pytorch-warmup            0.1.1                    pypi_0    pypi
+[conda] rotary-embedding-torch    0.2.3                    pypi_0    pypi
+[conda] torch                     2.1.0a0+gitfc85124           dev_0    
+[conda] torch-fidelity            0.3.0                    pypi_0    pypi
+[conda] torch-geometric           2.4.0                    pypi_0    pypi
+[conda] torch-sparse              0.6.17                    dev_0    
+[conda] torch-struct              0.5                      pypi_0    pypi
+[conda] torchaudio                2.0.2                    pypi_0    pypi
+[conda] torchdata                 0.6.1                    pypi_0    pypi
+[conda] torchmetrics              0.11.4                   pypi_0    pypi
+[conda] torchrec-nightly          2023.5.28                pypi_0    pypi
+[conda] torchtext                 0.15.2                   pypi_0    pypi
+[conda] torchvision               0.15.2                   pypi_0    pypi
+[conda] triton                    2.0.0                    pypi_0    pypi
+[conda] vector-quantize-pytorch   1.6.6                    pypi_0    pypi
+cc @jgong5 @XiaobingSuper @sanchitintel @ashokei @jingxu10 @ezyang @anjali411 @dylanbespalko @mruberry @lezcano @nikitaved
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Following this example for functorch, I would like to implement hessian vector products using func.torch. When trying to use torch.func.jvp, I get a RuntimeError due to some immutability. This is a repost of a topic in the discussion forum, due to no response.
+Minimal example:
+
+Error message:
+
+Versions
+PyTorch version: 2.1.0
+Is debug build: False
+CUDA used to build PyTorch: None
+ROCM used to build PyTorch: N/A
+OS: macOS 14.0 (arm64)
+GCC version: Could not collect
+Clang version: 15.0.0 (clang-1500.0.40.1)
+CMake version: version 3.27.7
+Libc version: N/A
+Python version: 3.8.17 | packaged by conda-forge | (default, Jun 16 2023, 07:11:32)  [Clang 14.0.6 ] (64-bit runtime)
+Python platform: macOS-14.0-arm64-arm-64bit
+Is CUDA available: False
+CUDA runtime version: No CUDA
+CUDA_MODULE_LOADING set to: N/A
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Apple M2 Max
+Versions of relevant libraries:
+[pip3] mypy==0.982
+[pip3] mypy-extensions==1.0.0
+[pip3] numpy==1.24.4
+[pip3] pytorch-lightning==2.0.9
+[pip3] torch==2.1.0
+[pip3] torchmetrics==1.2.0
+[pip3] torchvision==0.16.0
+[conda] numpy                     1.24.4                   pypi_0    pypi
+[conda] pytorch-lightning         2.0.9                    pypi_0    pypi
+[conda] torch                     2.1.0                    pypi_0    pypi
+[conda] torchmetrics              1.2.0                    pypi_0    pypi
+[conda] torchvision               0.16.0                   pypi_0    pypi
+cc @zou3519 @Chillee @samdow @kshitij12345 @janeyx99
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Sometimes a sampled index is drawn multiple time in a row even if replacement=False on torch.multinomial. This happens when an element of input is very small but not zero.
+To Reproduce
+Steps to reproduce the behavior:
+Here is a minimal working example:
+
+.
+Expected behavior
+Raise an error because one element of input is almost zero.
+Environment
+PyTorch version: 1.2.0
+Is debug build: No
+CUDA used to build PyTorch: 10.0.130
+OS: Ubuntu 18.04.2 LTS
+GCC version: (Ubuntu 7.4.0-1ubuntu1~18.04.1) 7.4.0
+CMake version: Could not collect
+Python version: 3.6
+Is CUDA available: Yes
+CUDA runtime version: Could not collect
+GPU models and configuration: GPU 0: GeForce GTX 1080 Ti
+Nvidia driver version: 418.67
+cuDNN version: /usr/lib/x86_64-linux-gnu/libcudnn.so.7.6.2
+Versions of relevant libraries:
+[pip3] numpy==1.16.4
+[pip3] torch==1.2.0
+[pip3] torchsummary==1.5.1
+[pip3] torchvision==0.3.0
+[conda] Could not collect
+cc @ezyang @gchanan @zou3519 @vincentqb @fritzo @neerajprad @alicanb @vishwakftw @nikitaved
+

@@ -1,0 +1,389 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+I want to record some information into log-file and print it in console at the same time. So I use two logger handlers.
+I also want to plot some figures so I use Tensorboard to make it.
+However, I found that after initializing the SummaryWriter, the 2nd handler always disappeared and all log messages couldn't be displayed in console!
+To Reproduce
+Steps to reproduce the behavior:
+
+You can reproduce the behavior by the following simple code:
+
+
+Then in the log file test/something.log you can see:
+
+But in console you can only see:
+
+Two lines will disappear.
+If the line train_board = SummaryWriter('what_happened') is deleted, the infomation displayed in console will be the same as the log file.
+Expected behavior
+The infomation displayed in console should be the same as the log file.
+Environment
+PyTorch version: 1.4.0
+Is debug build: False
+CUDA used to build PyTorch: 10.1
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.2 LTS (x86_64)
+GCC version: (Ubuntu 7.4.0-1ubuntu1~18.04.1) 7.4.0
+Clang version: Could not collect
+CMake version: Could not collect
+Python version: 3.6 (64-bit runtime)
+Is CUDA available: True
+CUDA runtime version: 10.1.243
+GPU models and configuration:
+GPU 0: GeForce RTX 2080 Ti
+GPU 1: GeForce RTX 2080 Ti
+GPU 2: GeForce RTX 2080 Ti
+GPU 3: GeForce RTX 2080 Ti
+GPU 4: GeForce RTX 2080 Ti
+GPU 5: GeForce RTX 2080 Ti
+GPU 6: GeForce RTX 2080 Ti
+GPU 7: GeForce RTX 2080 Ti
+Nvidia driver version: 430.50
+cuDNN version: /usr/local/cuda-10.1/targets/x86_64-linux/lib/libcudnn.so.7
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip] numpy==1.17.2
+[pip] torch==1.4.0
+[pip] torchvision==0.5.0
+[conda] blas                      1.0                         mkl
+[conda] cudatoolkit               10.1.243             h6bb024c_0    https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main
+[conda] mkl                       2019.4                      243
+[conda] mkl-service               2.3.0            py36he904b0f_0
+[conda] mkl_fft                   1.0.14           py36ha843d7b_0
+[conda] mkl_random                1.1.0            py36hd6b4f25_0
+[conda] numpy                     1.17.2           py36haad9e8e_0
+[conda] numpy-base                1.17.2           py36hde5b4d6_0
+[conda] pytorch                   1.4.0           py3.6_cuda10.1.243_cudnn7.6.3_0    pytorch
+[conda] torchvision               0.5.0                py36_cu101    pytorch
+Additional context
+Maybe it relates to the lazy loading in tensorflow.
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+The gradient backpropagated through the `split' function would be wrong, at least in the following scenario:
+When the input is a 3 dimension tensor and is split along the second dimension and produced with another tensor using each split. The gradient will be cumulated along the first dimension (which is not supposed to be so.)
+To Reproduce
+Steps to reproduce the behavior:
+
+Running the followed code:
+
+
+
+The gradient wrt a' should be repentances of weight' alone the first dimension. However, I find that the gradient wrt.  `a' was summed along the first dimension.
+
+
+Expected behavior
+The expected result should be the same with the following codes:
+
+
+Environment
+Please copy and paste the output from our
+environment collection script
+(or fill out the checklist below manually).
+You can get the script and run it with:
+
+
+PyTorch Version (e.g., 1.0): 1.1, 1.3, 1.4 (All be tested)
+OS (e.g., Linux):
+How you installed PyTorch (conda, pip, source):
+Build command you used (if compiling from source):
+Python version: 3.6, 3.7
+CUDA/cuDNN version:  cuda9.0, cuda 10.2
+GPU models and configuration:
+Any other relevant information:
+
+Additional context
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+When the value of the input is quite small (close to 0), the results calculated by torch.logdet will be completely different on Cuda and CPU.
+Execute the following code in the PyTorch1.13.1 environment, and the result on Cuda will be:
+
+However, the result on CPU will be:
+
+In addition, it is mentioned in the documentation corresponding to logdet:
+
+Does this mean that in the above calculation, the input obtained by Cuda backend is a series of negative determinant, while the value obtained by CPU is close to 0?
+Are there some implicit differences between these inputs on different backends?
+To Reproduce
+
+Error Result.
+I adjusted the batch value on multiple versions for multiple tests, and got interesting results.
+
+In 1.12.0/1.13.0/1.13.1, batch=9
+
+Cuda result: CPU result: 
+
+In 1.12.0, batch=8
+
+
+
+In 1.13.0/1.13.1, batch=8
+
+
+
+In 1.12.0, batch=2
+
+
+
+In 1.13.0/1.13.1, batch=2
+
+
+
+In 1.12.0, batch=1
+
+
+
+In 1.13.0/1.13.1, batch=1
+
+
+We can observe that in 1.13.0 and 1.13.1, the difference between the outputs on Cuda and CPU starts from batch≥2.
+However, in 1.12.0, it starts from batch≥9.
+I'm not sure if the root cause of the above behaviors is related to #73622.
+Expected behavior
+Perhaps this function should maintain the consistency of outputs on Cuda and CPU backends with different batch values, otherwise the explaination about input values in documentation may confuse users with this unexpected behavior.
+Or the docs could add a clearer description of the interesting output of such batch changes.
+Versions
+
+pytorch 1.12.0
+
+
+
+pytorch 1.13.0
+
+
+
+pytorch 1.13.1
+
+
+cc @jianyuh @nikitaved @pearu @mruberry @walterddr @IvanYashchuk @xwang233 @lezcano
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+To Reproduce
+The following piece of code:
+
+would produce the following traceback:
+
+Also, the following piece of code:
+
+would produce the following traceback:
+
+Also, I noticed that, if I removed the type annotation for wrapped, no error was thrown, but the code of wrapped.forward was not inlined, which was the behavior of PyTorch 1.3.1.  Formally, the following piece of code:
+
+would generate the following output:
+
+but the same code generates the following output with PyTorch 1.3.1:
+
+Expected behavior
+I suppose PyTorch should support Module and ModuleList in its annotations, just as 1.3.1.  Also, the code of wrapped is expected to be inlined, as a performance optimization.
+Environment
+
+PyTorch Version (e.g., 1.0): 1.4.0
+OS (e.g., Linux): Mac OSX 10.15.3
+How you installed PyTorch (conda, pip, source): pip
+Build command you used (if compiling from source): none
+Python version: 3.6
+CUDA/cuDNN version: none
+GPU models and configuration: none
+Any other relevant information: none
+
+cc @suo
+
+----------------------------------------Comment 1----------------------------------------
+
+🚀 The feature, motivation and pitch
+The proposal is to add an option to skip the NOLA check during istft computation as the NOLA check causes host-device synchronization.
+This has been discussed in other issues regarding reconstruction with certain windows when center=False ( #62323, #91309), but my proposal is from a performance standpoint (https://discuss.pytorch.org/t/torch-istft-nola-check-causes-synchronization-and-massive-slow-down/172430).
+I understand that NOLA check is necessary for invertibility, but if we are certain about the NOLA condition then we should ideally have the option to bypass the check (and subsequent synchronization) in the istft function.
+Alternatives
+No response
+Additional context
+Below is the profiler trace for istft. As you can see, it spends almost the entire time in synchronization. While for standalone usage it might not be much of a problem, in the case when istft is part of a neural network, the synchronization really slows down the computations during training.
+
+The above trace was obtained with the following code:
+
+cc @jianyuh @nikitaved @pearu @mruberry @walterddr @IvanYashchuk @xwang233 @lezcano @peterbell10
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+Whether create_graph=true or false, torch.autograd.grad returns different gradients. Guess there are different flows on back-propagation of modules whether create_graph=true or false. What I found is only occurred on models in transformer package.
+To Reproduce
+Steps to reproduce the behavior:
+
+When using transformer model, the assertion of the following code is failed.
+
+
+Printing results
+
+
+In the other model(resnet50), there is no problem.
+
+
+Expected behavior
+In reproduce step 1, the assertion should be succeeded.
+Environment
+PyTorch version: 1.5.0+cu101
+Is debug build: No
+CUDA used to build PyTorch: 10.1
+OS: Ubuntu 18.04.3 LTS
+GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+CMake version: version 3.13.3
+Python version: 3.8
+Is CUDA available: Yes
+CUDA runtime version: 10.1.168
+GPU models and configuration:
+GPU 0: Tesla V100-SXM2-32GB
+GPU 1: Tesla V100-SXM2-32GB
+GPU 2: Tesla V100-SXM2-32GB
+GPU 3: Tesla V100-SXM2-32GB
+GPU 4: Tesla V100-SXM2-32GB
+GPU 5: Tesla V100-SXM2-32GB
+GPU 6: Tesla V100-SXM2-32GB
+GPU 7: Tesla V100-SXM2-32GB
+Nvidia driver version: 418.152.00
+cuDNN version: /usr/local/cuda-10.1/targets/x86_64-linux/lib/libcudnn.so.7.6.5
+Versions of relevant libraries:
+[pip3] numpy==1.18.1
+[pip3] torch==1.5.1
+[pip3] torch-geometric==1.6.0
+[pip3] torch-scatter==2.0.4
+[pip3] torch-sparse==0.6.1
+[conda] blas                      1.0                         mkl
+[conda] cudatoolkit               10.1.243             h6bb024c_0
+[conda] mkl                       2020.0                      166
+[conda] mkl-service               2.3.0            py38he904b0f_0
+[conda] mkl_fft                   1.0.15           py38ha843d7b_0
+[conda] mkl_random                1.1.0            py38h962f231_0
+[conda] numpy                     1.18.2                   pypi_0    pypi
+[conda] numpy-base                1.18.1           py38hde5b4d6_1
+[conda] pytorch-nlp               0.5.0                     dev_0    
+[conda] torch                     1.5.0+cu101              pypi_0    pypi
+[conda] torchncmml                0.0.0                     dev_0    
+[conda] torchvision               0.6.0+cu101              pypi_0    pypi
+Additional context
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I got occasional crashes in test_cpp_extensions_jit which I could easily trigger with python test_cpp_extensions_jit.py -k test_warning. Digging deeper I found the cause to be a potential use-after-free leading to heap corruption and a later crash in a malloc call (seen in GDB)
+Using Valgrind I got the following trace:
+
+Note how the use-after-free is detected although it doesn't lead to a crash here, which is likely as nothing else runs/allocates after it.
+I reduced the test code to the following which still reproduces the bug:
+
+The issue seems to get triggered by the warning converted to an error in combination with the pytorch_error_handling. I.e. without either of TORCH_WARN, warnings.simplefilter("error") or with_pytorch_error_handling=True the bug isn't triggered
+Versions
+PyTorch version: 2.0.1
+GCC version: (GCC) 12.2.0
+Clang version: Could not collect
+CMake version: version 3.24.3
+Libc version: glibc-2.17
+Python version: 3.10.8 (main, Jul 25 2023, 10:52:38) [GCC 12.2.0] (64-bit runtime)
+Python platform: Linux-4.14.0-115.19.1.el7a.ppc64le-ppc64le-with-glibc2.17
+CPU:
+Architektur:                     ppc64le
+Byte-Reihenfolge:                Little Endian
+cc @malfet @zou3519
+
+----------------------------------------Comment 1----------------------------------------
+
+Hi, I'm writing this support issue after I got no answer from the forum:
+[https://discuss.pytorch.org/t/imagenet-meta-file-not-found-while-using-torchbench/61356]
+My problem is as follows:
+I'm trying to run the following simple code:
+
+This returns:
+
+Traceback (most recent call last):
+File "test_imagenet.py", line 4, in 
+imagenet = datasets.ImageNet("path2imagenet", split="val", transform=input_transform, target_transform=None, download=False)
+File "/usr/local/lib/python3.6/dist-packages/torchvision/datasets/imagenet.py", line 56, in init
+wnid_to_classes = self._load_meta_file()[0]
+File "/usr/local/lib/python3.6/dist-packages/torchvision/datasets/imagenet.py", line 108, in _load_meta_file
+"You can use download=True to create it.")
+RuntimeError: ('Meta file not found or corrupted.', 'You can use download=True to create it.')
+
+When I'm trying to do "download=True", I'm getting another error, but let's leave it aside since I don't want to download the dataset anyway.
+I'll be happy for some help to understand what I am missing.
+Thanks.
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Context: Just trying to port some TensorFlow code to PyTorch and do some performance profiling; it does some iterative stuff with gradients of network w.r.t. inputs.
+When using torch.jit.script with code like the following, there's some odd behavior where num_iter >= 8 seems to change how torch.autograd.grad reasons about x... or something. For example, this code ran through jit:
+
+Yields an error like:
+
+Some notes:
+
+It doesn't fail if not using torch.jit.script
+It doesn't fail if num_iter<=7
+It doesn't fail if (correctly?) detach inside the loop
+
+Full script: https://github.com/EricCousineau-TRI/repro/blob/2fb2dc0db0fd6a1f848ff83f771dbc0a0b4fff4e/python/torch/torch_jit_issue.py
+Versions
+
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+For some reason, if we convert tensor to float32 with .float(), calculations are performed with FP32 rather than TF32, even if the latter is enabled.
+To Reproduce
+Run the following code, based on guide for TF32:
+
+Both times are equal or almost equal (approx. 110ms on A6000).
+If we replace
+
+with
+
+we will get the expected result, i.e., first calculation is faster (approx. 33ms on A6000).
+Expected behavior
+Both .float() and .to(dtype=torch.float32) make use of TF32.
+Environment
+PyTorch version: 1.9.0+cu111
+Is debug build: False
+CUDA used to build PyTorch: 11.1
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.5 LTS (x86_64)
+GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+Clang version: Could not collect
+CMake version: version 3.10.2
+Libc version: glibc-2.25
+Python version: 3.6.9 (default, Jan 26 2021, 15:33:00)  [GCC 8.4.0] (64-bit runtime)
+Python platform: Linux-5.4.0-81-generic-x86_64-with-Ubuntu-18.04-bionic
+Is CUDA available: True
+CUDA runtime version: 11.1.105
+GPU models and configuration:
+GPU 0: NVIDIA RTX A6000
+GPU 1: NVIDIA RTX A6000
+GPU 2: NVIDIA RTX A6000
+GPU 3: NVIDIA RTX A6000
+Nvidia driver version: 470.57.02
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.2.1
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.18.5
+[pip3] torch==1.9.0+cu111
+[pip3] torchaudio==0.9.0
+[pip3] torchvision==0.10.0+cu111
+[conda] Could not collect
+Additional context
+Others have confirmed similar effect on other GPUs, e.g., A100
+cc @zasdfgbnm @ptrblck
+

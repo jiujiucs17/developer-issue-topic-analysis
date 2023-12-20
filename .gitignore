@@ -1,0 +1,4 @@
+scrapper_results/closed_issues/issues_contents
+scrapper_results/open_issues/issues_contents
+scrapper_results/test_results/issues_contents
+**/*.pkl

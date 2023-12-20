@@ -1,0 +1,414 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+When bfloat16 AMP is enabled, the backward passes of modules within activation checkpoints run as if float16 AMP is enabled instead. Here's some minimal reproduction code:
+
+Running this yields the following output:
+
+During the forward pass, the output is of type torch.bfloat16, as expected. During the backward pass, the output ends up as a torch.float16.
+Workarounds would be appreciated.
+Versions
+PyTorch version: 1.10.1+cu113
+Is debug build: False
+CUDA used to build PyTorch: 11.3
+ROCM used to build PyTorch: N/A
+OS: CentOS Linux release 7.9.2009 (Core) (x86_64)
+GCC version: (GCC) 4.8.5 20150623 (Red Hat 4.8.5-44)
+Clang version: Could not collect
+CMake version: version 2.8.12.2
+Libc version: glibc-2.9
+Python version: 3.7.0 (default, Oct  9 2018, 10:31:47)  [GCC 7.3.0] (64-bit runtime)
+Python platform: Linux-5.4.163.1.fi-x86_64-with-centos-7.9.2009-Core
+Is CUDA available: True
+CUDA runtime version: Could not collect
+GPU models and configuration: GPU 0: NVIDIA A100-SXM4-40GB
+Nvidia driver version: 470.82.01
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.21.2
+[pip3] pytorch-lightning==1.5.0
+[pip3] torch==1.10.1+cu113
+[pip3] torchaudio==0.10.1+cu113
+[pip3] torchmetrics==0.6.2
+[pip3] torchvision==0.11.2+cu113
+[conda] cudatoolkit               11.2.2               he111cf0_8    conda-forge
+[conda] numpy                     1.21.2                   pypi_0    pypi
+[conda] pytorch-lightning         1.5.0                    pypi_0    pypi
+[conda] torch                     1.10.1+cu113             pypi_0    pypi
+[conda] torchaudio                0.10.1+cu113             pypi_0    pypi
+[conda] torchmetrics              0.6.2                    pypi_0    pypi
+[conda] torchvision               0.11.2+cu113             pypi_0    pypi
+Tagging @jisaacso
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+To Reproduce
+Steps to reproduce the behavior:
+
+Expected behavior
+The results should be consistent between the saved and loaded
+Environment
+Please copy and paste the output from our
+environment collection script
+(or fill out the checklist below manually).
+You can get the script and run it with:
+
+
+PyTorch Version (e.g., 1.0): 1.0.1.post2
+OS (e.g., Linux): mac osx
+How you installed PyTorch (conda, pip, source): conda
+Build command you used (if compiling from source):  from binary
+Python version: 3.6
+CUDA/cuDNN version: None
+GPU models and configuration:None
+Any other relevant information:None
+
+Additional context
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+I'm trying to install pytorch according to https://pytorch.org/#pip-install-pytorch using python 3.7 and pip. When I run pip3 install pytorch it gives me an error telling me to install pytorch from http://pytorch.org.
+To Reproduce
+Steps to reproduce the behavior:
+
+pip3 install pytorch
+
+Produces the following output
+
+and opens https://pytorch.org/#pip-install-pytorch in the browser.
+Expected behavior
+Pytorch should install like it says on the website.
+Environment
+Collecting environment information...
+PyTorch version: N/A
+Is debug build: N/A
+CUDA used to build PyTorch: N/A
+OS: Mac OSX 10.14.3
+GCC version: Could not collect
+CMake version: version 3.13.2
+Python version: 3.7
+Is CUDA available: N/A
+CUDA runtime version: Could not collect
+GPU models and configuration: Could not collect
+Nvidia driver version: Could not collect
+cuDNN version: Could not collect
+Versions of relevant libraries:
+[pip3] numpy==1.16.2
+[conda] Could not collect
+
+----------------------------------------Comment 1----------------------------------------
+
+Issue description
+When normalizing within torch.stft, the function divides by the $\sqrt{framelength}$ or otherwise $\sqrt{nfft}$. This would make sense for a rectangular window, or when the window is None.
+When window is not None, or it is not a rectangular window however, it would make sense to normalize with regards to the values within the window, as can be seen in the link below, you normalize with the L2 norm of the window
+https://ccrma.stanford.edu/~jos/sasp/Normalized_STFT_Basis.html
+This is especially applicable when using normalizing for audio spectrograms, where the default window is a hann_window.
+I believe that normalization should happen with output /= window.pow(2.0).sum().sqrt() If window is None like default, then it should fall back to its current normalization.
+System Info
+
+PyTorch or Caffe2: PyTorch
+How you installed PyTorch (conda, pip, source): conda
+Build command you used (if compiling from source):
+OS: macOS 12.3.1 (arm64)
+PyTorch version: 1.13.0.dev20220601
+Python version: 3.9.12
+CUDA/cuDNN version: N/A
+GPU models and configuration: N/A
+GCC version (if compiling from source): N/A
+CMake version: N/A
+Versions of any other relevant libraries: N/A
+
+cc @ezyang @anjali411 @dylanbespalko @mruberry @lezcano @nikitaved @peterbell10
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Running python test/run_test.py fails when PyTorch is compiled w/o LAPACK support.
+The expected behavior is to skip tests relaying on it.
+The test that fails is: test_constraint in test/distributions/test_constraints.py.
+The error log is:
+
+Versions
+Collecting environment information...
+PyTorch version: N/A
+Is debug build: N/A
+CUDA used to build PyTorch: N/A
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.6 LTS (x86_64)
+GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+Clang version: 6.0.0-1ubuntu2 (tags/RELEASE_600/final)
+CMake version: version 3.22.0
+Python version: 3.8 (64-bit runtime)
+Is CUDA available: N/A
+CUDA runtime version: 10.2.89
+GPU models and configuration: GPU 0: GeForce RTX 2080 Ti
+Nvidia driver version: 460.91.03
+cuDNN version: /usr/lib/x86_64-linux-gnu/libcudnn.so.7.6.5
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.21.4
+[pip3] pytorch-sphinx-theme==0.0.24
+[pip3] torch==1.11.0a0+git0ece9a4
+[pip3] torchvision==0.11.1
+[conda] Could not collect
+cc @fritzo @neerajprad @alicanb @nikitaved
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Hi!
+I am trying to export my custom PyTorch model to ONNX as following:
+
+But onnx crashes with no clear explanation, giving warnings about an un-existing operator.
+Warning: Checker does not support models with experimental ops: ATen
+Shouldn't this (operator_export_type=torch.onnx.OperatorExportTypes.ONNX_ATEN_FALLBACK) fix it? Why not? How can I know which torch operator is causing the problems and how can I fix this?
+Versions
+Collecting environment information...
+PyTorch version: N/A
+Is debug build: N/A
+CUDA used to build PyTorch: N/A
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 18.04.5 LTS (x86_64)
+GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+Clang version: Could not collect
+CMake version: version 3.15.5
+Libc version: glibc-2.27
+Python version: 3.8.0 (default, Feb 25 2021, 22:10:10)  [GCC 8.4.0] (64-bit runtime)
+Python platform: Linux-5.4.0-1051-azure-x86_64-with-glibc2.27
+Is CUDA available: N/A
+CUDA runtime version: Could not collect
+GPU models and configuration:
+GPU 0: Tesla K80
+GPU 1: Tesla K80
+Nvidia driver version: 460.80
+cuDNN version: /usr/lib/x86_64-linux-gnu/libcudnn.so.7.6.5
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.21.4
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+When i used method
+
+on two nodes,setting args.init_method='10.110.158.147:3456' args.world_size=2,rank=0 or rank=1 on diffirent nodes,
+an error occured.
+
+But if i run it with torchrun, the program runs successfully.
+What are the possible reasons for this？
+Versions
+Info for rank0:
+Collecting environment information...
+PyTorch version: 1.10.1+cu102
+Is debug build: False
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: CentOS Linux 7 (Core) (x86_64)
+GCC version: (GCC) 7.3.0
+Clang version: Could not collect
+CMake version: version 3.23.0-rc2
+Libc version: glibc-2.17
+Python version: 3.6.8 (default, Sep 25 2019, 11:05:12)  [GCC 4.8.5 20150623 (Red Hat 4.8.5-28)] (64-bit runtime)
+Python platform: Linux-3.10.0-1160.59.1.el7.x86_64-x86_64-with-centos-7.4.1708-Core
+Is CUDA available: True
+CUDA runtime version: 9.0.176
+GPU models and configuration:
+GPU 0: Tesla P100-PCIE-16GB
+GPU 1: Tesla P100-PCIE-16GB
+Nvidia driver version: 450.172.01
+cuDNN version: Probably one of the following:
+/usr/local/cuda-10.1/targets/x86_64-linux/lib/libcudnn.so.7
+/usr/local/cuda-10.2/targets/x86_64-linux/lib/libcudnn.so.7
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.18.5
+[pip3] torch==1.10.1
+[pip3] torchvision==0.11.2
+Info for rank1:
+Collecting environment information...
+PyTorch version: 1.10.1+cu102
+Is debug build: False
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: CentOS Linux 7 (Core) (x86_64)
+GCC version: (GCC) 4.8.5 20150623 (Red Hat 4.8.5-44)
+Clang version: Could not collect
+CMake version: Could not collect
+Libc version: glibc-2.3.4
+Python version: 3.6.8 (default, Nov 16 2020, 16:55:22)  [GCC 4.8.5 20150623 (Red Hat 4.8.5-44)] (64-bit runtime)
+Python platform: Linux-3.10.0-1127.8.2.el7.x86_64-x86_64-with-centos-7.9.2009-Core
+Is CUDA available: True
+CUDA runtime version: Could not collect
+GPU models and configuration:
+GPU 0: Tesla P100-PCIE-16GB
+GPU 1: Tesla P100-PCIE-16GB
+Nvidia driver version: 450.191.01
+cuDNN version: /usr/local/cuda-10.1/targets/x86_64-linux/lib/libcudnn.so.7.6.5
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.19.5
+[pip3] torch==1.10.1
+[pip3] torchvision==0.11.2
+[conda] Could not collect
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @SciPioneer @H-Huang @kwen2501
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+For some particular data, torch.load() can not properly load a file dumped by torch.save().
+Root cause:
+The file was mistakenly identified as a zip file by zipfile.is_zipfile() at line 557 of torch\serialization.py, due to the collision of magic number.
+To Reproduce
+Steps to reproduce the behavior:
+
+Use any dumped tensor from https://github.com/nozomifans/reccell/tree/master/issue
+Load and save data in uint8, then try to load it back
+
+
+
+Traceback
+
+
+Expected behavior
+torch.load should load the tensor dumped by torch.save
+Environment
+
+PyTorch Version (e.g., 1.0): 1.2
+OS (e.g., Linux): Windows 10 or CentOS 7.6.1810
+How you installed PyTorch (conda, pip, source): Conda
+Build command you used (if compiling from source):
+Python version: 3.6 or 3.7
+CUDA/cuDNN version:
+GPU models and configuration: CPU only or 4x2080
+Any other relevant information:
+
+Additional context
+Current workaround is to save such collision into float32 to avoid the collision. Is that possible to provide an argument to flag this file is not a zip?
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+when i run the shell on two node,the program hanging,but i have no idea how it happened.
+
+
+###Outputs
+node0
+
+node1
+
+Versions
+node0
+Collecting environment information...
+PyTorch version: 1.10.1+cu102
+Is debug build: False
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: CentOS Linux 7 (Core) (x86_64)
+GCC version: (GCC) 7.3.0
+Clang version: Could not collect
+CMake version: version 3.23.0-rc2
+Libc version: glibc-2.17
+Python version: 3.6.8 (default, Sep 25 2019, 11:05:12)  [GCC 4.8.5 20150623 (Red Hat 4.8.5-28)] (64-bit runtime)
+Python platform: Linux-3.10.0-1160.59.1.el7.x86_64-x86_64-with-centos-7.4.1708-Core
+Is CUDA available: True
+CUDA runtime version: 9.0.176
+GPU models and configuration:
+GPU 0: Tesla P100-PCIE-16GB
+GPU 1: Tesla P100-PCIE-16GB
+Nvidia driver version: 450.172.01
+cuDNN version: Probably one of the following:
+/usr/local/cuda-10.1/targets/x86_64-linux/lib/libcudnn.so.7
+/usr/local/cuda-10.2/targets/x86_64-linux/lib/libcudnn.so.7
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.18.5
+[pip3] torch==1.10.1
+[pip3] torchvision==0.11.2
+[conda] Could not collect
+node1
+Collecting environment information...
+PyTorch version: 1.10.2+cu102
+Is debug build: False
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: CentOS Linux 7 (Core) (x86_64)
+GCC version: (GCC) 4.8.5 20150623 (Red Hat 4.8.5-44)
+Clang version: Could not collect
+CMake version: Could not collect
+Libc version: glibc-2.3.4
+Python version: 3.6.8 (default, Nov 16 2020, 16:55:22)  [GCC 4.8.5 20150623 (Red Hat 4.8.5-44)] (64-bit runtime)
+Python platform: Linux-3.10.0-1127.8.2.el7.x86_64-x86_64-with-centos-7.9.2009-Core
+Is CUDA available: True
+CUDA runtime version: Could not collect
+GPU models and configuration:
+GPU 0: Tesla P100-PCIE-16GB
+GPU 1: Tesla P100-PCIE-16GB
+Nvidia driver version: 450.191.01
+cuDNN version: /usr/local/cuda-10.1/targets/x86_64-linux/lib/libcudnn.so.7.6.5
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.19.5
+[pip3] torch==1.10.2
+[pip3] torchvision==0.11.2
+[conda] Could not collect
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @SciPioneer @H-Huang @kwen2501
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+To Reproduce
+Steps to reproduce the behavior:
+
+conda create -n tmp -y python=3.6
+conda install -c pytorch pytorch -y
+find "$CONDA_PREFIX" -name "libpytorch_jni.*"
+
+Expected behavior
+The conda artifact should include libpytorch_jni.
+Environment
+Please copy and paste the output from our
+environment collection script
+(or fill out the checklist below manually).
+You can get the script and run it with:
+
+PyTorch version: 1.6.0
+Is debug build: No
+CUDA used to build PyTorch: None
+OS: Mac OSX 10.15.6
+GCC version: Could not collect
+CMake version: version 3.14.0
+Python version: 3.6
+Is CUDA available: No
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+Versions of relevant libraries:
+[pip3] numpy==1.18.5
+[pip3] torch==1.6.0
+[conda] blas                      1.0                         mkl
+[conda] mkl                       2019.4                      233
+[conda] mkl-service               2.3.0            py36hfbe908c_0
+[conda] mkl_fft                   1.1.0            py36hc64f4ea_0
+[conda] mkl_random                1.1.1            py36h959d312_0
+[conda] numpy                     1.18.5           py36h55a193a_0
+[conda] numpy-base                1.18.5           py36h3304bdc_0
+[conda] pytorch                   1.6.0                   py3.6_0    pytorch
+Additional context
+libpytorch_jni is available through download of libtorch from pytorch.org, but the documentation is wrong for some platforms (e.g., at least OS X).
+cc @malfet
+

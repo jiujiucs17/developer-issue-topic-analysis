@@ -1,0 +1,1167 @@
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+On process group initialisation failure the global variable torch.distributed.distributed_c10d._group_count can be incremented by one even though no process group is created. This is because the counter is incremented at the beginning of _new_process_group_helper (https://github.com/pytorch/pytorch/blob/master/torch/distributed/distributed_c10d.py#L491) while the other global variables are set at the end.
+This matters because depending on the crashing and recovery process the variable may end up taking a different value for different processes. And since the counter is used as a prefix for the PrefixStore the processes will be using different keys, leading to a socket timeout.
+This issue cannot be "correctly" prevented since _group_count is private and destroy_process_group cannot be called here since the process group doesn't exist. It can be prevented by explicitly providing a group name to init_process_group, but the argument is marked as deprecated.
+To Reproduce
+The following code :
+
+This shows the following output:
+
+Expected behavior
+It should be possible to recover from a failed call to init_process_group with public methods such as is_initialized and destroy_process_group. In the current implementation this means the call should leave the global variables in a consistent state, i.e. either none or all of them should be modified. In the above example, _group_count should remain at zero.
+Environment
+
+Additional context
+This issue happens in an elastic training training context where the main process group is frequently reinitialised, and there is a rare crash where the initialisation fails due to a broken pairwise connection. I am unsure if this is due to a networking error or a bug in the code, but the above issue makes it difficult to recover from the crash. This is in part because some of the processes crash in ProcessGroupGloo.__init__,  leading to inconsistent state, while others crash in the barrier() call at the end of init_process_group. The recovery process is roughly as follow:
+
+But _group_count can be different across processes, so the recovery won't work.
+cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @xush6528 @osalpekar @jiayisuse @agolynski
+
+----------------------------------------Comment 1----------------------------------------
+
+Please fix the following issues.
+First, make sure to install the required tools:
+
+
+Then complete the followings steps:
+
+Run pydocstyle to see the number of errors in the file:
+
+
+    This command prints out the number of errors at the end of the output. Save this output to later add it to your PR description.
+2. Next, run ruff which should help autofix many of these errors:
+
+    RULECODE is the error code from the output in the issue, for example, D200. See the complete list of rules and autofixes here.
+3. You can run the above command with the --unsafe-fixes option. Double-check that the applied fixes are correct.
+4. Fix the remaining issues. Fix only the errors listed in the issue. Skip the 'Missing docstrings' errors.
+5. Run pydocstyle again:
+
+This number might not be 0 which is OK. Add the count of fixed errors to your PR description.
+
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: FlatParameter, Line: 188, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: FlatParameter, Line: 188, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _init_metadata, Line: 359, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _init_metadata, Line: 359, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _init_metadata, Line: 359, Description: First line should be in imperative mood (perhaps 'Initialize', not 'Initializes')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: FlatParamHandle, Line: 425, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: FlatParamHandle, Line: 425, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _init_flat_param_and_metadata, Line: 546, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _init_flat_param_and_metadata, Line: 546, Description: First line should end with a period (not 'h')
+Error Code: D200, File: torch/distributed/fsdp/flat_param.py, Entity: _validate_tensors_to_flatten, Line: 687, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _validate_tensors_to_flatten, Line: 687, Description: First line should be in imperative mood (perhaps 'Validate', not 'Validates')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: flatten_tensors, Line: 730, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: flatten_tensors, Line: 730, Description: First line should end with a period (not 'g')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _init_param_reduce_dtypes, Line: 787, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _init_param_reduce_dtypes, Line: 787, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: shard, Line: 820, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: shard, Line: 820, Description: First line should end with a period (not 'r')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _init_shard_metadata, Line: 855, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _init_shard_metadata, Line: 855, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _init_shard_metadata, Line: 855, Description: First line should be in imperative mood (perhaps 'Initialize', not 'Initializes')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _get_shard_metadata, Line: 897, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _get_shard_metadata, Line: 897, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _get_shard_metadata, Line: 897, Description: First line should be in imperative mood (perhaps 'Compute', not 'Computes')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _get_unpadded_shard, Line: 960, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _get_unpadded_shard, Line: 960, Description: First line should end with a period (not 'n')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _get_unpadded_shard, Line: 960, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _get_shard, Line: 987, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _get_shard, Line: 987, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _get_shard, Line: 987, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _get_sharded_size, Line: 1004, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _get_sharded_size, Line: 1004, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _get_sharded_size, Line: 1004, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _get_flat_param_offsets, Line: 1018, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _get_flat_param_offsets, Line: 1018, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _get_flat_param_offsets, Line: 1018, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: shard_metadata, Line: 1033, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: shard_metadata, Line: 1033, Description: First line should end with a period (not 'e')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: shard_metadata, Line: 1033, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: init_flat_param_attributes, Line: 1070, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: init_flat_param_attributes, Line: 1070, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: pre_unshard, Line: 1156, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _use_low_precision_shard, Line: 1183, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _use_low_precision_shard, Line: 1183, Description: First line should end with a period (not 'd')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: unshard, Line: 1202, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: unshard, Line: 1202, Description: First line should end with a period (not 'r')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: unshard, Line: 1202, Description: First line should be in imperative mood (perhaps 'Run', not 'Runs')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: needs_unshard, Line: 1226, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _alloc_padded_unsharded_flat_param, Line: 1237, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _alloc_padded_unsharded_flat_param, Line: 1237, Description: First line should end with a period (not 'd')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _get_padded_unsharded_flat_param, Line: 1251, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _get_padded_unsharded_flat_param, Line: 1251, Description: First line should end with a period (not 'n')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _get_padded_unsharded_flat_param, Line: 1251, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _all_gather_flat_param, Line: 1275, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _all_gather_flat_param, Line: 1275, Description: First line should end with a period (not 'n')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _use_unsharded_flat_param, Line: 1313, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _use_unsharded_flat_param, Line: 1313, Description: First line should end with a period (not 'a')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: post_unshard, Line: 1342, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: post_unshard, Line: 1342, Description: First line should end with a period (not 'n')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: post_unshard, Line: 1342, Description: First line should be in imperative mood (perhaps 'Run', not 'Runs')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: unshard_grad, Line: 1367, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: unshard_grad, Line: 1367, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: prepare_gradient_for_backward, Line: 1429, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: prepare_gradient_for_backward, Line: 1429, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: prepare_gradient_for_backward, Line: 1429, Description: First line should be in imperative mood (perhaps 'Prepare', not 'Prepares')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: prepare_gradient_for_optim, Line: 1494, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: prepare_gradient_for_optim, Line: 1494, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: prepare_gradient_for_optim, Line: 1494, Description: First line should be in imperative mood (perhaps 'Prepare', not 'Prepares')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: to_cpu, Line: 1540, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: to_cpu, Line: 1540, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: to_cpu, Line: 1540, Description: First line should be in imperative mood (perhaps 'Move', not 'Moves')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: reshard, Line: 1587, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: reshard, Line: 1587, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: reshard, Line: 1587, Description: First line should be in imperative mood (perhaps 'Run', not 'Runs')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: post_reshard, Line: 1603, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: post_reshard, Line: 1603, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: post_reshard, Line: 1603, Description: First line should be in imperative mood (perhaps 'Run', not 'Runs')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _free_unsharded_flat_param, Line: 1622, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _free_unsharded_flat_param, Line: 1622, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _get_unflat_views_unaligned, Line: 1688, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _get_unflat_views_unaligned, Line: 1688, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _get_unflat_views_unaligned, Line: 1688, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _get_unflat_views_aligned, Line: 1714, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _get_unflat_views_aligned, Line: 1714, Description: First line should end with a period (not '`')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _get_unflat_views_aligned, Line: 1714, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _use_unsharded_views, Line: 1741, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _use_unsharded_views, Line: 1741, Description: First line should end with a period (not 'l')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _use_unsharded_grad_views, Line: 1820, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _use_unsharded_grad_views, Line: 1820, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: unflatten_as_params, Line: 1888, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: unflatten_as_params, Line: 1888, Description: First line should end with a period (not ',')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _use_sharded_views, Line: 1903, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _use_sharded_views, Line: 1903, Description: First line should end with a period (not 'o')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _use_sharded_views, Line: 1903, Description: First line should be in imperative mood (perhaps 'Set', not 'Sets')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _use_sharded_grad_views, Line: 1958, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _use_sharded_grad_views, Line: 1958, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _use_sharded_grad_views, Line: 1958, Description: First line should be in imperative mood (perhaps 'Set', not 'Sets')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _writeback_orig_params, Line: 2018, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _writeback_orig_params, Line: 2018, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _writeback_orig_params, Line: 2018, Description: First line should be in imperative mood (perhaps 'Iterate', not 'Iterates')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _writeback_tensor, Line: 2176, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _writeback_tensor, Line: 2176, Description: First line should end with a period (not ',')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _writeback_tensor, Line: 2176, Description: First line should be in imperative mood (perhaps 'Write', not 'Writes')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _clear_grads_if_needed, Line: 2218, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _clear_grads_if_needed, Line: 2218, Description: First line should end with a period (not '`')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: flat_param_to, Line: 2245, Description: First line should be in imperative mood (perhaps 'Wrap', not 'Wraps')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _get_modules, Line: 2255, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _get_modules, Line: 2255, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _get_modules, Line: 2255, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: is_sharded, Line: 2264, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: is_sharded, Line: 2264, Description: First line should end with a period (not 'e')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: is_sharded, Line: 2264, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/flat_param.py, Entity: _reset_is_grad_none, Line: 2350, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/flat_param.py, Entity: _reset_is_grad_none, Line: 2350, Description: First line should end with a period (not 'e')
+Error Code: D401, File: torch/distributed/fsdp/flat_param.py, Entity: _reset_is_grad_none, Line: 2350, Description: First line should be in imperative mood (perhaps 'Reset', not 'Resets')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_intra_node_process_group, Line: 174, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_intra_node_process_group, Line: 174, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_inter_node_process_group, Line: 192, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_inter_node_process_group, Line: 192, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_inter_node_process_group, Line: 192, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_intra_and_inter_node_groups, Line: 227, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_intra_and_inter_node_groups, Line: 227, Description: First line should end with a period (not 'g')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_intra_and_inter_node_groups, Line: 227, Description: First line should be in imperative mood (perhaps 'Initialize', not 'Initializes')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_device_handle, Line: 283, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_device_handle, Line: 283, Description: First line should end with a period (not ',')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_device_handle, Line: 283, Description: First line should be in imperative mood (perhaps 'Determine', not 'Determines')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_param_handle_from_module, Line: 452, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_param_handle_from_module, Line: 452, Description: First line should be in imperative mood (perhaps 'Initialize', not 'Initializes')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_param_handles_from_module, Line: 499, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_param_handles_from_module, Line: 499, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _init_param_handles_from_module, Line: 499, Description: First line should be in imperative mood (perhaps 'Initialize', not 'Initializes')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_state_names_for_states, Line: 616, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_state_names_for_states, Line: 616, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_state_names_for_states, Line: 616, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_ignored_modules, Line: 647, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_ignored_modules, Line: 647, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_ignored_modules, Line: 647, Description: First line should be in imperative mood (perhaps 'Check', not 'Checks')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_ignored_params, Line: 704, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_ignored_params, Line: 704, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_ignored_params, Line: 704, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_buffer_names, Line: 733, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_buffer_names, Line: 733, Description: First line should end with a period (not 'y')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_buffer_names, Line: 733, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _check_single_device_module, Line: 746, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _check_single_device_module, Line: 746, Description: First line should end with a period (not ',')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _check_single_device_module, Line: 746, Description: First line should be in imperative mood (perhaps 'Raise', not 'Raises')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_device_from_device_id, Line: 762, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_device_from_device_id, Line: 762, Description: First line should end with a period (not 'r')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_device_from_device_id, Line: 762, Description: First line should be in imperative mood (perhaps 'Process', not 'Processes')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _need_to_materialize_module, Line: 788, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _need_to_materialize_module, Line: 788, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _need_to_materialize_module, Line: 788, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _move_module_to_device, Line: 841, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _move_module_to_device, Line: 841, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _move_module_to_device, Line: 841, Description: First line should be in imperative mood (perhaps 'Move', not 'Moves')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _move_states_to_device, Line: 894, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _move_states_to_device, Line: 894, Description: First line should end with a period (not 'd')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_compute_device, Line: 936, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_compute_device, Line: 936, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_compute_device, Line: 936, Description: First line should be in imperative mood (perhaps 'Determine', not 'Determines')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _sync_module_params_and_buffers, Line: 972, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _sync_module_params_and_buffers, Line: 972, Description: First line should end with a period (not 'l')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _sync_module_params_and_buffers, Line: 972, Description: First line should be in imperative mood (perhaps 'Synchronize', not 'Synchronizes')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_orig_params, Line: 1031, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_orig_params, Line: 1031, Description: First line should end with a period (not 'g')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _get_orig_params, Line: 1031, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/_init_utils.py, Entity: _check_orig_params_flattened, Line: 1051, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_init_utils.py, Entity: _check_orig_params_flattened, Line: 1051, Description: First line should end with a period (not 'e')
+Error Code: D401, File: torch/distributed/fsdp/_init_utils.py, Entity: _check_orig_params_flattened, Line: 1051, Description: First line should be in imperative mood (perhaps 'Check', not 'Checks')
+
+cc @carljparker
+
+----------------------------------------Comment 1----------------------------------------
+
+Please fix the following issues.
+First, make sure to install the required tools:
+
+
+Then complete the followings steps:
+
+Run pydocstyle to see the number of errors in the file:
+
+
+    This command prints out the number of errors at the end of the output. Save this output to later add it to your PR description.
+2. Next, run ruff which should help autofix many of these errors:
+
+    RULECODE is the error code from the output in the issue, for example, D200. See the complete list of rules and autofixes here.
+3. You can run the above command with the --unsafe-fixes option. Double-check that the applied fixes are correct.
+4. Fix the remaining issues. Fix only the errors listed in the issue. Skip the 'Missing docstrings' errors.
+5. Run pydocstyle again:
+
+This number might not be 0 which is OK. Add the count of fixed errors to your PR description.
+
+Error Code: D205, File: torch/distributed/_spmd/parallel_mode.py, Entity: ParallelMode, Line: 19, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/parallel_mode.py, Entity: ParallelMode, Line: 19, Description: First line should end with a period (not 't')
+Error Code: D205, File: torch/distributed/_spmd/parallel_mode.py, Entity: transform_and_compile, Line: 46, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/parallel_mode.py, Entity: transform_and_compile, Line: 46, Description: First line should end with a period (not 'h')
+Error Code: D205, File: torch/distributed/_spmd/parallel_mode.py, Entity: __init__, Line: 67, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/parallel_mode.py, Entity: __init__, Line: 67, Description: First line should end with a period (not 'e')
+Error Code: D403, File: torch/distributed/_spmd/parallel_mode.py, Entity: __init__, Line: 67, Description: First word of the first line should be properly capitalized ('Dataparallel', not 'DataParallel')
+Error Code: D400, File: torch/distributed/_spmd/parallel_mode.py, Entity: transform_and_compile, Line: 131, Description: First line should end with a period (not 's')
+Error Code: D403, File: torch/distributed/_spmd/parallel_mode.py, Entity: transform_and_compile, Line: 131, Description: First word of the first line should be properly capitalized ('Optimize', not 'optimize')
+Error Code: D205, File: torch/distributed/_spmd/parallel_mode.py, Entity: DTensorExpandMode, Line: 137, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/parallel_mode.py, Entity: DTensorExpandMode, Line: 137, Description: First line should end with a period (not 'd')
+Error Code: D205, File: torch/distributed/_spmd/parallel_mode.py, Entity: transform_and_compile, Line: 211, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/parallel_mode.py, Entity: transform_and_compile, Line: 211, Description: First line should end with a period (not 'n')
+Error Code: D202, File: torch/distributed/_composable/contract.py, Entity: contract, Line: 33, Description: No blank lines allowed after function docstring (found 1)
+Error Code: D205, File: torch/distributed/_composable/contract.py, Entity: contract, Line: 33, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_composable/contract.py, Entity: contract, Line: 33, Description: First line should end with a period (not 't')
+Error Code: D205, File: torch/distributed/_composable/contract.py, Entity: _get_registry, Line: 195, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_composable/contract.py, Entity: _get_registry, Line: 195, Description: First line should end with a period (not 'e')
+Error Code: D200, File: torch/distributed/_composable/fully_shard.py, Entity: fully_shard, Line: 54, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D401, File: torch/distributed/_composable/fully_shard.py, Entity: fully_shard, Line: 54, Description: First line should be in imperative mood (perhaps 'Apply', not 'Applies')
+Error Code: D400, File: torch/distributed/_composable/replicate.py, Entity: replicate, Line: 20, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/_composable/checkpoint_activation.py, Entity: _no_hook, Line: 15, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_composable/checkpoint_activation.py, Entity: _no_hook, Line: 15, Description: First line should end with a period (not 'n')
+Error Code: D205, File: torch/distributed/_composable/checkpoint_activation.py, Entity: checkpoint, Line: 180, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_composable/checkpoint_activation.py, Entity: checkpoint, Line: 180, Description: First line should end with a period (not 'l')
+Error Code: D401, File: torch/distributed/_composable/checkpoint_activation.py, Entity: checkpoint, Line: 180, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D205, File: torch/distributed/_tensor/op_schema.py, Entity: _rebuild_tensor_from_dtensor_meta, Line: 18, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D210, File: torch/distributed/_tensor/op_schema.py, Entity: _rebuild_tensor_from_dtensor_meta, Line: 18, Description: No whitespaces allowed surrounding docstring text
+Error Code: D400, File: torch/distributed/_tensor/op_schema.py, Entity: _rebuild_tensor_from_dtensor_meta, Line: 18, Description: First line should end with a period (not '"')
+Error Code: D205, File: torch/distributed/_tensor/op_schema.py, Entity: PlacementStrategy, Line: 32, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/op_schema.py, Entity: PlacementStrategy, Line: 32, Description: First line should end with a period (not 't')
+Error Code: D205, File: torch/distributed/_tensor/op_schema.py, Entity: StrategyType, Line: 58, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/op_schema.py, Entity: StrategyType, Line: 58, Description: First line should end with a period (not '
+Error Code: D200, File: torch/distributed/_tensor/op_schema.py, Entity: OpStrategy, Line: 67, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_tensor/op_schema.py, Entity: OpStrategy, Line: 67, Description: First line should end with a period (not 'p')
+Error Code: D200, File: torch/distributed/_tensor/op_schema.py, Entity: max_num_shards, Line: 80, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_tensor/op_schema.py, Entity: max_num_shards, Line: 80, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/_tensor/op_schema.py, Entity: max_num_shards, Line: 80, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/_tensor/op_schema.py, Entity: TupleStrategy, Line: 87, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/op_schema.py, Entity: TupleStrategy, Line: 87, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/_tensor/op_schema.py, Entity: OpSchema, Line: 113, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/op_schema.py, Entity: OpSchema, Line: 113, Description: First line should end with a period (not 't')
+Error Code: D205, File: torch/distributed/_tensor/op_schema.py, Entity: args_spec, Line: 163, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/op_schema.py, Entity: args_spec, Line: 163, Description: First line should end with a period (not 't')
+Error Code: D205, File: torch/distributed/_tensor/op_schema.py, Entity: gen_fake_args, Line: 194, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/op_schema.py, Entity: gen_fake_args, Line: 194, Description: First line should end with a period (not 'd')
+Error Code: D205, File: torch/distributed/_tensor/op_schema.py, Entity: gen_fake_kwargs, Line: 204, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/op_schema.py, Entity: gen_fake_kwargs, Line: 204, Description: First line should end with a period (not 'd')
+Error Code: D205, File: torch/distributed/_tensor/op_schema.py, Entity: OutputSharding, Line: 229, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/op_schema.py, Entity: OutputSharding, Line: 229, Description: First line should end with a period (not 'n')
+Error Code: D205, File: torch/distributed/_tensor/redistribute.py, Entity: _replicate_then_shard, Line: 19, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D205, File: torch/distributed/_tensor/redistribute.py, Entity: _decompose_reshard, Line: 33, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/redistribute.py, Entity: _decompose_reshard, Line: 33, Description: First line should end with a period (not 'j')
+Error Code: D200, File: torch/distributed/_tensor/sharding_prop.py, Entity: register_sharding_prop_rule, Line: 37, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D200, File: torch/distributed/_tensor/sharding_prop.py, Entity: register_op_strategy, Line: 47, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D205, File: torch/distributed/_tensor/sharding_prop.py, Entity: prepare_op_schema, Line: 55, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/sharding_prop.py, Entity: prepare_op_schema, Line: 55, Description: First line should end with a period (not 'm')
+Error Code: D401, File: torch/distributed/_tensor/sharding_prop.py, Entity: prepare_op_schema, Line: 55, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D200, File: torch/distributed/_tensor/sharding_prop.py, Entity: _wrap_output_spec_meta, Line: 149, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D200, File: torch/distributed/_tensor/sharding_prop.py, Entity: propagate_op_sharding, Line: 164, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D205, File: torch/distributed/_tensor/sharding_prop.py, Entity: _CachingPropagator, Line: 260, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D205, File: torch/distributed/_tensor/sharding_prop.py, Entity: propagate, Line: 275, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D205, File: torch/distributed/_tensor/_utils.py, Entity: compute_local_shape, Line: 17, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/_utils.py, Entity: compute_local_shape, Line: 17, Description: First line should end with a period (not 't')
+Error Code: D205, File: torch/distributed/_tensor/_utils.py, Entity: compute_local_offset, Line: 48, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/_utils.py, Entity: compute_local_offset, Line: 48, Description: First line should end with a period (not 't')
+Error Code: D205, File: torch/distributed/_tensor/_utils.py, Entity: compute_global_tensor_info, Line: 83, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D205, File: torch/distributed/_tensor/__init__.py, Entity: ones, Line: 85, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/__init__.py, Entity: ones, Line: 85, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/_tensor/__init__.py, Entity: ones, Line: 85, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/_tensor/__init__.py, Entity: empty, Line: 128, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/__init__.py, Entity: empty, Line: 128, Description: First line should end with a period (not '`')
+Error Code: D401, File: torch/distributed/_tensor/__init__.py, Entity: empty, Line: 128, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/_tensor/__init__.py, Entity: full, Line: 173, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/__init__.py, Entity: full, Line: 173, Description: First line should end with a period (not 'h')
+Error Code: D401, File: torch/distributed/_tensor/__init__.py, Entity: full, Line: 173, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D401, File: torch/distributed/_tensor/__init__.py, Entity: zeros, Line: 218, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/_tensor/api.py, Entity: __new__, Line: 162, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/api.py, Entity: __new__, Line: 162, Description: First line should end with a period (not 'd')
+Error Code: D205, File: torch/distributed/_tensor/api.py, Entity: from_local, Line: 242, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/api.py, Entity: from_local, Line: 242, Description: First line should end with a period (not 'k')
+Error Code: D205, File: torch/distributed/_tensor/api.py, Entity: to_local, Line: 292, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/api.py, Entity: to_local, Line: 292, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/_tensor/api.py, Entity: redistribute, Line: 310, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/api.py, Entity: redistribute, Line: 310, Description: First line should end with a period (not 't')
+Error Code: D205, File: torch/distributed/_tensor/api.py, Entity: placements, Line: 359, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/api.py, Entity: placements, Line: 359, Description: First line should end with a period (not 's')
+Error Code: D202, File: torch/distributed/_tensor/api.py, Entity: distribute_tensor, Line: 373, Description: No blank lines allowed after function docstring (found 1)
+Error Code: D205, File: torch/distributed/_tensor/api.py, Entity: distribute_tensor, Line: 373, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/api.py, Entity: distribute_tensor, Line: 373, Description: First line should end with a period (not '`')
+Error Code: D202, File: torch/distributed/_tensor/api.py, Entity: distribute_module, Line: 467, Description: No blank lines allowed after function docstring (found 1)
+Error Code: D205, File: torch/distributed/_tensor/api.py, Entity: distribute_module, Line: 467, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/api.py, Entity: distribute_module, Line: 467, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/_tensor/api.py, Entity: distribute_module, Line: 467, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D205, File: torch/distributed/_tensor/device_mesh.py, Entity: _get_device_handle, Line: 55, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D205, File: torch/distributed/_tensor/device_mesh.py, Entity: DeviceMesh, Line: 65, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/device_mesh.py, Entity: DeviceMesh, Line: 65, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/_tensor/device_mesh.py, Entity: get_coordinate, Line: 272, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/device_mesh.py, Entity: get_coordinate, Line: 272, Description: First line should end with a period (not 'l')
+Error Code: D205, File: torch/distributed/_tensor/device_mesh.py, Entity: scatter, Line: 285, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/device_mesh.py, Entity: scatter, Line: 285, Description: First line should end with a period (not 't')
+Error Code: D403, File: torch/distributed/_tensor/device_mesh.py, Entity: scatter, Line: 285, Description: First word of the first line should be properly capitalized ('Scatter', not 'scatter')
+Error Code: D205, File: torch/distributed/_tensor/device_mesh.py, Entity: broadcast, Line: 341, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/device_mesh.py, Entity: broadcast, Line: 341, Description: First line should end with a period (not 't')
+Error Code: D403, File: torch/distributed/_tensor/device_mesh.py, Entity: broadcast, Line: 341, Description: First word of the first line should be properly capitalized ('Broadcast', not 'broadcast')
+Error Code: D205, File: torch/distributed/_tensor/device_mesh.py, Entity: all_gather, Line: 378, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/device_mesh.py, Entity: all_gather, Line: 378, Description: First line should end with a period (not 'a')
+Error Code: D205, File: torch/distributed/_tensor/device_mesh.py, Entity: all_reduce, Line: 402, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/device_mesh.py, Entity: all_reduce, Line: 402, Description: First line should end with a period (not 'd')
+Error Code: D202, File: torch/distributed/_tensor/device_mesh.py, Entity: reduce_scatter, Line: 425, Description: No blank lines allowed after function docstring (found 1)
+Error Code: D205, File: torch/distributed/_tensor/device_mesh.py, Entity: reduce_scatter, Line: 425, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/device_mesh.py, Entity: reduce_scatter, Line: 425, Description: First line should end with a period (not 'r')
+Error Code: D403, File: torch/distributed/_tensor/device_mesh.py, Entity: reduce_scatter, Line: 425, Description: First word of the first line should be properly capitalized ('Reduce', not 'reduce')
+Error Code: D205, File: torch/distributed/_tensor/placement_types.py, Entity: _split_tensor, Line: 43, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/placement_types.py, Entity: _split_tensor, Line: 43, Description: First line should end with a period (not 'g')
+Error Code: D401, File: torch/distributed/_tensor/placement_types.py, Entity: _split_tensor, Line: 43, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D200, File: torch/distributed/_tensor/placement_types.py, Entity: _local_shard_size_on_dim, Line: 121, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_tensor/placement_types.py, Entity: _local_shard_size_on_dim, Line: 121, Description: First line should end with a period (not 'm')
+Error Code: D401, File: torch/distributed/_tensor/placement_types.py, Entity: _local_shard_size_on_dim, Line: 121, Description: First line should be in imperative mood (perhaps 'Return', not 'returns')
+Error Code: D403, File: torch/distributed/_tensor/placement_types.py, Entity: _local_shard_size_on_dim, Line: 121, Description: First word of the first line should be properly capitalized ('Returns', not 'returns')
+Error Code: D205, File: torch/distributed/_tensor/placement_types.py, Entity: _shard_tensor, Line: 152, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/placement_types.py, Entity: _shard_tensor, Line: 152, Description: First line should end with a period (not 'e')
+Error Code: D403, File: torch/distributed/_tensor/placement_types.py, Entity: _shard_tensor, Line: 152, Description: First word of the first line should be properly capitalized ('Shard', not 'shard')
+Error Code: D200, File: torch/distributed/_tensor/placement_types.py, Entity: _reduce_shard_tensor, Line: 183, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_tensor/placement_types.py, Entity: _reduce_shard_tensor, Line: 183, Description: First line should end with a period (not 'n')
+Error Code: D403, File: torch/distributed/_tensor/placement_types.py, Entity: _reduce_shard_tensor, Line: 183, Description: First word of the first line should be properly capitalized ('Reduce', not 'reduce')
+Error Code: D205, File: torch/distributed/_tensor/placement_types.py, Entity: _to_replicate_tensor, Line: 216, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/placement_types.py, Entity: _to_replicate_tensor, Line: 216, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/_tensor/placement_types.py, Entity: _to_replicate_tensor, Line: 216, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D200, File: torch/distributed/_tensor/placement_types.py, Entity: __repr__, Line: 267, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_tensor/placement_types.py, Entity: __repr__, Line: 267, Description: First line should end with a period (not 't')
+Error Code: D403, File: torch/distributed/_tensor/placement_types.py, Entity: __repr__, Line: 267, Description: First word of the first line should be properly capitalized ('Machine', not 'machine')
+Error Code: D400, File: torch/distributed/_tensor/placement_types.py, Entity: __str__, Line: 273, Description: First line should end with a period (not 't')
+Error Code: D403, File: torch/distributed/_tensor/placement_types.py, Entity: __str__, Line: 273, Description: First word of the first line should be properly capitalized ('Human', not 'human')
+Error Code: D200, File: torch/distributed/_tensor/placement_types.py, Entity: __repr__, Line: 289, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_tensor/placement_types.py, Entity: __repr__, Line: 289, Description: First line should end with a period (not 't')
+Error Code: D403, File: torch/distributed/_tensor/placement_types.py, Entity: __repr__, Line: 289, Description: First word of the first line should be properly capitalized ('Machine', not 'machine')
+Error Code: D200, File: torch/distributed/_tensor/placement_types.py, Entity: __str__, Line: 295, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_tensor/placement_types.py, Entity: __str__, Line: 295, Description: First line should end with a period (not 't')
+Error Code: D403, File: torch/distributed/_tensor/placement_types.py, Entity: __str__, Line: 295, Description: First word of the first line should be properly capitalized ('Human', not 'human')
+Error Code: D205, File: torch/distributed/_tensor/placement_types.py, Entity: _replicate_tensor, Line: 303, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/placement_types.py, Entity: _replicate_tensor, Line: 303, Description: First line should end with a period (not 'e')
+Error Code: D200, File: torch/distributed/_tensor/placement_types.py, Entity: __repr__, Line: 354, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_tensor/placement_types.py, Entity: __repr__, Line: 354, Description: First line should end with a period (not 't')
+Error Code: D403, File: torch/distributed/_tensor/placement_types.py, Entity: __repr__, Line: 354, Description: First word of the first line should be properly capitalized ('Machine', not 'machine')
+Error Code: D200, File: torch/distributed/_tensor/placement_types.py, Entity: __str__, Line: 360, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_tensor/placement_types.py, Entity: __str__, Line: 360, Description: First line should end with a period (not 't')
+Error Code: D403, File: torch/distributed/_tensor/placement_types.py, Entity: __str__, Line: 360, Description: First word of the first line should be properly capitalized ('Human', not 'human')
+Error Code: D205, File: torch/distributed/_tensor/placement_types.py, Entity: dim_map, Line: 415, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/placement_types.py, Entity: dim_map, Line: 415, Description: First line should end with a period (not 'f')
+Error Code: D205, File: torch/distributed/_tensor/placement_types.py, Entity: sums, Line: 452, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/placement_types.py, Entity: sums, Line: 452, Description: First line should end with a period (not 'e')
+Error Code: D403, File: torch/distributed/_tensor/placement_types.py, Entity: sums, Line: 452, Description: First word of the first line should be properly capitalized ('Sums', not 'sums')
+Error Code: D401, File: torch/distributed/_tensor/random.py, Entity: set_rng_state, Line: 15, Description: First line should be in imperative mood (perhaps 'Set', not 'Sets')
+Error Code: D205, File: torch/distributed/_tensor/random.py, Entity: get_rng_state, Line: 45, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/random.py, Entity: get_rng_state, Line: 45, Description: First line should end with a period (not 'a')
+Error Code: D401, File: torch/distributed/_tensor/random.py, Entity: get_rng_state, Line: 45, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D401, File: torch/distributed/_tensor/random.py, Entity: manual_seed, Line: 72, Description: First line should be in imperative mood (perhaps 'Set', not 'Sets')
+Error Code: D205, File: torch/distributed/_tensor/random.py, Entity: set_pre_op_offset, Line: 115, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/random.py, Entity: set_pre_op_offset, Line: 115, Description: First line should end with a period (not 'l')
+Error Code: D205, File: torch/distributed/_tensor/random.py, Entity: set_post_op_offset, Line: 202, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/random.py, Entity: set_post_op_offset, Line: 202, Description: First line should end with a period (not 'y')
+Error Code: D401, File: torch/distributed/_tensor/random.py, Entity: set_post_op_offset, Line: 202, Description: First line should be in imperative mood (perhaps 'Set', not 'Sets')
+Error Code: D401, File: torch/distributed/_tensor/random.py, Entity: _get_rng_offset, Line: 224, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D401, File: torch/distributed/_tensor/random.py, Entity: _set_rng_offset, Line: 252, Description: First line should be in imperative mood (perhaps 'Set', not 'Sets')
+Error Code: D205, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: ``, Line: 1, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: ``, Line: 1, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: gen_tensor_parallel_model, Line: 40, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: gen_tensor_parallel_model, Line: 40, Description: First line should end with a period (not 'l')
+Error Code: D401, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: gen_tensor_parallel_model, Line: 40, Description: First line should be in imperative mood (perhaps 'Generate', not 'generates')
+Error Code: D403, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: gen_tensor_parallel_model, Line: 40, Description: First word of the first line should be properly capitalized ('Generates', not 'generates')
+Error Code: D205, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: gen_partial_replicate_2d, Line: 53, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: gen_partial_replicate_2d, Line: 53, Description: First line should end with a period (not 'h')
+Error Code: D401, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: gen_partial_replicate_2d, Line: 53, Description: First line should be in imperative mood (perhaps 'Generate', not 'generates')
+Error Code: D403, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: gen_partial_replicate_2d, Line: 53, Description: First word of the first line should be properly capitalized ('Generates', not 'generates')
+Error Code: D205, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: gen_model_param_in_submesh, Line: 96, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: gen_model_param_in_submesh, Line: 96, Description: First line should end with a period (not 'a')
+Error Code: D401, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: gen_model_param_in_submesh, Line: 96, Description: First line should be in imperative mood (perhaps 'Generate', not 'generates')
+Error Code: D403, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: gen_model_param_in_submesh, Line: 96, Description: First word of the first line should be properly capitalized ('Generates', not 'generates')
+Error Code: D200, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: checkpoint, Line: 137, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: checkpoint, Line: 137, Description: First line should end with a period (not 's')
+Error Code: D403, File: torch/distributed/_tensor/examples/checkpoint_example.py, Entity: checkpoint, Line: 137, Description: First word of the first line should be properly capitalized ('Checkpoint', not 'checkpoint')
+Error Code: D200, File: torch/distributed/_tensor/ops/basic_strategy.py, Entity: parse_equation, Line: 27, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_tensor/ops/basic_strategy.py, Entity: parse_equation, Line: 27, Description: First line should end with a period (not 'r')
+Error Code: D205, File: torch/distributed/_tensor/ops/basic_strategy.py, Entity: parse_dims, Line: 42, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_tensor/ops/basic_strategy.py, Entity: parse_dims, Line: 42, Description: First line should end with a period (not 's')
+Error Code: D200, File: torch/distributed/_tensor/ops/basic_strategy.py, Entity: gen_einsum_strategies, Line: 94, Description: One-line docstring should fit on one line with quotes (found 3)
+
+cc @carljparker
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+I've encountered a RuntimeError that is raised when using the torch.nn.AdaptiveAvgPool1d module with zero output size in a model compiled using torch.compile(). Here's the reproduction code:
+
+The error message received is:
+torch._dynamo.exc.BackendCompilerFailed: backend='inductor' raised: RuntimeError: adaptive_avg_pool2d_backward(): Expected grad_output to have non-zero size for non-batch dimensions, torch.Size([16, 16, 1, 0]) with dimension 3 being empty.
+🧐 Expected Behavior
+While setting the output size to zero in AdaptiveAvgPool1d could be viewed as problematic, the error message is not clear and it is raised only when the model is compiled using torch.compile(). This could suggest a potential issue with the torch.compile() function or the way it handles modules with zero-sized output.
+Versions
+PyTorch version: 2.1.0.dev20230622+cu118
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.6 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu120.04.1) 9.4.0
+Clang version: 12.0.0-3ubuntu120.04.5
+CMake version: version 3.26.1
+Libc version: glibc-2.31
+Python version: 3.9.16 (main, Mar  8 2023, 14:00:05)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.4.0-152-generic-x86_64-with-glibc2.31
+Is CUDA available: True
+CUDA runtime version: 12.1.105
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration:
+GPU 0: NVIDIA GeForce RTX 2070
+GPU 1: NVIDIA GeForce RTX 2070
+GPU 2: NVIDIA GeForce RTX 2070
+GPU 3: NVIDIA GeForce RTX 2070
+Nvidia driver version: 530.30.02
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.9.2
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.9.2
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.9.2
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.9.2
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.9.2
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.9.2
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.9.2
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   46 bits physical, 48 bits virtual
+CPU(s):                          32
+On-line CPU(s) list:             0-31
+Thread(s) per core:              2
+Core(s) per socket:              8
+Socket(s):                       2
+NUMA node(s):                    2
+Vendor ID:                       GenuineIntel
+CPU family:                      6
+Model:                           63
+Model name:                      Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz
+Stepping:                        2
+CPU MHz:                         1224.656
+CPU max MHz:                     3200.0000
+CPU min MHz:                     1200.0000
+BogoMIPS:                        4794.39
+Virtualization:                  VT-x
+L1d cache:                       512 KiB
+L1i cache:                       512 KiB
+L2 cache:                        4 MiB
+L3 cache:                        40 MiB
+NUMA node0 CPU(s):               0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30
+NUMA node1 CPU(s):               1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31
+Vulnerability Itlb multihit:     KVM: Mitigation: Split huge pages
+Vulnerability L1tf:              Mitigation; PTE Inversion; VMX conditional cache flushes, SMT vulnerable
+Vulnerability Mds:               Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Meltdown:          Mitigation; PTI
+Vulnerability Mmio stale data:   Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Retbleed:          Not affected
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP conditional, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm cpuid_fault epb invpcid_single pti ssbd ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm xsaveopt cqm_llc cqm_occup_llc dtherm ida arat pln pts md_clear flush_l1d
+Versions of relevant libraries:
+[pip3] numpy==1.24.1
+[pip3] pytorch-triton==2.1.0+440fd1bf20
+[pip3] torch==2.1.0.dev20230622+cu118
+[pip3] torchaudio==2.1.0.dev20230622+cu118
+[pip3] torchvision==0.16.0.dev20230622+cu118
+[conda] blas                      1.0                         mkl
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] mkl                       2023.1.0         h6d00ec8_46342
+[conda] mkl-service               2.4.0            py39h5eee18b_1
+[conda] mkl_fft                   1.3.6            py39h417a72b_1
+[conda] mkl_random                1.2.2            py39h417a72b_1
+[conda] numpy                     1.24.1                   pypi_0    pypi
+[conda] pytorch-mutex             1.0                         cpu    pytorch
+[conda] pytorch-triton            2.1.0+440fd1bf20          pypi_0    pypi
+[conda] torch                     2.1.0.dev20230622+cu118          pypi_0    pypi
+[conda] torchaudio                2.1.0.dev20230622+cu118          pypi_0    pypi
+[conda] torchvision               0.16.0.dev20230622+cu118          pypi_0    pypi
+cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @voznesenskym @penguinwu @EikanWang @jgong5 @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @Xia-Weiwen @wenzhe-nrv @jiayisunx @peterbell10 @ipiszy @ngimel @yf225 @chenyang78 @kadeng @muchulee8 @aakhundov
+
+----------------------------------------Comment 1----------------------------------------
+
+Please fix the following issues.
+First, make sure to install the required tools:
+
+
+Then complete the followings steps:
+
+Run pydocstyle to see the number of errors in the file:
+
+
+    This command prints out the number of errors at the end of the output. Save this output to later add it to your PR description.
+2. Next, run ruff which should help autofix many of these errors:
+
+    RULECODE is the error code from the output in the issue, for example, D200. See the complete list of rules and autofixes here.
+3. You can run the above command with the --unsafe-fixes option. Double-check that the applied fixes are correct.
+4. Fix the remaining issues. Fix only the errors listed in the issue. Skip the 'Missing docstrings' errors.
+5. Run pydocstyle again:
+
+This number might not be 0 which is OK. Add the count of fixed errors to your PR description.
+
+Error Code: D205, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _writeback_to_local_shard, Line: 35, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _writeback_to_local_shard, Line: 35, Description: First line should end with a period (not 'd')
+Error Code: D205, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _deregister_flat_param, Line: 72, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _deregister_flat_param, Line: 72, Description: First line should end with a period (not 't')
+Error Code: D205, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _register_flat_param, Line: 86, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _register_flat_param, Line: 86, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _register_flat_param, Line: 86, Description: First line should be in imperative mood (perhaps 'Register', not 'Registers')
+Error Code: D205, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _unflatten_as_params, Line: 102, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _unflatten_as_params, Line: 102, Description: First line should end with a period (not ',')
+Error Code: D205, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _unshard_fsdp_state_params, Line: 167, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _unshard_fsdp_state_params, Line: 167, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _unshard_fsdp_state_params, Line: 167, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D205, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _unshard_params_recurse, Line: 248, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _unshard_params_recurse, Line: 248, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _unshard_params_recurse, Line: 248, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D205, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _unshard_params, Line: 310, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _unshard_params, Line: 310, Description: First line should end with a period (not 'n')
+Error Code: D401, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _unshard_params, Line: 310, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D200, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _deregister_orig_params, Line: 335, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D200, File: torch/distributed/fsdp/_unshard_param_utils.py, Entity: _register_orig_params, Line: 357, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D205, File: torch/distributed/fsdp/_debug_utils.py, Entity: _get_sharded_module_tree_with_module_name_to_fqns, Line: 15, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_debug_utils.py, Entity: _get_sharded_module_tree_with_module_name_to_fqns, Line: 15, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/fsdp/_debug_utils.py, Entity: _get_sharded_module_tree_with_module_name_to_fqns, Line: 15, Description: First line should be in imperative mood; try rephrasing (found 'It')
+Error Code: D205, File: torch/distributed/fsdp/_wrap_utils.py, Entity: FullyShardedModuleState, Line: 21, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_wrap_utils.py, Entity: FullyShardedModuleState, Line: 21, Description: First line should end with a period (not 'g')
+Error Code: D205, File: torch/distributed/fsdp/_wrap_utils.py, Entity: _auto_wrap, Line: 35, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_wrap_utils.py, Entity: _auto_wrap, Line: 35, Description: First line should end with a period (not 'n')
+Error Code: D205, File: torch/distributed/fsdp/_wrap_utils.py, Entity: _get_fully_sharded_module_to_states, Line: 92, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_wrap_utils.py, Entity: _get_fully_sharded_module_to_states, Line: 92, Description: First line should end with a period (not ',')
+Error Code: D401, File: torch/distributed/fsdp/_wrap_utils.py, Entity: _get_fully_sharded_module_to_states, Line: 92, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/_wrap_utils.py, Entity: _record_module_wrapper_cls, Line: 175, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_wrap_utils.py, Entity: _record_module_wrapper_cls, Line: 175, Description: First line should end with a period (not '`')
+Error Code: D401, File: torch/distributed/fsdp/_wrap_utils.py, Entity: _record_module_wrapper_cls, Line: 175, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D205, File: torch/distributed/fsdp/wrap.py, Entity: always_wrap_policy, Line: 36, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/wrap.py, Entity: always_wrap_policy, Line: 36, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/fsdp/wrap.py, Entity: always_wrap_policy, Line: 36, Description: First line should be in imperative mood; try rephrasing (found 'A')
+Error Code: D205, File: torch/distributed/fsdp/wrap.py, Entity: _FSDPPolicy, Line: 45, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/wrap.py, Entity: _FSDPPolicy, Line: 45, Description: First line should end with a period (not 'r')
+Error Code: D205, File: torch/distributed/fsdp/wrap.py, Entity: _module_wrap_policy, Line: 65, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/wrap.py, Entity: _module_wrap_policy, Line: 65, Description: First line should end with a period (not 'n')
+Error Code: D401, File: torch/distributed/fsdp/wrap.py, Entity: _module_wrap_policy, Line: 65, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D205, File: torch/distributed/fsdp/wrap.py, Entity: lambda_auto_wrap_policy, Line: 112, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/wrap.py, Entity: lambda_auto_wrap_policy, Line: 112, Description: First line should end with a period (not 'r')
+Error Code: D401, File: torch/distributed/fsdp/wrap.py, Entity: lambda_auto_wrap_policy, Line: 112, Description: First line should be in imperative mood; try rephrasing (found 'A')
+Error Code: D205, File: torch/distributed/fsdp/wrap.py, Entity: transformer_auto_wrap_policy, Line: 143, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/wrap.py, Entity: transformer_auto_wrap_policy, Line: 143, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/fsdp/wrap.py, Entity: _or_policy, Line: 170, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/wrap.py, Entity: _or_policy, Line: 170, Description: First line should end with a period (not 'f')
+Error Code: D401, File: torch/distributed/fsdp/wrap.py, Entity: _or_policy, Line: 170, Description: First line should be in imperative mood; try rephrasing (found 'A')
+Error Code: D401, File: torch/distributed/fsdp/wrap.py, Entity: size_based_auto_wrap_policy, Line: 189, Description: First line should be in imperative mood; try rephrasing (found 'A')
+Error Code: D205, File: torch/distributed/fsdp/wrap.py, Entity: wrap, Line: 276, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/wrap.py, Entity: wrap, Line: 276, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/fsdp/wrap.py, Entity: _recursive_wrap, Line: 334, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/wrap.py, Entity: _recursive_wrap, Line: 334, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/fsdp/wrap.py, Entity: _recursive_wrap, Line: 334, Description: First line should be in imperative mood (perhaps 'Wrap', not 'Wraps')
+Error Code: D205, File: torch/distributed/fsdp/wrap.py, Entity: _ConfigAutoWrap, Line: 400, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D205, File: torch/distributed/fsdp/sharded_grad_scaler.py, Entity: _GeneralMultiDeviceReplicator, Line: 23, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/sharded_grad_scaler.py, Entity: _GeneralMultiDeviceReplicator, Line: 23, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/fsdp/sharded_grad_scaler.py, Entity: ShardedGradScaler, Line: 35, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/sharded_grad_scaler.py, Entity: ShardedGradScaler, Line: 35, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/fsdp/sharded_grad_scaler.py, Entity: _amp_update_scale_cpu_, Line: 297, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D202, File: torch/distributed/fsdp/sharded_grad_scaler.py, Entity: update, Line: 313, Description: No blank lines allowed after function docstring (found 1)
+Error Code: D205, File: torch/distributed/fsdp/sharded_grad_scaler.py, Entity: update, Line: 313, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/fsdp/sharded_grad_scaler.py, Entity: update, Line: 313, Description: First line should be in imperative mood (perhaps 'Update', not 'Updates')
+Error Code: D200, File: torch/distributed/fsdp/_common_utils.py, Entity: ``, Line: 1, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D205, File: torch/distributed/fsdp/_common_utils.py, Entity: _FSDPDeviceHandle, Line: 47, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_common_utils.py, Entity: _FSDPDeviceHandle, Line: 47, Description: First line should end with a period (not ',')
+Error Code: D205, File: torch/distributed/fsdp/_common_utils.py, Entity: from_device, Line: 67, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_common_utils.py, Entity: from_device, Line: 67, Description: First line should end with a period (not ',')
+Error Code: D200, File: torch/distributed/fsdp/_common_utils.py, Entity: TrainingState, Line: 147, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D200, File: torch/distributed/fsdp/_common_utils.py, Entity: HandleTrainingState, Line: 157, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D205, File: torch/distributed/fsdp/_common_utils.py, Entity: _module_handles, Line: 175, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_common_utils.py, Entity: _module_handles, Line: 175, Description: First line should end with a period (not 'e')
+Error Code: D401, File: torch/distributed/fsdp/_common_utils.py, Entity: _module_handles, Line: 175, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D401, File: torch/distributed/fsdp/_common_utils.py, Entity: _has_fsdp_params, Line: 191, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/_common_utils.py, Entity: _get_sharding_strategy, Line: 196, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_common_utils.py, Entity: _get_sharding_strategy, Line: 196, Description: First line should end with a period (not '`')
+Error Code: D401, File: torch/distributed/fsdp/_common_utils.py, Entity: _get_sharding_strategy, Line: 196, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/_common_utils.py, Entity: clean_tensor_name, Line: 218, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_common_utils.py, Entity: clean_tensor_name, Line: 218, Description: First line should end with a period (not 'r')
+Error Code: D401, File: torch/distributed/fsdp/_common_utils.py, Entity: clean_tensor_name, Line: 218, Description: First line should be in imperative mood (perhaps 'Clean', not 'Cleans')
+Error Code: D205, File: torch/distributed/fsdp/_common_utils.py, Entity: _set_fsdp_flattened, Line: 231, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_common_utils.py, Entity: _set_fsdp_flattened, Line: 231, Description: First line should end with a period (not 'o')
+Error Code: D401, File: torch/distributed/fsdp/_common_utils.py, Entity: _set_fsdp_flattened, Line: 231, Description: First line should be in imperative mood (perhaps 'Set', not 'Sets')
+Error Code: D401, File: torch/distributed/fsdp/_common_utils.py, Entity: _is_fsdp_flattened, Line: 239, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/_common_utils.py, Entity: _named_parameters_with_duplicates, Line: 246, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_common_utils.py, Entity: _named_parameters_with_duplicates, Line: 246, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/fsdp/_common_utils.py, Entity: _named_parameters_with_duplicates, Line: 246, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D205, File: torch/distributed/fsdp/_common_utils.py, Entity: _get_param_to_fqns, Line: 266, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_common_utils.py, Entity: _get_param_to_fqns, Line: 266, Description: First line should end with a period (not 'l')
+Error Code: D401, File: torch/distributed/fsdp/_common_utils.py, Entity: _get_param_to_fqns, Line: 266, Description: First line should be in imperative mood (perhaps 'Construct', not 'Constructs')
+Error Code: D205, File: torch/distributed/fsdp/_common_utils.py, Entity: _apply_to_modules, Line: 340, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_common_utils.py, Entity: _apply_to_modules, Line: 340, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/fsdp/_common_utils.py, Entity: _apply_to_modules, Line: 340, Description: First line should be in imperative mood (perhaps 'Perform', not 'Performs')
+Error Code: D401, File: torch/distributed/fsdp/_common_utils.py, Entity: _assert_in_training_states, Line: 400, Description: First line should be in imperative mood (perhaps 'Assert', not 'Asserts')
+Error Code: D205, File: torch/distributed/fsdp/_common_utils.py, Entity: _get_root_modules, Line: 418, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_common_utils.py, Entity: _get_root_modules, Line: 418, Description: First line should end with a period (not '
+Error Code: D401, File: torch/distributed/fsdp/_common_utils.py, Entity: _get_root_modules, Line: 418, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/_fsdp_extensions.py, Entity: FSDPExtensions, Line: 16, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_fsdp_extensions.py, Entity: FSDPExtensions, Line: 16, Description: First line should end with a period (not 'r')
+Error Code: D205, File: torch/distributed/fsdp/_fsdp_extensions.py, Entity: pre_load_state_dict_transform, Line: 56, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_fsdp_extensions.py, Entity: pre_load_state_dict_transform, Line: 56, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/fsdp/_fsdp_extensions.py, Entity: pre_load_state_dict_transform, Line: 56, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _ConsolidatedOptimState, Line: 62, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _ConsolidatedOptimState, Line: 62, Description: First line should end with a period (not '-')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _PosDimTensorInfo, Line: 87, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _PosDimTensorInfo, Line: 87, Description: First line should end with a period (not 'r')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _OptimStateKey, Line: 103, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _OptimStateKey, Line: 103, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _unflatten_optim_state, Line: 119, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _unflatten_optim_state, Line: 119, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _communicate_optim_state, Line: 172, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _communicate_optim_state, Line: 172, Description: First line should end with a period (not 'l')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _unflatten_communicated_optim_state, Line: 243, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _unflatten_communicated_optim_state, Line: 243, Description: First line should end with a period (not ',')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _shard_orig_param_state, Line: 357, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _flatten_optim_state_dict, Line: 393, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _flatten_optim_state_dict, Line: 393, Description: First line should end with a period (not 'r')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _flatten_optim_state, Line: 533, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _flatten_optim_state, Line: 533, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _flatten_tensor_optim_state, Line: 665, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _flatten_tensor_optim_state, Line: 665, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _flatten_zero_dim_tensor_optim_state, Line: 748, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _flatten_zero_dim_tensor_optim_state, Line: 748, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _flatten_non_tensor_optim_state, Line: 802, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _flatten_non_tensor_optim_state, Line: 802, Description: First line should end with a period (not '`')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _rekey_sharded_optim_state_dict, Line: 849, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _rekey_sharded_optim_state_dict, Line: 849, Description: First line should end with a period (not 't')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _get_param_id_to_param_from_optim_input, Line: 925, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _get_param_id_to_param_from_optim_input, Line: 925, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/fsdp/_optim_utils.py, Entity: _get_param_id_to_param_from_optim_input, Line: 925, Description: First line should be in imperative mood (perhaps 'Construct', not 'Constructs')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _get_param_key_to_param, Line: 1022, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _get_param_key_to_param, Line: 1022, Description: First line should end with a period (not 'r')
+Error Code: D401, File: torch/distributed/fsdp/_optim_utils.py, Entity: _get_param_key_to_param, Line: 1022, Description: First line should be in imperative mood (perhaps 'Construct', not 'Constructs')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _get_param_to_param_key, Line: 1073, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _get_param_to_param_key, Line: 1073, Description: First line should end with a period (not 'I')
+Error Code: D401, File: torch/distributed/fsdp/_optim_utils.py, Entity: _get_param_to_param_key, Line: 1073, Description: First line should be in imperative mood (perhaps 'Construct', not 'Constructs')
+Error Code: D401, File: torch/distributed/fsdp/_optim_utils.py, Entity: _get_param_to_param_id_from_optim_input, Line: 1093, Description: First line should be in imperative mood (perhaps 'Construct', not 'Constructs')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _map_param_key_to_optim_keys, Line: 1147, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _map_param_key_to_optim_keys, Line: 1147, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _optim_state_dict, Line: 1257, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _optim_state_dict, Line: 1257, Description: First line should end with a period (not '`')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _get_fqn_to_fsdp_param_info, Line: 1422, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _get_fqn_to_fsdp_param_info, Line: 1422, Description: First line should end with a period (not '`')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _all_gather_optim_state, Line: 1485, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/_optim_utils.py, Entity: _all_gather_optim_state, Line: 1485, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/fsdp/_optim_utils.py, Entity: _gather_orig_param_state, Line: 1586, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/fsdp/_utils.py, Entity: _same_storage, Line: 48, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/api.py, Entity: ``, Line: 1, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/api.py, Entity: ``, Line: 1, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/fsdp/api.py, Entity: ShardingStrategy, Line: 33, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/api.py, Entity: ShardingStrategy, Line: 33, Description: First line should end with a period (not 'y')
+Error Code: D205, File: torch/distributed/fsdp/api.py, Entity: BackwardPrefetch, Line: 73, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/api.py, Entity: BackwardPrefetch, Line: 73, Description: First line should end with a period (not 't')
+Error Code: D205, File: torch/distributed/fsdp/api.py, Entity: StateDictType, Line: 237, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/api.py, Entity: StateDictType, Line: 237, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/fsdp/api.py, Entity: StateDictConfig, Line: 268, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D205, File: torch/distributed/fsdp/api.py, Entity: FullStateDictConfig, Line: 281, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/api.py, Entity: FullStateDictConfig, Line: 281, Description: First line should end with a period (not 'h')
+Error Code: D205, File: torch/distributed/fsdp/api.py, Entity: OptimStateDictConfig, Line: 323, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/api.py, Entity: OptimStateDictConfig, Line: 323, Description: First line should end with a period (not 't')
+
+cc @carljparker
+
+----------------------------------------Comment 1----------------------------------------
+
+Hello, I'm trying to convert my pytorch model to keras and I have ready onnx file for It. I realized that there is no problems with onnx2keras module. When I started to converting onnx to keras, I've got next error:
+
+There is my code:
+
+And here is my onnx file to reproduce my errors:
+https://drive.google.com/file/d/1NjYMbidm5WOB4SeeBw22dGzn-jZIrU2-/view?usp=sharing
+Is there a possibillity to convert onnx to keras using onnxruntime?
+Thank you.
+
+----------------------------------------Comment 1----------------------------------------
+
+Please fix the following issues.
+First, make sure to install the required tools:
+
+
+Then complete the followings steps:
+
+Run pydocstyle to see the number of errors in the file:
+
+
+    This command prints out the number of errors at the end of the output. Save this output to later add it to your PR description.
+2. Next, run ruff which should help autofix many of these errors:
+
+    RULECODE is the error code from the output in the issue, for example, D200. See the complete list of rules and autofixes here.
+3. You can run the above command with the --unsafe-fixes option. Double-check that the applied fixes are correct.
+4. Fix the remaining issues. Fix only the errors listed in the issue. Skip the 'Missing docstrings' errors.
+5. Run pydocstyle again:
+
+This number might not be 0 which is OK. Add the count of fixed errors to your PR description.
+
+Error Code: D205, File: torch/distributed/elastic/timer/__init__.py, Entity: ``, Line: 7, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/__init__.py, Entity: ``, Line: 7, Description: First line should end with a period (not 'd')
+Error Code: D205, File: torch/distributed/elastic/timer/api.py, Entity: TimerRequest, Line: 19, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/api.py, Entity: TimerRequest, Line: 19, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/elastic/timer/api.py, Entity: TimerClient, Line: 48, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/api.py, Entity: TimerClient, Line: 48, Description: First line should end with a period (not 'g')
+Error Code: D205, File: torch/distributed/elastic/timer/api.py, Entity: acquire, Line: 55, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/api.py, Entity: acquire, Line: 55, Description: First line should end with a period (not 't')
+Error Code: D205, File: torch/distributed/elastic/timer/api.py, Entity: release, Line: 64, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/api.py, Entity: release, Line: 64, Description: First line should end with a period (not 's')
+Error Code: D200, File: torch/distributed/elastic/timer/api.py, Entity: RequestQueue, Line: 73, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/elastic/timer/api.py, Entity: RequestQueue, Line: 73, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/elastic/timer/api.py, Entity: size, Line: 79, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/elastic/timer/api.py, Entity: size, Line: 79, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/elastic/timer/api.py, Entity: get, Line: 100, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/api.py, Entity: get, Line: 100, Description: First line should end with a period (not 'n')
+Error Code: D401, File: torch/distributed/elastic/timer/api.py, Entity: get, Line: 100, Description: First line should be in imperative mood (perhaps 'Get', not 'Gets')
+Error Code: D205, File: torch/distributed/elastic/timer/api.py, Entity: TimerServer, Line: 108, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/api.py, Entity: TimerServer, Line: 108, Description: First line should end with a period (not 'm')
+Error Code: D205, File: torch/distributed/elastic/timer/api.py, Entity: __init__, Line: 117, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/api.py, Entity: __init__, Line: 117, Description: First line should end with a period (not '`')
+Error Code: D205, File: torch/distributed/elastic/timer/api.py, Entity: register_timers, Line: 132, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/elastic/timer/api.py, Entity: register_timers, Line: 132, Description: First line should be in imperative mood (perhaps 'Process', not 'Processes')
+Error Code: D200, File: torch/distributed/elastic/timer/api.py, Entity: clear_timers, Line: 142, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D401, File: torch/distributed/elastic/timer/api.py, Entity: clear_timers, Line: 142, Description: First line should be in imperative mood (perhaps 'Clear', not 'Clears')
+Error Code: D205, File: torch/distributed/elastic/timer/api.py, Entity: get_expired_timers, Line: 149, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/api.py, Entity: get_expired_timers, Line: 149, Description: First line should end with a period (not 'r')
+Error Code: D401, File: torch/distributed/elastic/timer/api.py, Entity: get_expired_timers, Line: 149, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/elastic/timer/api.py, Entity: _reap_worker, Line: 158, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/api.py, Entity: _reap_worker, Line: 158, Description: First line should end with a period (not 'n')
+Error Code: D205, File: torch/distributed/elastic/timer/api.py, Entity: _reap_worker_no_throw, Line: 166, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/api.py, Entity: _reap_worker_no_throw, Line: 166, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/elastic/timer/api.py, Entity: _reap_worker_no_throw, Line: 166, Description: First line should be in imperative mood (perhaps 'Wrap', not 'Wraps')
+Error Code: D200, File: torch/distributed/elastic/timer/api.py, Entity: configure, Line: 239, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D401, File: torch/distributed/elastic/timer/api.py, Entity: configure, Line: 239, Description: First line should be in imperative mood (perhaps 'Configure', not 'Configures')
+Error Code: D205, File: torch/distributed/elastic/timer/api.py, Entity: expires, Line: 251, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/api.py, Entity: expires, Line: 251, Description: First line should end with a period (not ',')
+Error Code: D205, File: torch/distributed/elastic/timer/file_based_local_timer.py, Entity: FileTimerRequest, Line: 25, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/file_based_local_timer.py, Entity: FileTimerRequest, Line: 25, Description: First line should end with a period (not 'e')
+Error Code: D204, File: torch/distributed/elastic/timer/file_based_local_timer.py, Entity: FileTimerClient, Line: 67, Description: 1 blank line required after class docstring (found 0)
+Error Code: D205, File: torch/distributed/elastic/timer/file_based_local_timer.py, Entity: FileTimerClient, Line: 67, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/file_based_local_timer.py, Entity: FileTimerClient, Line: 67, Description: First line should end with a period (not 'd')
+Error Code: D412, File: torch/distributed/elastic/timer/file_based_local_timer.py, Entity: FileTimerClient, Line: 67, Description: No blank lines allowed between a section header and its content ('Args')
+Error Code: D205, File: torch/distributed/elastic/timer/file_based_local_timer.py, Entity: FileTimerServer, Line: 137, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/file_based_local_timer.py, Entity: FileTimerServer, Line: 137, Description: First line should end with a period (not 'e')
+Error Code: D412, File: torch/distributed/elastic/timer/file_based_local_timer.py, Entity: FileTimerServer, Line: 137, Description: No blank lines allowed between a section header and its content ('Args')
+Error Code: D205, File: torch/distributed/elastic/timer/local_timer.py, Entity: LocalTimerClient, Line: 21, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/local_timer.py, Entity: LocalTimerClient, Line: 21, Description: First line should end with a period (not 'd')
+Error Code: D200, File: torch/distributed/elastic/timer/local_timer.py, Entity: MultiprocessingRequestQueue, Line: 45, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/elastic/timer/local_timer.py, Entity: MultiprocessingRequestQueue, Line: 45, Description: First line should end with a period (not '`')
+Error Code: D205, File: torch/distributed/elastic/timer/local_timer.py, Entity: LocalTimerServer, Line: 76, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/timer/local_timer.py, Entity: LocalTimerServer, Line: 76, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/elastic/utils/api.py, Entity: get_env_variable_or_raise, Line: 16, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/utils/api.py, Entity: get_env_variable_or_raise, Line: 16, Description: First line should end with a period (not '`')
+Error Code: D401, File: torch/distributed/elastic/utils/api.py, Entity: get_env_variable_or_raise, Line: 16, Description: First line should be in imperative mood (perhaps 'Try', not 'Tries')
+Error Code: D200, File: torch/distributed/elastic/utils/api.py, Entity: macros, Line: 47, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/elastic/utils/api.py, Entity: macros, Line: 47, Description: First line should end with a period (not 'n')
+Error Code: D200, File: torch/distributed/elastic/utils/log_level.py, Entity: get_log_level, Line: 11, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D202, File: torch/distributed/elastic/utils/logging.py, Entity: get_logger, Line: 19, Description: No blank lines allowed after function docstring (found 1)
+Error Code: D205, File: torch/distributed/elastic/utils/logging.py, Entity: get_logger, Line: 19, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/utils/logging.py, Entity: get_logger, Line: 19, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/elastic/utils/logging.py, Entity: _derive_module_name, Line: 42, Description: First line should be in imperative mood (perhaps 'Derive', not 'Derives')
+Error Code: D205, File: torch/distributed/elastic/utils/store.py, Entity: get_all, Line: 14, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/utils/store.py, Entity: get_all, Line: 14, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/elastic/utils/store.py, Entity: synchronize, Line: 55, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/elastic/utils/store.py, Entity: synchronize, Line: 55, Description: First line should be in imperative mood (perhaps 'Synchronize', not 'Synchronizes')
+Error Code: D401, File: torch/distributed/elastic/utils/store.py, Entity: barrier, Line: 71, Description: First line should be in imperative mood; try rephrasing (found 'A')
+Error Code: D202, File: torch/distributed/elastic/utils/distributed.py, Entity: get_socket_with_port, Line: 115, Description: No blank lines allowed after function docstring (found 1)
+Error Code: D205, File: torch/distributed/elastic/utils/distributed.py, Entity: get_socket_with_port, Line: 115, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/utils/distributed.py, Entity: get_socket_with_port, Line: 115, Description: First line should end with a period (not 'y')
+Error Code: D401, File: torch/distributed/elastic/utils/distributed.py, Entity: get_socket_with_port, Line: 115, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/elastic/utils/data/cycling_iterator.py, Entity: CyclingIterator, Line: 11, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/utils/data/cycling_iterator.py, Entity: CyclingIterator, Line: 11, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/elastic/utils/data/elastic_distributed_sampler.py, Entity: ElasticDistributedSampler, Line: 16, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/elastic/utils/data/elastic_distributed_sampler.py, Entity: ElasticDistributedSampler, Line: 16, Description: First line should end with a period (not 'f')
+Error Code: D205, File: torch/distributed/launcher/api.py, Entity: _get_entrypoint_name, Line: 140, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/launcher/api.py, Entity: _get_entrypoint_name, Line: 140, Description: First line should end with a period (not '
+Error Code: D204, File: torch/distributed/_shard/sharder.py, Entity: Sharder, Line: 5, Description: 1 blank line required after class docstring (found 0)
+Error Code: D205, File: torch/distributed/_shard/sharder.py, Entity: Sharder, Line: 5, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/sharder.py, Entity: Sharder, Line: 5, Description: First line should end with a period (not 'd')
+Error Code: D205, File: torch/distributed/_shard/sharder.py, Entity: shard, Line: 16, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/sharder.py, Entity: shard, Line: 16, Description: First line should end with a period (not 'd')
+Error Code: D200, File: torch/distributed/_shard/_utils.py, Entity: narrow_tensor_by_index, Line: 8, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D200, File: torch/distributed/_shard/_utils.py, Entity: narrow_tensor, Line: 25, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_shard/_utils.py, Entity: narrow_tensor, Line: 25, Description: First line should end with a period (not 'a')
+Error Code: D205, File: torch/distributed/_shard/api.py, Entity: _shard_tensor, Line: 21, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/api.py, Entity: _shard_tensor, Line: 21, Description: First line should end with a period (not 'd')
+Error Code: D205, File: torch/distributed/_shard/api.py, Entity: shard_parameter, Line: 78, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/api.py, Entity: shard_parameter, Line: 78, Description: First line should end with a period (not 't')
+Error Code: D200, File: torch/distributed/_shard/api.py, Entity: load_with_process_group, Line: 127, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D205, File: torch/distributed/_shard/api.py, Entity: _get_current_process_group, Line: 142, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/_shard/api.py, Entity: _get_current_process_group, Line: 142, Description: First line should be in imperative mood (perhaps 'Retrieve', not 'Retrieves')
+Error Code: D205, File: torch/distributed/_shard/api.py, Entity: _reshard_output, Line: 155, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/api.py, Entity: _reshard_output, Line: 155, Description: First line should end with a period (not 'g')
+Error Code: D401, File: torch/distributed/_shard/api.py, Entity: _reshard_output, Line: 155, Description: First line should be in imperative mood; try rephrasing (found 'Hook')
+Error Code: D401, File: torch/distributed/_shard/api.py, Entity: _collect_local_shard, Line: 175, Description: First line should be in imperative mood; try rephrasing (found 'Hook')
+Error Code: D205, File: torch/distributed/_shard/api.py, Entity: shard_module, Line: 212, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/api.py, Entity: shard_module, Line: 212, Description: First line should end with a period (not 'd')
+Error Code: D200, File: torch/distributed/_shard/common_op_utils.py, Entity: _basic_validation, Line: 6, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D401, File: torch/distributed/_shard/common_op_utils.py, Entity: _basic_validation, Line: 6, Description: First line should be in imperative mood; try rephrasing (found 'Common')
+Error Code: D205, File: torch/distributed/_shard/common_op_utils.py, Entity: tensor_default_op, Line: 50, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/common_op_utils.py, Entity: tensor_default_op, Line: 50, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/_shard/common_op_utils.py, Entity: tensor_default_op, Line: 50, Description: First line should be in imperative mood (perhaps 'Handle', not 'Handles')
+Error Code: D205, File: torch/distributed/_shard/metadata.py, Entity: ShardMetadata, Line: 9, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/metadata.py, Entity: ShardMetadata, Line: 9, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/_shard/op_registry_utils.py, Entity: _register_op, Line: 11, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/op_registry_utils.py, Entity: _register_op, Line: 11, Description: First line should end with a period (not 'n')
+Error Code: D401, File: torch/distributed/_shard/op_registry_utils.py, Entity: _register_op, Line: 11, Description: First line should be in imperative mood (perhaps 'Perform', not 'Performs')
+Error Code: D205, File: torch/distributed/_shard/op_registry_utils.py, Entity: _decorator_func, Line: 24, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/op_registry_utils.py, Entity: _decorator_func, Line: 24, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/_shard/op_registry_utils.py, Entity: _decorator_func, Line: 24, Description: First line should be in imperative mood (perhaps 'Decorate', not 'Decorator')
+Error Code: D201, File: torch/distributed/_shard/sharded_optim/__init__.py, Entity: named_params_with_sharded_tensor, Line: 16, Description: No blank lines allowed before function docstring (found 1)
+Error Code: D205, File: torch/distributed/_shard/sharded_optim/__init__.py, Entity: named_params_with_sharded_tensor, Line: 16, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/sharded_optim/__init__.py, Entity: named_params_with_sharded_tensor, Line: 16, Description: First line should end with a period (not 'e')
+Error Code: D401, File: torch/distributed/_shard/sharded_optim/__init__.py, Entity: named_params_with_sharded_tensor, Line: 16, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/_shard/sharded_optim/api.py, Entity: __init__, Line: 16, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/sharded_optim/api.py, Entity: __init__, Line: 16, Description: First line should end with a period (not 'f')
+Error Code: D403, File: torch/distributed/_shard/sharded_optim/api.py, Entity: __init__, Line: 16, Description: First word of the first line should be properly capitalized ('Shardedoptimizer', not 'ShardedOptimizer')
+Error Code: D401, File: torch/distributed/_shard/sharded_optim/api.py, Entity: zero_grad, Line: 44, Description: First line should be in imperative mood (perhaps 'Reset', not 'Resets')
+Error Code: D401, File: torch/distributed/_shard/sharded_optim/api.py, Entity: step, Line: 61, Description: First line should be in imperative mood (perhaps 'Perform', not 'Performs')
+Error Code: D402, File: torch/distributed/_shard/sharded_optim/api.py, Entity: step, Line: 61, Description: First line should not be the function's "signature"
+Error Code: D205, File: torch/distributed/_shard/sharded_optim/api.py, Entity: state_dict, Line: 74, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/sharded_optim/api.py, Entity: state_dict, Line: 74, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/_shard/sharded_optim/api.py, Entity: state_dict, Line: 74, Description: First line should be in imperative mood (perhaps 'Return', not 'Returned')
+Error Code: D401, File: torch/distributed/_shard/sharded_optim/api.py, Entity: load_state_dict, Line: 84, Description: First line should be in imperative mood (perhaps 'Load', not 'Loads')
+Error Code: D200, File: torch/distributed/_shard/sharded_optim/api.py, Entity: add_param_group, Line: 94, Description: One-line docstring should fit on one line with quotes (found 2)
+Error Code: D400, File: torch/distributed/_shard/sharded_optim/api.py, Entity: add_param_group, Line: 94, Description: First line should end with a period (not 'p')
+Error Code: D200, File: torch/distributed/_shard/sharded_tensor/utils.py, Entity: _flatten_tensor_size, Line: 66, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D401, File: torch/distributed/_shard/sharded_tensor/utils.py, Entity: _flatten_tensor_size, Line: 66, Description: First line should be in imperative mood (perhaps 'Check', not 'Checks')
+Error Code: D205, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: empty, Line: 31, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: empty, Line: 31, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: ones, Line: 83, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: ones, Line: 83, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: zeros, Line: 134, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: zeros, Line: 134, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: full, Line: 187, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: full, Line: 187, Description: First line should end with a period (not 'e')
+Error Code: D401, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: full, Line: 187, Description: First line should be in imperative mood (perhaps 'Create', not 'Creates')
+Error Code: D205, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: rand, Line: 238, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: rand, Line: 238, Description: First line should end with a period (not 'n')
+Error Code: D401, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: rand, Line: 238, Description: First line should be in imperative mood (perhaps 'Create', not 'Creates')
+Error Code: D205, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: randn, Line: 291, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: randn, Line: 291, Description: First line should end with a period (not 'n')
+Error Code: D401, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: randn, Line: 291, Description: First line should be in imperative mood (perhaps 'Create', not 'Creates')
+Error Code: D205, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: init_from_local_shards, Line: 341, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: init_from_local_shards, Line: 341, Description: First line should be in imperative mood (perhaps 'Create', not 'Creates')
+Error Code: D205, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: state_dict_hook, Line: 395, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: state_dict_hook, Line: 395, Description: First line should end with a period (not 'e')
+Error Code: D401, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: state_dict_hook, Line: 395, Description: First line should be in imperative mood; try rephrasing (found 'Hook')
+Error Code: D200, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: pre_load_state_dict_hook, Line: 408, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D205, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: custom_sharded_op_impl, Line: 420, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: custom_sharded_op_impl, Line: 420, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: custom_sharded_op_impl, Line: 420, Description: First line should be in imperative mood (perhaps 'Provide', not 'Provides')
+Error Code: D200, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: _sharded_op_impl, Line: 457, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D401, File: torch/distributed/_shard/sharded_tensor/__init__.py, Entity: _sharded_op_impl, Line: 457, Description: First line should be in imperative mood (perhaps 'Decorate', not 'Decorator')
+Error Code: D210, File: torch/distributed/_shard/sharded_tensor/metadata.py, Entity: TensorProperties, Line: 15, Description: No whitespaces allowed surrounding docstring text
+Error Code: D400, File: torch/distributed/_shard/sharded_tensor/metadata.py, Entity: TensorProperties, Line: 15, Description: First line should end with a period (not '`')
+Error Code: D200, File: torch/distributed/_shard/sharded_tensor/metadata.py, Entity: ShardedTensorMetadata, Line: 72, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_shard/sharded_tensor/metadata.py, Entity: ShardedTensorMetadata, Line: 72, Description: First line should end with a period (not '`')
+Error Code: D204, File: torch/distributed/_shard/sharded_tensor/shard.py, Entity: Shard, Line: 11, Description: 1 blank line required after class docstring (found 0)
+Error Code: D205, File: torch/distributed/_shard/sharded_tensor/shard.py, Entity: Shard, Line: 11, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/sharded_tensor/shard.py, Entity: Shard, Line: 11, Description: First line should end with a period (not 'o')
+Error Code: D401, File: torch/distributed/_shard/sharded_tensor/shard.py, Entity: from_tensor_and_offsets, Line: 42, Description: First line should be in imperative mood (perhaps 'Create', not 'Creates')
+Error Code: D205, File: torch/distributed/_shard/sharded_tensor/reshard.py, Entity: build_reshard_metadata, Line: 52, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D205, File: torch/distributed/_shard/sharded_tensor/reshard.py, Entity: reshuffle_local_shard, Line: 94, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/sharded_tensor/reshard.py, Entity: reshuffle_local_shard, Line: 94, Description: First line should end with a period (not 'l')
+Error Code: D205, File: torch/distributed/_shard/sharded_tensor/reshard.py, Entity: reshard_local_shard, Line: 161, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_shard/sharded_tensor/reshard.py, Entity: reshard_local_shard, Line: 161, Description: First line should end with a period (not 's')
+
+cc @carljparker
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Bug
+The shape of PReLU weight is incompatible with ONNX document.
+The shape of weight should be [channels, 1, 1] according to ONNX document, however, the actual shape is [channels] instead.
+It causes the exported ONNX model illegal. Related issue: daquexian/onnx-simplifier#7
+To Reproduce
+Code sample:
+
+Error:
+
+RuntimeError: Method run failed due to: [ONNXRuntimeError] : 1 : GENERAL ERROR : /onnxruntime_src/onnxruntime/core/providers/cpu/math/element_wise_ops.h:341 void onnxruntime::BroadcastIterator::Init(int64_t, int64_t) axis == 1 || axis == largest was false. Attempting to broadcast an axis by a dimension other than 1. 16 by 96
+
+Expected behavior
+The model runs correctly.
+Environment
+PyTorch version: 1.1.0
+Is debug build: No
+CUDA used to build PyTorch: 9.0.176
+OS: Manjaro Linux
+GCC version: (GCC) 8.3.0
+CMake version: version 3.14.4
+Python version: 3.7
+Is CUDA available: No
+Versions of relevant libraries:
+[pip3] numpy==1.16.2
+[pip3] torch==1.1.0
+[pip3] torchvision==0.2.1
+[conda] Could not collect
+
+----------------------------------------Comment 1----------------------------------------
+
+Please fix the following issues.
+First, make sure to install the required tools:
+
+
+Then complete the followings steps:
+
+Run pydocstyle to see the number of errors in the file:
+
+
+    This command prints out the number of errors at the end of the output. Save this output to later add it to your PR description.
+2. Next, run ruff which should help autofix many of these errors:
+
+    RULECODE is the error code from the output in the issue, for example, D200. See the complete list of rules and autofixes here.
+3. You can run the above command with the --unsafe-fixes option. Double-check that the applied fixes are correct.
+4. Fix the remaining issues. Fix only the errors listed in the issue. Skip the 'Missing docstrings' errors.
+5. Run pydocstyle again:
+
+This number might not be 0 which is OK. Add the count of fixed errors to your PR description.
+
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: FullyShardedDataParallel, Line: 119, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: FullyShardedDataParallel, Line: 119, Description: First line should end with a period (not 's')
+Error Code: D200, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: module, Line: 473, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D402, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: module, Line: 473, Description: First line should not be the function's "signature"
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: fsdp_modules, Line: 512, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: fsdp_modules, Line: 512, Description: First line should end with a period (not 'f')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: fsdp_modules, Line: 512, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: apply, Line: 531, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: apply, Line: 531, Description: First line should end with a period (not ')')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: apply, Line: 531, Description: First line should be in imperative mood (perhaps 'Apply', not 'Applies')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _mixed_precision_enabled_for_buffers, Line: 572, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D200, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _low_precision_hook_enabled, Line: 582, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D200, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _reset_lazy_init, Line: 591, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: set_state_dict_type, Line: 603, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: set_state_dict_type, Line: 603, Description: First line should end with a period (not ')')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: get_state_dict_type, Line: 705, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: get_state_dict_type, Line: 705, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: state_dict_type, Line: 746, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: state_dict_type, Line: 746, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: state_dict_type, Line: 746, Description: First line should be in imperative mood; try rephrasing (found 'A')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: forward, Line: 785, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: forward, Line: 785, Description: First line should end with a period (not 'c')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: forward, Line: 785, Description: First line should be in imperative mood (perhaps 'Run', not 'Runs')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: summon_full_params, Line: 818, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: summon_full_params, Line: 818, Description: First line should be in imperative mood; try rephrasing (found 'A')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _deregister_orig_params_ctx, Line: 884, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _deregister_orig_params_ctx, Line: 884, Description: First line should end with a period (not 'e')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _deregister_orig_params_ctx, Line: 884, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _apply, Line: 904, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _apply, Line: 904, Description: First line should end with a period (not 'l')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: named_buffers, Line: 928, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: named_buffers, Line: 928, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: named_buffers, Line: 928, Description: First line should be in imperative mood (perhaps 'Override', not 'Overrides')
+Error Code: D402, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: named_buffers, Line: 928, Description: First line should not be the function's "signature"
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: named_parameters, Line: 946, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: named_parameters, Line: 946, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: named_parameters, Line: 946, Description: First line should be in imperative mood (perhaps 'Override', not 'Overrides')
+Error Code: D402, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: named_parameters, Line: 946, Description: First line should not be the function's "signature"
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: no_sync, Line: 981, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: no_sync, Line: 981, Description: First line should end with a period (not 'P')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: no_sync, Line: 981, Description: First line should be in imperative mood; try rephrasing (found 'A')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: clip_grad_norm_, Line: 1022, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: clip_grad_norm_, Line: 1022, Description: First line should end with a period (not 'r')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _optim_state_dict_impl, Line: 1187, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _optim_state_dict_impl, Line: 1187, Description: First line should be in imperative mood; try rephrasing (found 'The')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _optim_state_dict_to_load_impl, Line: 1238, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _optim_state_dict_to_load_impl, Line: 1238, Description: First line should be in imperative mood; try rephrasing (found 'The')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: full_optim_state_dict, Line: 1293, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: full_optim_state_dict, Line: 1293, Description: First line should end with a period (not 't')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: sharded_optim_state_dict, Line: 1358, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: sharded_optim_state_dict, Line: 1358, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: sharded_optim_state_dict, Line: 1358, Description: First line should be in imperative mood; try rephrasing (found 'The')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: shard_full_optim_state_dict, Line: 1394, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: shard_full_optim_state_dict, Line: 1394, Description: First line should end with a period (not 'y')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: flatten_sharded_optim_state_dict, Line: 1466, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: flatten_sharded_optim_state_dict, Line: 1466, Description: First line should end with a period (not 'y')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: flatten_sharded_optim_state_dict, Line: 1466, Description: First line should be in imperative mood; try rephrasing (found 'The')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: scatter_full_optim_state_dict, Line: 1509, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: scatter_full_optim_state_dict, Line: 1509, Description: First line should end with a period (not ',')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: rekey_optim_state_dict, Line: 1591, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: rekey_optim_state_dict, Line: 1591, Description: First line should end with a period (not 'y')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: optim_state_dict, Line: 1711, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: optim_state_dict, Line: 1711, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: optim_state_dict, Line: 1711, Description: First line should be in imperative mood (perhaps 'Transform', not 'Transforms')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: optim_state_dict_to_load, Line: 1804, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: optim_state_dict_to_load, Line: 1804, Description: First line should end with a period (not 'h')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: register_comm_hook, Line: 1884, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: register_comm_hook, Line: 1884, Description: First line should end with a period (not 'a')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: register_comm_hook, Line: 1884, Description: First line should be in imperative mood (perhaps 'Register', not 'Registers')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _get_grad_norm, Line: 1942, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _get_grad_norm, Line: 1942, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _get_grad_norm, Line: 1942, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _get_param_to_fqn, Line: 1975, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _get_param_to_fqn, Line: 1975, Description: First line should end with a period (not '`')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _get_param_to_fqn, Line: 1975, Description: First line should be in imperative mood (perhaps 'Construct', not 'Constructs')
+Error Code: D401, File: torch/distributed/fsdp/fully_sharded_data_parallel.py, Entity: _get_fqn_to_param, Line: 2006, Description: First line should be in imperative mood (perhaps 'Construct', not 'Constructs')
+Error Code: D205, File: torch/distributed/_spmd/comm_tensor.py, Entity: CommTensor, Line: 57, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/comm_tensor.py, Entity: CommTensor, Line: 57, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/_spmd/experimental_ops.py, Entity: _refine_sharding, Line: 352, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/experimental_ops.py, Entity: _refine_sharding, Line: 352, Description: First line should end with a period (not ',')
+Error Code: D205, File: torch/distributed/_spmd/graph_utils.py, Entity: get_output, Line: 43, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/graph_utils.py, Entity: get_output, Line: 43, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/_spmd/graph_utils.py, Entity: find_node, Line: 56, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/graph_utils.py, Entity: find_node, Line: 56, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/_spmd/graph_utils.py, Entity: is_leaf_subgraph, Line: 67, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/graph_utils.py, Entity: is_leaf_subgraph, Line: 67, Description: First line should end with a period (not '
+Error Code: D401, File: torch/distributed/_spmd/graph_utils.py, Entity: is_leaf_subgraph, Line: 67, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D202, File: torch/distributed/_spmd/graph_utils.py, Entity: clone_subgraph, Line: 87, Description: No blank lines allowed after function docstring (found 1)
+Error Code: D205, File: torch/distributed/_spmd/graph_utils.py, Entity: clone_subgraph, Line: 87, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D202, File: torch/distributed/_spmd/graph_utils.py, Entity: rebuild_graph, Line: 127, Description: No blank lines allowed after function docstring (found 1)
+Error Code: D205, File: torch/distributed/_spmd/graph_utils.py, Entity: rebuild_graph, Line: 127, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/_spmd/graph_utils.py, Entity: rebuild_graph, Line: 127, Description: First line should be in imperative mood (perhaps 'Run', not 'Runs')
+Error Code: D205, File: torch/distributed/_spmd/iter_graph_module.py, Entity: IterGraph, Line: 24, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/iter_graph_module.py, Entity: IterGraph, Line: 24, Description: First line should end with a period (not '`')
+Error Code: D205, File: torch/distributed/_spmd/iter_graph_module.py, Entity: _forward_subgraph_inputs, Line: 129, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/iter_graph_module.py, Entity: _forward_subgraph_inputs, Line: 129, Description: First line should end with a period (not 't')
+Error Code: D401, File: torch/distributed/_spmd/iter_graph_module.py, Entity: _forward_subgraph_inputs, Line: 129, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D205, File: torch/distributed/_spmd/iter_graph_module.py, Entity: _forward_inputs_to_subgraph, Line: 221, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/iter_graph_module.py, Entity: _forward_inputs_to_subgraph, Line: 221, Description: First line should end with a period (not 'o')
+Error Code: D401, File: torch/distributed/_spmd/iter_graph_module.py, Entity: _forward_inputs_to_subgraph, Line: 221, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D205, File: torch/distributed/_spmd/iter_graph_module.py, Entity: move_to_next_iter_before, Line: 277, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D205, File: torch/distributed/_spmd/iter_graph_module.py, Entity: IterGraphModule, Line: 635, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D205, File: torch/distributed/_spmd/iter_graph_module.py, Entity: finalize_setup, Line: 676, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/iter_graph_module.py, Entity: finalize_setup, Line: 676, Description: First line should end with a period (not 's')
+Error Code: D205, File: torch/distributed/_spmd/distribute.py, Entity: DSymInt, Line: 48, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/distribute.py, Entity: DSymInt, Line: 48, Description: First line should end with a period (not 't')
+Error Code: D400, File: torch/distributed/_spmd/distribute.py, Entity: _is_partial_dtensor, Line: 90, Description: First line should end with a period (not 'l')
+Error Code: D403, File: torch/distributed/_spmd/distribute.py, Entity: _is_partial_dtensor, Line: 90, Description: First word of the first line should be properly capitalized ('Check', not 'check')
+Error Code: D205, File: torch/distributed/_spmd/distribute.py, Entity: _build_dummy_add_graph, Line: 458, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/_spmd/distribute.py, Entity: _build_dummy_add_graph, Line: 458, Description: First line should be in imperative mood (perhaps 'Create', not 'Creates')
+Error Code: D205, File: torch/distributed/_spmd/distribute.py, Entity: _convert_to_distributed, Line: 686, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/distribute.py, Entity: _convert_to_distributed, Line: 686, Description: First line should end with a period (not '
+Error Code: D401, File: torch/distributed/_spmd/distribute.py, Entity: _convert_to_distributed, Line: 686, Description: First line should be in imperative mood (perhaps 'Return', not 'Returns')
+Error Code: D205, File: torch/distributed/_spmd/api.py, Entity: Override, Line: 35, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D205, File: torch/distributed/_spmd/api.py, Entity: replacement, Line: 50, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/api.py, Entity: replacement, Line: 50, Description: First line should end with a period (not 'o')
+Error Code: D205, File: torch/distributed/_spmd/api.py, Entity: transform, Line: 70, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/api.py, Entity: transform, Line: 70, Description: First line should end with a period (not ',')
+Error Code: D205, File: torch/distributed/_spmd/api.py, Entity: _to_caller_flattened_graph_module, Line: 101, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/api.py, Entity: _to_caller_flattened_graph_module, Line: 101, Description: First line should end with a period (not 'e')
+Error Code: D412, File: torch/distributed/_spmd/api.py, Entity: _to_caller_flattened_graph_module, Line: 101, Description: No blank lines allowed between a section header and its content ('Example')
+Error Code: D205, File: torch/distributed/_spmd/api.py, Entity: compile, Line: 497, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/api.py, Entity: compile, Line: 497, Description: First line should end with a period (not 'g')
+Error Code: D205, File: torch/distributed/_spmd/batch_dim_utils.py, Entity: BatchDimAnalyzer, Line: 23, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/batch_dim_utils.py, Entity: BatchDimAnalyzer, Line: 23, Description: First line should end with a period (not 'e')
+Error Code: D200, File: torch/distributed/_spmd/batch_dim_utils.py, Entity: init_batch_dim_size, Line: 57, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_spmd/batch_dim_utils.py, Entity: init_batch_dim_size, Line: 57, Description: First line should end with a period (not 'e')
+Error Code: D403, File: torch/distributed/_spmd/batch_dim_utils.py, Entity: init_batch_dim_size, Line: 57, Description: First word of the first line should be properly capitalized ('Initialize', not 'initialize')
+Error Code: D200, File: torch/distributed/_spmd/batch_dim_utils.py, Entity: compute_batch_dim, Line: 77, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_spmd/batch_dim_utils.py, Entity: compute_batch_dim, Line: 77, Description: First line should end with a period (not '`')
+Error Code: D403, File: torch/distributed/_spmd/batch_dim_utils.py, Entity: compute_batch_dim, Line: 77, Description: First word of the first line should be properly capitalized ('Compute', not 'compute')
+Error Code: D205, File: torch/distributed/_spmd/batch_dim_utils.py, Entity: compute_act_spec, Line: 171, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/batch_dim_utils.py, Entity: compute_act_spec, Line: 171, Description: First line should end with a period (not ',')
+Error Code: D401, File: torch/distributed/_spmd/batch_dim_utils.py, Entity: compute_act_spec, Line: 171, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D205, File: torch/distributed/_spmd/data_parallel.py, Entity: DataParallelStyle, Line: 44, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/data_parallel.py, Entity: DataParallelStyle, Line: 44, Description: First line should end with a period (not '
+Error Code: D205, File: torch/distributed/_spmd/data_parallel.py, Entity: NodeType, Line: 67, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D205, File: torch/distributed/_spmd/data_parallel.py, Entity: DataParallelStrategy, Line: 80, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/data_parallel.py, Entity: DataParallelStrategy, Line: 80, Description: First line should end with a period (not 's')
+Error Code: D202, File: torch/distributed/_spmd/data_parallel.py, Entity: gradients_tagging, Line: 116, Description: No blank lines allowed after function docstring (found 1)
+Error Code: D205, File: torch/distributed/_spmd/data_parallel.py, Entity: gradients_tagging, Line: 116, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/data_parallel.py, Entity: gradients_tagging, Line: 116, Description: First line should end with a period (not 's')
+Error Code: D401, File: torch/distributed/_spmd/data_parallel.py, Entity: gradients_tagging, Line: 116, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D200, File: torch/distributed/_spmd/data_parallel.py, Entity: _gen_shard_strategy, Line: 138, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_spmd/data_parallel.py, Entity: _gen_shard_strategy, Line: 138, Description: First line should end with a period (not 'm')
+Error Code: D403, File: torch/distributed/_spmd/data_parallel.py, Entity: _gen_shard_strategy, Line: 138, Description: First word of the first line should be properly capitalized ('Util', not 'util')
+Error Code: D200, File: torch/distributed/_spmd/data_parallel.py, Entity: _gen_replicate_strategy, Line: 150, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_spmd/data_parallel.py, Entity: _gen_replicate_strategy, Line: 150, Description: First line should end with a period (not 'y')
+Error Code: D403, File: torch/distributed/_spmd/data_parallel.py, Entity: _gen_replicate_strategy, Line: 150, Description: First word of the first line should be properly capitalized ('Util', not 'util')
+Error Code: D200, File: torch/distributed/_spmd/data_parallel.py, Entity: _gen_partial_strategy, Line: 160, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_spmd/data_parallel.py, Entity: _gen_partial_strategy, Line: 160, Description: First line should end with a period (not 'y')
+Error Code: D403, File: torch/distributed/_spmd/data_parallel.py, Entity: _gen_partial_strategy, Line: 160, Description: First word of the first line should be properly capitalized ('Util', not 'util')
+Error Code: D205, File: torch/distributed/_spmd/data_parallel.py, Entity: build_data_parallel_strategies, Line: 183, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/data_parallel.py, Entity: build_data_parallel_strategies, Line: 183, Description: First line should end with a period (not 'e')
+Error Code: D401, File: torch/distributed/_spmd/data_parallel.py, Entity: build_data_parallel_strategies, Line: 183, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D200, File: torch/distributed/_spmd/data_parallel.py, Entity: mark_data_parallel_shardings, Line: 521, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_spmd/data_parallel.py, Entity: mark_data_parallel_shardings, Line: 521, Description: First line should end with a period (not 'h')
+Error Code: D401, File: torch/distributed/_spmd/data_parallel.py, Entity: mark_data_parallel_shardings, Line: 521, Description: First line should be in imperative mood; try rephrasing (found 'This')
+Error Code: D200, File: torch/distributed/_spmd/data_parallel.py, Entity: _partition_val, Line: 604, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D400, File: torch/distributed/_spmd/data_parallel.py, Entity: _partition_val, Line: 604, Description: First line should end with a period (not 't')
+Error Code: D403, File: torch/distributed/_spmd/data_parallel.py, Entity: _partition_val, Line: 604, Description: First word of the first line should be properly capitalized ('Util', not 'util')
+Error Code: D205, File: torch/distributed/_spmd/data_parallel.py, Entity: partitioner, Line: 632, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/data_parallel.py, Entity: partitioner, Line: 632, Description: First line should end with a period (not 'h')
+Error Code: D205, File: torch/distributed/_spmd/data_parallel.py, Entity: partition_data_parallel, Line: 765, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/data_parallel.py, Entity: partition_data_parallel, Line: 765, Description: First line should end with a period (not 'l')
+Error Code: D401, File: torch/distributed/_spmd/data_parallel.py, Entity: partition_data_parallel, Line: 765, Description: First line should be in imperative mood; try rephrasing (found 'The')
+Error Code: D205, File: torch/distributed/_spmd/graph_optimization.py, Entity: graph_optimization_pass, Line: 66, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/graph_optimization.py, Entity: graph_optimization_pass, Line: 66, Description: First line should end with a period (not 'd')
+Error Code: D401, File: torch/distributed/_spmd/graph_optimization.py, Entity: graph_optimization_pass, Line: 66, Description: First line should be in imperative mood; try rephrasing (found 'The')
+Error Code: D205, File: torch/distributed/_spmd/graph_optimization.py, Entity: get_comm_block, Line: 160, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/graph_optimization.py, Entity: get_comm_block, Line: 160, Description: First line should end with a period (not 'o')
+Error Code: D205, File: torch/distributed/_spmd/graph_optimization.py, Entity: _scatter_wait_result, Line: 308, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/graph_optimization.py, Entity: _scatter_wait_result, Line: 308, Description: First line should end with a period (not '-')
+Error Code: D200, File: torch/distributed/_spmd/graph_optimization.py, Entity: _fuse_with_cat, Line: 373, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D205, File: torch/distributed/_spmd/graph_optimization.py, Entity: comm_fusion_with_concat, Line: 476, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D200, File: torch/distributed/_spmd/graph_optimization.py, Entity: schedule_comm_wait, Line: 510, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D205, File: torch/distributed/_spmd/graph_optimization.py, Entity: remove_copy_from_optimizer, Line: 551, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D200, File: torch/distributed/_spmd/graph_optimization.py, Entity: get_fused_optimizer_block, Line: 744, Description: One-line docstring should fit on one line with quotes (found 3)
+Error Code: D205, File: torch/distributed/_spmd/graph_optimization.py, Entity: get_all_fused_optimizer_blocks, Line: 785, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/graph_optimization.py, Entity: get_all_fused_optimizer_blocks, Line: 785, Description: First line should end with a period (not 'n')
+Error Code: D205, File: torch/distributed/_spmd/graph_optimization.py, Entity: _split_fused_adam, Line: 801, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D400, File: torch/distributed/_spmd/graph_optimization.py, Entity: _split_fused_adam, Line: 801, Description: First line should end with a period (not 'e')
+Error Code: D205, File: torch/distributed/_spmd/graph_optimization.py, Entity: iter_move_grads_and_optimizers, Line: 951, Description: 1 blank line required between summary line and description (found 0)
+Error Code: D401, File: torch/distributed/_spmd/graph_optimization.py, Entity: iter_move_grads_and_optimizers, Line: 951, Description: First line should be in imperative mood; try rephrasing (found 'Function')
+Error Code: D202, File: torch/distributed/_spmd/graph_optimization.py, Entity: find_all_descendants, Line: 984, Description: No blank lines allowed after function docstring (found 1)
+Error Code: D400, File: torch/distributed/_spmd/graph_optimization.py, Entity: find_all_descendants, Line: 984, Description: First line should end with a period (not 'n')
+Error Code: D401, File: torch/distributed/_spmd/graph_optimization.py, Entity: find_all_descendants, Line: 984, Description: First line should be in imperative mood (perhaps 'Identify', not 'identifying')
+Error Code: D403, File: torch/distributed/_spmd/graph_optimization.py, Entity: find_all_descendants, Line: 984, Description: First word of the first line should be properly capitalized ('Identifying', not 'identifying')
+
+cc @carljparker
+
+----------------------------------------Comment 1----------------------------------------
+
+🐛 Describe the bug
+Hi, I have trained a pytorch RetinaNet3D model using the MONAI framework and would like to serialize it so it can be run with BentoML.  However I get the following error using torch.onnx.export:
+
+Here is code to reproduce that error, although I can't include the actual model file or example tensor.
+
+What could cause this error?  Thanks!
+Versions
+wget does not work on my Windows machine.  I am using the following:
+torch=2.0.0
+monai=1.1.0
+
