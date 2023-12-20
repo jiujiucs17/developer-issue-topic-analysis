@@ -156,6 +156,28 @@ class plots:
                 print(pair)
         return important_pairs
 
+def calculate_sample_size(population_size, confidence_level, margin_of_error):
+    # Z-score for the given confidence level
+    if confidence_level == 0.90:
+        z = 1.645
+    elif confidence_level == 0.95:
+        z = 1.96
+    elif confidence_level == 0.99:
+        z = 2.576
+    else:
+        raise ValueError("Invalid confidence level. Choose from 0.90, 0.95, or 0.99.")
+
+    # Proportion (assuming maximum variability i.e., p = 0.5)
+    p = 0.5
+
+    # Calculate the sample size
+    sample_size = (z**2 * p * (1-p)) / (margin_of_error**2)
+
+    # Adjust the sample size for finite population
+    sample_size = sample_size / (1 + ((sample_size - 1) / population_size))
+
+    return math.ceil(sample_size)  # Round up to the nearest whole number
+
 def get_first_comments_as_list_of_words(issues_contents: [SingleIssueContent], 
                                         skip_stop_words: bool = True, 
                                         stop_words: set = set(stopwords.words('english')), 
@@ -168,9 +190,32 @@ def get_first_comments_as_list_of_words(issues_contents: [SingleIssueContent],
     print("\nextracting first comments...")
     for issue_content in tqdm(issues_contents):
         comment = issue_content.comments[0]
+        text_comment = comment.text_content.lower()
+
+        # delete the fout sections: "versions", "error logs", "code example", "system info"
+        # use regular expression, ignore all texts after the section title, till the end of comment
+        section_titles = ["versions", 
+                          "error logs", 
+                          "code example", 
+                          "system info", 
+                          "system information", 
+                          "system info", 
+                          "environment"]
+        for section_title in section_titles:
+            text_comment = re.sub(section_title + ".*", "", text_comment, flags=re.DOTALL)
+
+        # also, delete several format string of issues, but keep the content after them
+        format_string = ["🐛 Describe the bug", 
+                         "🚀 The feature, motivation and pitch",
+                         "📚 The doc issue"]
+        for string in format_string:
+            text_comment = re.sub(string, "", text_comment)
+            
+        # delete urls
+        text_comment = re.sub(r"http\S+", "", text_comment)
 
         # data pre-processing and cleaning
-        tokenized_comment = nltk.word_tokenize(comment.text_content.lower())
+        tokenized_comment = nltk.word_tokenize(text_comment)
 
         # remove all the invalid words and put all the words into lower case
         # perform stemming or lemmatization,
@@ -361,18 +406,29 @@ def get_cooccurence_pairs_origin_issues(cooccurence_pairs_origin_issue_index: di
         cooccurence_pairs_origin_issues_issue_contents[pair] = issue_contents
     return cooccurence_pairs_origin_issues_issue_contents
 
-def get_comment_sample_for_pair(pair_list: list, cooccurence_pairs_origin_issues_issue_contents: dict, sample_size: int = 10, dir_path: str = None, log: bool = True):
+def get_comment_sample_for_pair(pair_list: list, 
+                                cooccurence_pairs_origin_issues_issue_contents: dict, 
+                                sample_size: int = None, 
+                                dir_path: str = None, 
+                                log: bool = True,
+                                confidence_level: float = None,
+                                margin_of_error: float = None):
+    
+    if sample_size is None and (confidence_level is None or margin_of_error is None):
+        raise Exception("sample_size or confidence_level and margin_of_error must be provided")
+
     if log:
         print(f"\ngetting sample of comments for pair ({pair_list[0]}, {pair_list[1]})...")
     if len(pair_list) != 2:
         raise Exception("pair must be a list of two words")
     pair_set = frozenset(pair_list)
     comments = cooccurence_pairs_origin_issues_issue_contents[pair_set]
+    if sample_size is None:
+        sample_size = calculate_sample_size(len(comments), confidence_level, margin_of_error)
     sample_size = min(sample_size, len(comments))
     sample = random.sample(comments, sample_size)
     if dir_path:
-
-        with open(dir_path + f"/pair_comments_sample_({pair_list[0]},{pair_list[1]}).txt", "w" ,encoding="utf-8") as f:
+        with open(dir_path + f"/sample_of_({pair_list[0]},{pair_list[1]})_size_{sample_size}_popu_{len(comments)}.txt", "w" ,encoding="utf-8") as f:
             i = 0
             for comment in sample:
                f.write(f"----------------------------------------Comment {str(i+1)}----------------------------------------\n" + comment + "\n")
@@ -403,25 +459,23 @@ if __name__ == "__main__":
     output_path = "./scrapper_results/cooccurence_network_results"
 
     # set up pairs to ignore in the cooccurence network
-    # pairs_to_ignore = []
-    pairs_to_ignore = [frozenset(("version", "runtime")),
-                       ]
+    pairs_to_ignore = [frozenset(("", ""))]
 
     issues_contents_open = load_saved_results(pickle_path_open)
     issues_contents_closed = load_saved_results(pickle_path_closed)
 
     issue_contents = issues_contents_open + issues_contents_closed
 
-    # # udpate the cooccurence network
-    # coocurence_pairs, unique_words_total_occurence, unique_words_pair_count, report_str, cooccurence_pairs_origin_issue_index = cooccurence_network(issue_contents, maximum_word_distance=2, stem=False, lemmatize=True)
+    # udpate the cooccurence network
+    coocurence_pairs, unique_words_total_occurence, unique_words_pair_count, report_str, cooccurence_pairs_origin_issue_index = cooccurence_network(issue_contents, maximum_word_distance=2, stem=False, lemmatize=True)
 
-    # # save the variables related to the network to checkpoints
-    # save_variables_to_checkpoint(output_path,  
-    #                              cooccurence_pairs=coocurence_pairs, 
-    #                              unique_words_total_occurence=unique_words_total_occurence, 
-    #                              unique_words_pair_count=unique_words_pair_count,
-    #                              pairs_origin_issue_index=cooccurence_pairs_origin_issue_index)
-    # save_report_to_file(output_path, report_str)
+    # save the variables related to the network to checkpoints
+    save_variables_to_checkpoint(output_path,  
+                                 cooccurence_pairs=coocurence_pairs, 
+                                 unique_words_total_occurence=unique_words_total_occurence, 
+                                 unique_words_pair_count=unique_words_pair_count,
+                                 pairs_origin_issue_index=cooccurence_pairs_origin_issue_index)
+    save_report_to_file(output_path, report_str)
 
     # load the variables from checkpoint
     cooccurence_pairs, unique_words_total_occurence, unique_words_pair_count, cooccurence_pairs_origin_issue_index = load_variables_from_checkpoint(output_path)
@@ -467,33 +521,16 @@ if __name__ == "__main__":
 
     # get the sample origin issues of each pair in important_pairs
     # remember to delete all existing files in the output_path/important_pairs folder before running this
-    print("\n\n----getting sample origin issues of each pair in important_pairs---")
+    print("\n\noutput sample origin issues of each pair in txt files...")
     samples_of_issues_contain_pairs = {}
     for word in important_pairs:
         samples_of_issues_contain_pairs[word] = []
         for pair in important_pairs[word]:
             sample = get_comment_sample_for_pair(list(pair[0]), 
                                                  cooccurence_pairs_origin_issues_issue_contents, 
-                                                 sample_size=10, 
                                                  dir_path=output_path + "/important_pairs",
-                                                 log = False)
+                                                 log = False,
+                                                 confidence_level=0.9,
+                                                 margin_of_error=0.1)
             samples_of_issues_contain_pairs[word].append(sample)
-
-    # # get origin issues of pairs that are important in the network
-    # # this list need to be updated ******************************************************
-    # pairs = [['version', 'runtime'],
-    #          ['version', 'python'],
-    #          ['version', 'torch'],
-    #          ['cc', 'ezyang'],
-    #          ['vulnerability', 'affected'],
-    #          ['line', 'description'],
-    #          ['line', 'file'],
-    #          ['log', 'test'],
-    #          ['gpu', 'model']]
-    # samples_of_issues_contain_pairs = []
-    # for pair in pairs:
-    #     sample = get_comment_sample_for_pair(pair, 
-    #                                           cooccurence_pairs_origin_issues_issue_contents, 
-    #                                           sample_size=10, 
-    #                                           dir_path=output_path + "/important_pairs")
-    #     samples_of_issues_contain_pairs.append(sample)
+    print("done")
