@@ -1,621 +1,151 @@
 ----------------------------------------Comment 1----------------------------------------
 
 🐛 Describe the bug
-When torch.compile is enabled, even with backend='eager', code that uses a vararg function stored as class instance attribute crashes. It seems like torchdynamo attempts to call it as a method.
-Normal troubleshooting methods fail - no automatic repro is created even with the right arguments.
-Interestingly, this bug is hidden when there is a graph break before the arguments are unpacked.
-This was verified with the latest nightly as of filing.
-Error logs
-2.1.0.dev20230525+cu118
-Normal
-3
-Compiled
-Traceback (most recent call last):
-File "/content/rep.py", line 24, in 
-torch.compile(outer, backend="eager")(trainer)
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/eval_frame.py", line 287, in _fn
-return fn(*args, **kwargs)
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/eval_frame.py", line 440, in catch_errors
-return callback(frame, cache_size, hooks, frame_state)
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/convert_frame.py", line 527, in _convert_frame
-result = inner_convert(frame, cache_size, hooks, frame_state)
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/convert_frame.py", line 127, in _fn
-return fn(*args, **kwargs)
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/convert_frame.py", line 360, in _convert_frame_assert
-return _compile(
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/utils.py", line 180, in time_wrapper
-r = func(*args, **kwargs)
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/convert_frame.py", line 430, in _compile
-out_code = transform_code_object(code, transform)
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/bytecode_transformation.py", line 1000, in transform_code_object
-transformations(instructions, code_options)
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/convert_frame.py", line 415, in transform
-tracer.run()
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/symbolic_convert.py", line 2019, in run
-super().run()
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/symbolic_convert.py", line 703, in run
-and self.step()
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/symbolic_convert.py", line 663, in step
-getattr(self, inst.opname)(inst)
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/symbolic_convert.py", line 385, in wrapper
-return inner_fn(self, inst)
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/symbolic_convert.py", line 1094, in CALL_FUNCTION
-self.call_function(fn, args, {})
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/symbolic_convert.py", line 554, in call_function
-self.push(fn.call_function(self, args, kwargs))
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/variables/functions.py", line 330, in call_function
-return super().call_function(tx, args, kwargs)
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/variables/functions.py", line 284, in call_function
-return super().call_function(tx, args, kwargs)
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/variables/functions.py", line 117, in call_function
-return tx.inline_user_function_return(
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/symbolic_convert.py", line 590, in inline_user_function_return
-result = InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
-File "/usr/local/lib/python3.10/dist-packages/torch/dynamo/symbolic_convert.py", line 2124, in inline_call
-return cls.inline_call(parent, func, args, kwargs)
-File "/usr/local/lib/python3.10/dist-packages/torch/dynamo/symbolic_convert.py", line 2221, in inline_call
-tracer.run()
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/symbolic_convert.py", line 703, in run
-and self.step()
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/symbolic_convert.py", line 663, in step
-getattr(self, inst.opname)(inst)
-File "/usr/local/lib/python3.10/dist-packages/torch/_dynamo/symbolic_convert.py", line 1420, in UNPACK_SEQUENCE
-assert len(val) == inst.argval
-AssertionError:
-from user code:
-File "/content/rep.py", line 19, in outer
-trainer._fw_bw(1,2,3)
-File "/content/rep.py", line 8, in fw_bw
-a,b,c = args
-You can suppress this exception and fall back to eager by setting:
-import torch._dynamo
-torch._dynamo.config.suppress_errors = True
-Minified repro
+With default setting of torch.compile, failed running special_hermite_polynomial_he and threw a torch._dynamo.exec.TorchRuntimeError. Its behavior is as expected behavior on eager mode.
+
+
 
 Versions
 Collecting environment information...
-PyTorch version: 2.1.0.dev20230525+cu118
+PyTorch version: 2.2.0.dev20231105+cu118
 Is debug build: False
 CUDA used to build PyTorch: 11.8
 ROCM used to build PyTorch: N/A
-OS: Ubuntu 20.04.5 LTS (x86_64)
-GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
-Clang version: 10.0.0-4ubuntu1
-CMake version: version 3.25.2
-Libc version: glibc-2.31
-Python version: 3.10.11 (main, Apr  5 2023, 14:15:10) [GCC 9.4.0] (64-bit runtime)
-Python platform: Linux-5.15.107+-x86_64-with-glibc2.31
-Is CUDA available: False
-CUDA runtime version: 11.8.89
-CUDA_MODULE_LOADING set to: N/A
-GPU models and configuration: Could not collect
-Nvidia driver version: Could not collect
-cuDNN version: Probably one of the following:
-/usr/lib/x86_64-linux-gnu/libcudnn.so.8.7.0
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.7.0
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.7.0
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.7.0
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.7.0
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.7.0
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.7.0
-HIP runtime version: N/A
-MIOpen runtime version: N/A
-Is XNNPACK available: True
-CPU:
-Architecture:                    x86_64
-CPU op-mode(s):                  32-bit, 64-bit
-Byte Order:                      Little Endian
-Address sizes:                   48 bits physical, 48 bits virtual
-CPU(s):                          2
-On-line CPU(s) list:             0,1
-Thread(s) per core:              2
-Core(s) per socket:              1
-Socket(s):                       1
-NUMA node(s):                    1
-Vendor ID:                       AuthenticAMD
-CPU family:                      23
-Model:                           49
-Model name:                      AMD EPYC 7B12
-Stepping:                        0
-CPU MHz:                         2250.000
-BogoMIPS:                        4500.00
-Hypervisor vendor:               KVM
-Virtualization type:             full
-L1d cache:                       32 KiB
-L1i cache:                       32 KiB
-L2 cache:                        512 KiB
-L3 cache:                        16 MiB
-NUMA node0 CPU(s):               0,1
-Vulnerability Itlb multihit:     Not affected
-Vulnerability L1tf:              Not affected
-Vulnerability Mds:               Not affected
-Vulnerability Meltdown:          Not affected
-Vulnerability Mmio stale data:   Not affected
-Vulnerability Retbleed:          Vulnerable
-Vulnerability Spec store bypass: Vulnerable
-Vulnerability Spectre v1:        Vulnerable: __user pointer sanitization and usercopy barriers only; no swapgs barriers
-Vulnerability Spectre v2:        Vulnerable, IBPB: disabled, STIBP: disabled, PBRSB-eIBRS: Not affected
-Vulnerability Srbds:             Not affected
-Vulnerability Tsx async abort:   Not affected
-Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid tsc_known_freq pni pclmulqdq ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext ssbd ibrs ibpb stibp vmmcall fsgsbase tsc_adjust bmi1 avx2 smep bmi2 rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 clzero xsaveerptr arat npt nrip_save umip rdpid
-Versions of relevant libraries:
-[pip3] numpy==1.22.4
-[pip3] pytorch-triton==2.1.0+7d1a95b046
-[pip3] torch==2.1.0.dev20230525+cu118
-[pip3] torchaudio==2.0.2+cu118
-[pip3] torchdata==0.6.1
-[pip3] torchsummary==1.5.1
-[pip3] torchtext==0.15.2
-[pip3] torchvision==0.15.2+cu118
-[pip3] triton==2.0.0
-[conda] Could not collect
-cc @ezyang @msaroufim @wconstab @ngimel @bdhirsh @anijain2305 @voznesenskym @penguinwu @EikanWang @jgong5 @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @Xia-Weiwen @wenzhe-nrv @jiayisunx
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-python code：
-import sys
-import os.path
-import time
-import numpy as np
-import random
-import torch
-from torch import nn
-import torchaudio
-import pickle
-import torch.utils.data
-from torch.cuda.amp import GradScaler, autocast
-from torch.utils.data import Dataset
-from torch.nn.parallel import DataParallel
-#torch.set_float32_matmul_precision('high')
-DNN_DATA_TYPE = torch.float32
-HALF_TRAIN = False
-HALF_TEST = False
-TRAIN_BATCH_SIZE = 36
-TRAIN_THREAD_SIZE = 4
-TEST_BATCH_SIZE = 36
-TEST_THREAD_SIZE = 4
-IS_DATA_COV_IN_CPU = False
-def get_device():
-device_type = 'cpu'
-is_cuda = False
-if torch.cuda.is_available():
-device_type = 'cuda'
-torch.backends.cudnn.enabled = True
-torch.backends.cudnn.benchmark = True
-is_cuda = True
-if is_cuda == True:
-print('enable cuda amp test')
-elif torch.has_mps:
-device_type = 'mps'
-elif torch.is_vulkan_available():
-device_type = 'vulkan'
-# device_type = 'cpu'
-if device_type == 'cpu':
-is_cuda = False
-if os.name.lower() == 'nt':
-# 防止没有这个模块
-import importlib
-spam_loader = importlib.util.find_spec('torch_directml')
-found = spam_loader is not None
-if found == True:
-import torch_directml
-print(f'device_type: directml')
-return torch_directml.device(), is_cuda
-print(f'device_type: {device_type}')
-device = torch.device(device_type)
-return device, is_cuda
-def read_file_random(path, want_size=48000 * 12):
-data, sr = torchaudio.load(path)
-if sr != 48000:
-resample = torchaudio.transforms.Resample(orig_freq=sr, new_freq=48000)
-data = resample(data)
-sr = 48000
-data_length = len(data[0])
-add_size = int(want_size) - data_length
-if data_length < want_size:
-first_add_len = int(random.randint(0, add_size))
-end_add_len = add_size - first_add_len
-if first_add_len > 0:
-first_add = torch.zeros(1, first_add_len)
-data = torch.concatenate((first_add, data), axis=1)
-if end_add_len > 0:
-end_add = torch.zeros(1, end_add_len)
-data = torch.concatenate((data, end_add), axis=1)
-elif data_length > want_size:
-data = data[:want_size]
-print(f'cut, name:{path}')
-return data.to(DNN_DATA_TYPE)
-def read_file_src(path, want_size=48000 * 12):
-data, sr = torchaudio.load(path)
-if sr != 48000:
-resample = torchaudio.transforms.Resample(orig_freq=sr, new_freq=48000)
-data = resample(data)
-sr = 48000
-data_length = len(data[0])
-add_size = int(want_size) - data_length
-if data_length < want_size:
-end_add = torch.zeros(1, add_size)
-data = torch.concatenate((data, end_add), axis=1)
-elif data_length > want_size:
-data = data[:, :want_size]
-print(f'cut, name:{path}')
-'''
-# 删除前0.5s数据
-data = data[:, 24000:]
-befor_add = torch.zeros(1, 24000)
-data = torch.concatenate((befor_add, data), axis=1)
-# 查找起点
-vad = torchaudio.transforms.Vad(sample_rate=48000)
-vad_result = vad(data)
-# 找到第一个语音段的起点位置
-speech_start_index = torch.argmax(vad_result)
-point = speech_start_index.item()
-# 截取掉没有语音的部分
-data = data[:, point:]
-befor_add = torch.zeros(1, point)
-data = torch.concatenate((befor_add, data), axis=1)
-'''
-return data.to(DNN_DATA_TYPE)
-def read_file(path, want_size=48000 * 12):
-return read_file_src(path, want_size)
-class MyDataSet(Dataset):
-
-class DataCov(nn.Module):
-def init(self):
-super(DataCov, self).init()
-
-class QANet(nn.Module):
-def init(self, num_classes=1):
-super(QANet, self).init()
-
-def read_train_data(info_file, base_dir):
-with open(info_file, 'rb') as f:
-data = pickle.load(f)
-data_len = len(data)
-ans = []
-for i in range(data_len):
-file, score = data[i]
-if os.name.lower() == 'posix':
-file = file.replace("\", "/")
-file = os.path.abspath(os.path.join(base_dir, file))
-if os.path.exists(file):
-if os.path.isfile(file):
-if score > 0:
-ans.append((file, score))
-return ans
-def init_module():
-# 若当前 Pytorch 版本以及电脑支持GPU，则使用 GPU 训练，否则使用 CPU
-device, is_cuda = get_device()
-model = QANet().to(DNN_DATA_TYPE)
-
-def save_model(model, path):
-# 保存网络
-torch.save(model.state_dict(), path)
-def init_module_with_pth(pth):
-# 若当前 Pytorch 版本以及电脑支持GPU，则使用 GPU 训练，否则使用 CPU
-device, is_cuda = get_device()
-state_dict = torch.load(pth, map_location='cpu')
-model = QANet().to(DNN_DATA_TYPE)
-set_compile = True
-if set_compile:
-state_dict_fix = {}
-for k, v in state_dict.items():
-tmp_k = k[k.find(".") + 1:]
-state_dict_fix[tmp_k] = v
-set_compile2 = False
-if set_compile2:
-state_dict_fix2 = {}
-for k, v in state_dict_fix.items():
-tmp_k = k[k.find(".") + 1:]
-state_dict_fix2[tmp_k] = v
-state_dict_fix = state_dict_fix2
-
-def get_data_loader(src_info_path, src_base_dir, src_wav_path):
-src_wav_data = read_file_src(src_wav_path)
-train_list = read_train_data(src_info_path, src_base_dir)
-random.shuffle(train_list)
-test_list_size = int(len(train_list) * 0.05)
-test_list = train_list[:test_list_size]
-train_list = train_list[test_list_size:]
-train_loader_in = MyDataSet(data_input_list=train_list, src_file_data=src_wav_data)
-train_loader = torch.utils.data.DataLoader(
-dataset=train_loader_in,
-batch_size=TRAIN_BATCH_SIZE,  # 每批提取的数量
-shuffle=True,  # 要不要打乱数据（打乱比较好）
-num_workers=TRAIN_THREAD_SIZE,  # 多少线程来读取数据
-pin_memory=not IS_DATA_COV_IN_CPU
-)
-random.shuffle(test_list)
-test_loader_in = MyDataSet(data_input_list=test_list, src_file_data=src_wav_data)
-
-def init_random():
-# 设置一个随机种子
-SEED = 1
-# 下面分别对不同模组的随机数进行设定
-np.random.seed(SEED)  # 对numpy模组进行随机数设定
-random.seed(SEED)  # 对venv2模组进行随机数设定，其实就是python中的普通模组
-torch.manual_seed(SEED)  # 对torch中的CPU部分进行随机数设定
-torch.cuda.manual_seed(SEED)  # 对torch中的GPU部分进行随机数设定
-def init_train(module, pth_path):
-if module == 'empty_train' or not os.path.exists(pth_path):
-model, loss_fn, device, is_cuda = init_module()
-else:
-model, loss_fn, device, is_cuda = init_module_with_pth(pth_path)
-return model, loss_fn, device, is_cuda
-def fund_max_index(input):
-outsize = len(input)
-ans = torch.zeros(outsize)
-for i in range(outsize):
-loopsize = len(input[i])
-max_index = 0
-max_value = -99999999999999
-for j in range(loopsize):
-if input[i][j] >= max_value:
-max_value = input[i][j]
-max_index = j
-ans[i] = max_index
-return ans
-def get_eq_number(vector1, vector2):
-loop = len(vector1)
-eq_number = 0
-for i in range(loop):
-if vector1[i] == vector2[i]:
-eq_number += 1
-return eq_number
-def train(pth_path, module, learn_rate, train_loader, test_loader, train_time):
-global scheduler, scaler, optimizer
-model, loss_fn, device, is_cuda = init_train(module, pth_path)
-num_batches = len(train_loader)
-allTime = num_batches * train_time
-test_list_size = len(test_loader)
-if is_cuda and HALF_TRAIN:
-scaler = GradScaler()
-all_diff_pr = test_list_size * 10.0 * 10000
-all_all_loss = test_list_size * 10.0 * 10000
-if IS_DATA_COV_IN_CPU:
-data_prepare = DataCov().to(DNN_DATA_TYPE).to('cpu')
-else:
-if is_cuda:
-data_prepare = DataCov().to(DNN_DATA_TYPE).to("cuda")
-data_prepare = DataParallel(data_prepare, device_ids=[0, 1])
-else:
-data_prepare = DataCov().to(DNN_DATA_TYPE).to(device)
-time_without_save = 0
-# optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate)
-optimizer = torch.optim.SGD(model.parameters(), lr=learn_rate)
-
-def train_data(src_info_path, src_base_dir, src_wav_path, pth_path, module='empty', train_time=50000):
-init_random()
-
-if name == 'main':
-is_debug = True if sys.gettrace() else False
-can_run = False
-voice_info = "d:/tmp/data2/fun3.info"
-voice_dir = "d:/tmp/data2/datasrc"
-src_file = "d:/tmp/data2/sample48k.wav"
-pth_path = "d:/tmp/data2/fun3.pth"
-module = "pre_load_train"
-if is_debug:
-can_run = True
-else:
-argc = len(sys.argv)
-if (argc >= 5):
-voice_info = sys.argv[1]
-voice_dir = sys.argv[2]
-src_file = sys.argv[3]
-pth_path = sys.argv[4]
-can_run = True
-if can_run:
-voice_info = os.path.abspath(voice_info)
-voice_dir = os.path.abspath(voice_dir)
-src_file = os.path.abspath(src_file)
-pth_path = os.path.abspath(pth_path)
-train_data(voice_info, voice_dir, src_file, pth_path, module)
-else:
-print("can't run need more args, use sample:")
-print("python3 fun3_dnn.py voice_info voice_dir src_file pth_path")
-error：
-Traceback (most recent call last):
-File "/root/autodl-tmp/fun3_cnn.py", line 625, in 
-train_data(voice_info, voice_dir, src_file, pth_path, module)
-File "/root/autodl-tmp/fun3_cnn.py", line 599, in train_data
-train(pth_path, module, learn_rate, train_loader, test_loader, train_time)
-File "/root/autodl-tmp/fun3_cnn.py", line 517, in train
-output = model(wav_data_prepare, src_wav_data_prepare, wav_data, src_wav_data)
-File "/root/miniconda3/envs/ai/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
-return forward_call(*args, **kwargs)
-File "/root/miniconda3/envs/ai/lib/python3.10/site-packages/torch/nn/parallel/data_parallel.py", line 171, in forward
-outputs = self.parallel_apply(replicas, inputs, kwargs)
-File "/root/miniconda3/envs/ai/lib/python3.10/site-packages/torch/nn/parallel/data_parallel.py", line 181, in parallel_apply
-return parallel_apply(replicas, inputs, kwargs, self.device_ids[:len(replicas)])
-File "/root/miniconda3/envs/ai/lib/python3.10/site-packages/torch/nn/parallel/parallel_apply.py", line 89, in parallel_apply
-output.reraise()
-File "/root/miniconda3/envs/ai/lib/python3.10/site-packages/torch/_utils.py", line 644, in reraise
-raise exception
-RuntimeError: Caught RuntimeError in replica 1 on device 1.
-Original Traceback (most recent call last):
-File "/root/miniconda3/envs/ai/lib/python3.10/site-packages/torch/nn/parallel/parallel_apply.py", line 64, in _worker
-output = module(*input, **kwargs)
-File "/root/miniconda3/envs/ai/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
-return forward_call(*args, **kwargs)
-File "/root/autodl-tmp/fun3_cnn.py", line 261, in forward
-x_1 = self.fc_for_mel(x_1)
-File "/root/miniconda3/envs/ai/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
-return forward_call(*args, **kwargs)
-File "/root/miniconda3/envs/ai/lib/python3.10/site-packages/torch/nn/modules/container.py", line 217, in forward
-input = module(input)
-File "/root/miniconda3/envs/ai/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
-return forward_call(*args, **kwargs)
-File "/root/miniconda3/envs/ai/lib/python3.10/site-packages/torch/nn/modules/linear.py", line 114, in forward
-return F.linear(input, self.weight, self.bias)
-RuntimeError: CUDA error: CUBLAS_STATUS_NOT_SUPPORTED when calling cublasLtMatmul with transpose_mat1 1 transpose_mat2 0 m 1024 n 12 k 5280 mat1_ld 5280 mat2_ld 5280 result_ld 1024 abcType 0 computeType 77 scaleType 0
-Versions
-Collecting environment information...
-PyTorch version: 2.0.1
-Is debug build: False
-CUDA used to build PyTorch: 11.8
-ROCM used to build PyTorch: N/A
-OS: Ubuntu 22.04.2 LTS (x86_64)
+OS: Ubuntu 22.04.3 LTS (x86_64)
 GCC version: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
 Clang version: Could not collect
 CMake version: version 3.22.1
 Libc version: glibc-2.35
-Python version: 3.10.12 (main, Jul  5 2023, 18:54:27) [GCC 11.2.0] (64-bit runtime)
-Python platform: Linux-5.4.0-146-generic-x86_64-with-glibc2.35
+Python version: 3.9.18 (main, Sep 11 2023, 13:41:44) [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-86-generic-x86_64-with-glibc2.35
 Is CUDA available: True
-CUDA runtime version: 11.8.89
+CUDA runtime version: 12.1.105
 CUDA_MODULE_LOADING set to: LAZY
 GPU models and configuration:
-GPU 0: NVIDIA GeForce RTX 4090
-GPU 1: NVIDIA GeForce RTX 4090
-Nvidia driver version: 525.105.17
-cuDNN version: Probably one of the following:
-/usr/lib/x86_64-linux-gnu/libcudnn.so.8.6.0
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.6.0
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.6.0
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.6.0
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.6.0
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.6.0
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.6.0
+GPU 0: NVIDIA GeForce RTX 2070
+GPU 1: NVIDIA GeForce RTX 2070
+GPU 2: NVIDIA GeForce RTX 2070
+GPU 3: NVIDIA GeForce RTX 2070
+Nvidia driver version: 535.104.12
+cuDNN version: Could not collect
 HIP runtime version: N/A
 MIOpen runtime version: N/A
 Is XNNPACK available: True
 CPU:
-Architecture:                    x86_64
-CPU op-mode(s):                  32-bit, 64-bit
-Address sizes:                   46 bits physical, 57 bits virtual
-Byte Order:                      Little Endian
-CPU(s):                          128
-On-line CPU(s) list:             0-127
-Vendor ID:                       GenuineIntel
-Model name:                      Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz
-CPU family:                      6
-Model:                           106
-Thread(s) per core:              2
-Core(s) per socket:              32
-Socket(s):                       2
-Stepping:                        6
-Frequency boost:                 enabled
-CPU max MHz:                     2901.0000
-CPU min MHz:                     800.0000
-BogoMIPS:                        5800.00
-Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 invpcid_single ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local wbnoinvd dtherm ida arat pln pts avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg tme avx512_vpopcntdq rdpid md_clear pconfig flush_l1d arch_capabilities
-Virtualization:                  VT-x
-L1d cache:                       3 MiB (64 instances)
-L1i cache:                       2 MiB (64 instances)
-L2 cache:                        80 MiB (64 instances)
-L3 cache:                        108 MiB (2 instances)
-NUMA node(s):                    2
-NUMA node0 CPU(s):               0-31,64-95
-NUMA node1 CPU(s):               32-63,96-127
-Vulnerability Itlb multihit:     Not affected
-Vulnerability L1tf:              Not affected
-Vulnerability Mds:               Not affected
-Vulnerability Meltdown:          Not affected
-Vulnerability Mmio stale data:   Mitigation; Clear CPU buffers; SMT vulnerable
-Vulnerability Retbleed:          Not affected
+Architecture: x86_64
+CPU op-mode(s): 32-bit, 64-bit
+Address sizes: 46 bits physical, 48 bits virtual
+Byte Order: Little Endian
+CPU(s): 32
+On-line CPU(s) list: 0-31
+Vendor ID: GenuineIntel
+Model name: Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz
+CPU family: 6
+Model: 63
+Thread(s) per core: 2
+Core(s) per socket: 8
+Socket(s): 2
+Stepping: 2
+CPU max MHz: 3200.0000
+CPU min MHz: 1200.0000
+BogoMIPS: 4794.64
+Flags: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm cpuid_fault epb invpcid_single pti ssbd ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm xsaveopt cqm_llc cqm_occup_llc dtherm ida arat pln pts md_clear flush_l1d
+Virtualization: VT-x
+L1d cache: 512 KiB (16 instances)
+L1i cache: 512 KiB (16 instances)
+L2 cache: 4 MiB (16 instances)
+L3 cache: 40 MiB (2 instances)
+NUMA node(s): 2
+NUMA node0 CPU(s): 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30
+NUMA node1 CPU(s): 1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31
+Vulnerability Gather data sampling: Not affected
+Vulnerability Itlb multihit: KVM: Mitigation: VMX disabled
+Vulnerability L1tf: Mitigation; PTE Inversion; VMX conditional cache flushes, SMT vulnerable
+Vulnerability Mds: Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Meltdown: Mitigation; PTI
+Vulnerability Mmio stale data: Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Retbleed: Not affected
+Vulnerability Spec rstack overflow: Not affected
 Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
-Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
-Vulnerability Spectre v2:        Mitigation; Enhanced IBRS, IBPB conditional, RSB filling, PBRSB-eIBRS SW sequence
-Vulnerability Srbds:             Not affected
-Vulnerability Tsx async abort:   Not affected
+Vulnerability Spectre v1: Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2: Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP conditional, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds: Not affected
+Vulnerability Tsx async abort: Not affected
 Versions of relevant libraries:
-[pip3] numpy==1.25.2
-[pip3] torch==2.0.1
-[pip3] torchaudio==2.0.2
-[pip3] torchvision==0.15.2
-[pip3] triton==2.0.0
-[conda] blas                      1.0                         mkl    https://mirrors.ustc.edu.cn/anaconda/pkgs/main
-[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
-[conda] mkl                       2023.1.0         h213fc3f_46343    https://mirrors.ustc.edu.cn/anaconda/pkgs/main
-[conda] mkl-service               2.4.0           py310h5eee18b_1    https://mirrors.ustc.edu.cn/anaconda/pkgs/main
-[conda] mkl_fft                   1.3.6           py310h1128e8f_1    https://mirrors.ustc.edu.cn/anaconda/pkgs/main
-[conda] mkl_random                1.2.2           py310h1128e8f_1    https://mirrors.ustc.edu.cn/anaconda/pkgs/main
-[conda] numpy                     1.25.2          py310h5f9d8c6_0    https://mirrors.ustc.edu.cn/anaconda/pkgs/main
-[conda] numpy-base                1.25.2          py310hb5e798b_0    https://mirrors.ustc.edu.cn/anaconda/pkgs/main
-[conda] pytorch                   2.0.1           py3.10_cuda11.8_cudnn8.7.0_0    pytorch
-[conda] pytorch-cuda              11.8                 h7e8668a_5    pytorch
-[conda] pytorch-mutex             1.0                        cuda    pytorch
-[conda] torchaudio                2.0.2               py310_cu118    pytorch
-[conda] torchtriton               2.0.0                     py310    pytorch
-[conda] torchvision               0.15.2              py310_cu118    pytorch
-cc @ptrblck @csarofeen @xwang233
+[pip3] numpy==1.26.1
+[pip3] pytorch-triton==2.1.0+6e4932cda8
+[pip3] torch==2.2.0.dev20231105+cu118
+[pip3] torchaudio==2.2.0.dev20231105+cu118
+[pip3] torchvision==0.17.0.dev20231105+cu118
+[conda] cudatoolkit 11.8.0 h6a678d5_0 defaults
+[conda] numpy 1.26.1 pypi_0 pypi
+[conda] pytorch-triton 2.1.0+6e4932cda8 pypi_0 pypi
+[conda] torch 2.2.0.dev20231105+cu118 pypi_0 pypi
+[conda] torchaudio 2.2.0.dev20231105+cu118 pypi_0 pypi
+[conda] torchvision 0.17.0.dev20231105+cu118 pypi_0 pypi
+cc @mruberry @kshitij12345 @ezyang @lezcano @peterbell10 @msaroufim @wconstab @bdhirsh @anijain2305 @zou3519 @eellison
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 2----------------------------------------
 
 🐛 Describe the bug
-I try to export my script model to onnx format with torch.onnx,export, here's my export function:
-
-And I get the error msgs as follow:
-
-I checked group_norm operator is supported from opset=9, and I try torch version 1.12 and 1.13, all gave the error...
-Any ideas to fix that?
+We train classification models from latest timm on millions of images over multiple epochs.
+Since upgrading to torch>=2.0.0 and using torch.compile() we observe continually increasing main memory usage during training/validation: The process uses more RAM with each minibatch processed by the network, until we eventually get OOM errors. Memory profiling points to the outputs = model(data) call.
+The same code without calling torch.compile(model) has approx. constant memory usage throughout the training loop.
+We observe this issue for various architectures, whereas larger architectures appear to have a steeper memory increase over time. Below, I attach a script (modified transfer learning example from Pytorch tutorials) to reproduce this issue with a small network from timm as showcase (tinynet).
+example.py.zip
+Error logs
+(no error logs; memory usage increases until process is killed by OS due to OOM)
+Minified repro
+(relevant here? Also, created .py is too large for this form...)
 Versions
-PyTorch version: 1.13.1+cu117
+Collecting environment information...
+PyTorch version: 2.0.1
 Is debug build: False
 CUDA used to build PyTorch: 11.7
 ROCM used to build PyTorch: N/A
-OS: Ubuntu 20.04.6 LTS (x86_64)
-GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+OS: Ubuntu 22.04.2 LTS (x86_64)
+GCC version: (Ubuntu 11.3.0-1ubuntu1~22.04.1) 11.3.0
 Clang version: Could not collect
-CMake version: version 3.16.3
-Libc version: glibc-2.31
-Python version: 3.8.10 (default, Jun  4 2021, 15:09:15)  [GCC 7.5.0] (64-bit runtime)
-Python platform: Linux-5.15.0-67-generic-x86_64-with-glibc2.17
+CMake version: version 3.22.1
+Libc version: glibc-2.35
+Python version: 3.10.12 | packaged by conda-forge | (main, Jun 23 2023, 22:40:32) [GCC 12.3.0] (64-bit runtime)
+Python platform: Linux-5.15.0-76-generic-x86_64-with-glibc2.35
 Is CUDA available: True
 CUDA runtime version: Could not collect
 CUDA_MODULE_LOADING set to: LAZY
-GPU models and configuration:
-GPU 0: NVIDIA GeForce RTX 3090
-GPU 1: NVIDIA GeForce RTX 3090
-GPU 2: NVIDIA GeForce RTX 3090
-GPU 3: NVIDIA GeForce RTX 3090
-GPU 4: NVIDIA GeForce RTX 3090
-GPU 5: NVIDIA GeForce RTX 3090
-GPU 6: NVIDIA GeForce RTX 3090
-GPU 7: NVIDIA GeForce RTX 3090
-Nvidia driver version: 515.65.01
-cuDNN version: Probably one of the following:
-/usr/lib/x86_64-linux-gnu/libcudnn.so.8.2.1
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.2.1
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.2.1
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.2.1
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.2.1
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.2.1
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.2.1
+GPU models and configuration: GPU 0: Quadro RTX 8000
+Nvidia driver version: 525.125.06
+cuDNN version: Could not collect
 HIP runtime version: N/A
 MIOpen runtime version: N/A
 Is XNNPACK available: True
 CPU:
 Architecture:                    x86_64
 CPU op-mode(s):                  32-bit, 64-bit
+Address sizes:                   44 bits physical, 48 bits virtual
 Byte Order:                      Little Endian
-Address sizes:                   43 bits physical, 48 bits virtual
-CPU(s):                          128
-On-line CPU(s) list:             0-127
-Thread(s) per core:              2
-Core(s) per socket:              32
-Socket(s):                       2
-NUMA node(s):                    2
+CPU(s):                          144
+On-line CPU(s) list:             0-143
 Vendor ID:                       AuthenticAMD
+Model name:                      AMD EPYC 7552 48-Core Processor
 CPU family:                      23
 Model:                           49
-Model name:                      AMD EPYC 7502 32-Core Processor
+Thread(s) per core:              2
+Core(s) per socket:              36
+Socket(s):                       2
 Stepping:                        0
-Frequency boost:                 enabled
-CPU MHz:                         1745.438
-CPU max MHz:                     2500.0000
-CPU min MHz:                     1500.0000
-BogoMIPS:                        5000.36
-Virtualization:                  AMD-V
-L1d cache:                       2 MiB
-L1i cache:                       2 MiB
-L2 cache:                        32 MiB
-L3 cache:                        256 MiB
-NUMA node0 CPU(s):               0-31,64-95
-NUMA node1 CPU(s):               32-63,96-127
+BogoMIPS:                        4391.78
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm rep_good nopl cpuid extd_apicid pni pclmulqdq ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext ssbd ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves xsaveerptr virt_ssbd arat rdpid
+Hypervisor vendor:               Microsoft
+Virtualization type:             full
+L1d cache:                       2.3 MiB (72 instances)
+L1i cache:                       2.3 MiB (72 instances)
+L2 cache:                        36 MiB (72 instances)
+L3 cache:                        32 MiB (2 instances)
+NUMA node(s):                    3
+NUMA node0 CPU(s):               0-47
+NUMA node1 CPU(s):               48-95
+NUMA node2 CPU(s):               96-143
 Vulnerability Itlb multihit:     Not affected
 Vulnerability L1tf:              Not affected
 Vulnerability Mds:               Not affected
@@ -627,288 +157,249 @@ Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user
 Vulnerability Spectre v2:        Mitigation; Retpolines, IBPB conditional, STIBP always-on, RSB filling, PBRSB-eIBRS Not affected
 Vulnerability Srbds:             Not affected
 Vulnerability Tsx async abort:   Not affected
-Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd amd_ppin arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip rdpid overflow_recov succor smca sme sev sev_es
 Versions of relevant libraries:
-[pip3] mypy-extensions==1.0.0
-[pip3] mypy-protobuf==3.3.0
-[pip3] numpy==1.23.5
-[pip3] torch==1.13.1
-[pip3] torch-tensorrt==1.3.0
-[pip3] torch2trt==0.2.0
-[pip3] torchaudio==2.0.0
-[pip3] torchvision==0.15.0
+[pip3] numpy==1.25.0
+[pip3] torch==2.0.1
+[pip3] torchvision==0.15.2
 [pip3] triton==2.0.0
-[conda] blas                      1.0                         mkl
+[conda] blas                      1.0                         mkl    conda-forge
 [conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
-[conda] mkl                       2021.4.0           h06a4308_640
-[conda] mkl-service               2.4.0            py38h7f8727e_0
-[conda] mkl_fft                   1.3.1            py38hd3c417c_0
-[conda] mkl_random                1.2.2            py38h51133e4_0
-[conda] numpy                     1.23.5           py38h14f4228_0
-[conda] numpy-base                1.23.5           py38h31eccc5_0
-[conda] pytorch-cuda              11.7                 h778d358_3    pytorch
+[conda] mkl                       2023.1.0         h6d00ec8_46342
+[conda] numpy                     1.25.0          py310ha4c1d20_0    conda-forge
+[conda] pytorch                   2.0.1           py3.10_cuda11.7_cudnn8.5.0_0    pytorch
+[conda] pytorch-cuda              11.7                 h778d358_5    pytorch
 [conda] pytorch-mutex             1.0                        cuda    pytorch
-[conda] torch                     1.13.1                   pypi_0    pypi
-[conda] torch-tensorrt            1.3.0                    pypi_0    pypi
-[conda] torchaudio                2.0.0                py38_cu117    pytorch
-[conda] torchtriton               2.0.0                      py38    pytorch
-[conda] torchvision               0.15.0               py38_cu117    pytorch
+[conda] torchtriton               2.0.0                     py310    pytorch
+[conda] torchvision               0.15.2              py310_cu117    pytorch
+Manually added by OP
+timm==0.9.2
+cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 3----------------------------------------
 
 🐛 Describe the bug
-Based on #110347, I created
+I have a Stable Diffusion model(sdm)    # Type is LatentDiffusion
+It has a var named 'xxx'.  NOTE: Python dir(obj) returns vars of a class
 
-Which shows a mismatch.
+Did compile() make OptimizedModule a subclass of the original LatentDiffusion class?
+Later when a function, is compiled using @torch.compile, has a reference to sdm.xxx, it fails with an InternalTorchDynamoError caused by the failure to find sdm.xxx here:
+
+This failure to find sdm.xxx raises AttributeError(attr) leading to the Internal Error(stack at the end).
+See this note from inspect.getattr_static():
+
+'xxx' is a valid attribute of my 'sdm' model.  But either due to a short coming of inspect or the usage of inspect, it can't find it.
+Internal error stack:
+Traceback (most recent call last): File "~/a1/modules/call_queue.py", line 56, in f res = list(func(*args, **kwargs)) File "~/a1/modules/call_queue.py", line 37, in f res = func(*args, **kwargs) File "~/a1/modules/txt2img.py", line 56, in txt2img processed = process_images(p) File "~/a1/modules/processing.py", line 486, in process_images res = process_images_inner(p) File "~/a1/modules/processing.py", line 636, in process_images_inner samples_ddim = p.sample(conditioning=c, unconditional_conditioning=uc, seeds=seeds, subseeds=subseeds, subseed_strength=p.subseed_strength, prompts=prompts) File "~/a1/modules/processing.py", line 840, in sample samples = self.sampler.sample(self, x, conditioning, unconditional_conditioning, image_conditioning=self.txt2img_image_conditioning(x)) File "~/a1/venv/lib/python3.10/site-packages/torch/_dynamo/eval_frame.py", line 209, in _fn  return fn(*args, **kwargs) File "~/a1/modules/sd_samplers_kdiffusion.py", line 326, in sample extra_params_kwargs = self.initialize(p) File "~/a1/modules/sd_samplers_kdiffusion.py", line 336, in <graph break in sample>  samples = self.launch_sampling(steps, lambda: self.func(self.model_wrap_cfg, x, extra_args={ File "~/a1/modules/sd_samplers_kdiffusion.py", line 233, in launch_sampling return func() File "~/a1/modules/sd_samplers_kdiffusion.py", line 336, in <lambda>  samples = self.launch_sampling(steps, lambda: self.func(self.model_wrap_cfg, x, extra_args={ File "~/a1/venv/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context  return func(*args, **kwargs) File "~/a1/repositories/k-diffusion/k_diffusion/sampling.py", line 144, in sample_euler_ancestral for i in trange(len(sigmas) - 1, disable=disable): File "~/a1/repositories/k-diffusion/k_diffusion/sampling.py", line 145, in <graph break in sample_euler_ancestral> denoised = model(x, sigmas[i] * s_in, **extra_args) File "~/a1/venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl return forward_call(*args, **kwargs) File "~/a1/modules/sd_samplers_kdiffusion.py", line 91, in forward print("******************************************") File "~/a1/modules/sd_samplers_kdiffusion.py", line 92, in <graph break in forward> print("Where the bug will appear") File "~/a1/modules/sd_samplers_kdiffusion.py", line 93, in <graph break in forward> print("Where the bug will appear") File "~/a1/modules/sd_samplers_kdiffusion.py", line 94, in <graph break in forward> print("Where the bug will appear") File "~/a1/venv/lib/python3.10/site-packages/torch/_dynamo/eval_frame.py", line 330, in catch_errors return callback(frame, cache_size, hooks) File "~/a1/venv/lib/python3.10/site-packages/torch/_dynamo/convert_frame.py", line 404, in _convert_frame result = inner_convert(frame, cache_size, hooks) File "~/a1/venv/lib/python3.10/site-packages/torch/_dynamo/convert_frame.py", line 104, in _fn return fn(*args, **kwargs) File "~/a1/venv/lib/python3.10/site-packages/torch/_dynamo/convert_frame.py", line 262, in _convert_frame_assert return _compile( File "~/a1/venv/lib/python3.10/site-packages/torch/_dynamo/utils.py", line 163, in time_wrapper r = func(*args, **kwargs) File "~/a1/venv/lib/python3.10/site-packages/torch/_dynamo/convert_frame.py", line 394, in _compile raise InternalTorchDynamoError() from e File "~/a1/modules/sd_samplers_kdiffusion.py", line 92, in <graph break in forward> print("Where the bug will appear") File "~/a1/modules/sd_samplers_kdiffusion.py", line 93, in <graph break in forward> print("Where the bug will appear") File "~/a1/modules/sd_samplers_kdiffusion.py", line 94, in <graph break in forward> print("Where the bug will appear") File "~/a1/venv/lib/python3.10/site-packages/torch/_dynamo/eval_frame.py", line 330, in catch_errors return callback(frame, cache_size, hooks) File "~/a1/venv/lib/python3.10/site-packages/torch/_dynamo/convert_frame.py", line 404, in _convert_frame result = inner_convert(frame, cache_size, hooks) File "~/a1/venv/lib/python3.10/site-packages/torch/_dynamo/convert_frame.py", line 104, in _fn return fn(*args, **kwargs) File "~/a1/venv/lib/python3.10/site-packages/torch/_dynamo/convert_frame.py", line 262, in _convert_frame_assert return _compile( File "~/a1/venv/lib/python3.10/site-packages/torch/_dynamo/utils.py", line 163, in time_wrapper r = func(*args, **kwargs) File "~/a1/venv/lib/python3.10/site-packages/torch/_dynamo/convert_frame.py", line 394, in _compile raise InternalTorchDynamoError() from e torch._dynamo.exc.InternalTorchDynamoError 
+Error logs
+torch._dynamo.exc.InternalTorchDynamoError
+Minified repro
+No response
 Versions
 Collecting environment information...
-PyTorch version: 2.2.0a0+gitbb14805
-Is debug build: True
-CUDA used to build PyTorch: None
+PyTorch version: N/A
+Is debug build: N/A
+CUDA used to build PyTorch: N/A
 ROCM used to build PyTorch: N/A
-OS: Ubuntu 22.04.3 LTS (x86_64)
-GCC version: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
-Clang version: 14.0.0-1ubuntu1.1
-CMake version: version 3.22.1
+OS: Ubuntu 22.04.1 LTS (x86_64)
+GCC version: (Ubuntu 11.3.0-1ubuntu1~22.04) 11.3.0
+Clang version: Could not collect
+CMake version: version 3.25.0
 Libc version: glibc-2.35
-Python version: 3.10.9 (main, Jan 11 2023, 15:21:40) [GCC 11.2.0] (64-bit runtime)
-Python platform: Linux-6.2.0-1011-azure-x86_64-with-glibc2.35
-Is CUDA available: False
-CUDA runtime version: No CUDA
+Python version: 3.10.6 (main, Nov 14 2022, 16:10:14) [GCC 11.3.0] (64-bit runtime)
+Python platform: Linux-5.17.0-1019-oem-x86_64-with-glibc2.35
+Is CUDA available: N/A
+CUDA runtime version: 11.8.89
 CUDA_MODULE_LOADING set to: N/A
-GPU models and configuration: No CUDA
-Nvidia driver version: No CUDA
-cuDNN version: No CUDA
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 4090
+Nvidia driver version: 525.85.12
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.7.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.7.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.7.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.7.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.7.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.7.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.7.0
+/usr/local/cuda-12.0/targets/x86_64-linux/lib/libcudnn.so.8.7.0
+/usr/local/cuda-12.0/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.7.0
+/usr/local/cuda-12.0/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.7.0
+/usr/local/cuda-12.0/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.7.0
+/usr/local/cuda-12.0/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.7.0
+/usr/local/cuda-12.0/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.7.0
+/usr/local/cuda-12.0/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.7.0
 HIP runtime version: N/A
 MIOpen runtime version: N/A
-Is XNNPACK available: True
+Is XNNPACK available: N/A
 CPU:
-Architecture:                       x86_64
-CPU op-mode(s):                     32-bit, 64-bit
-Address sizes:                      46 bits physical, 48 bits virtual
-Byte Order:                         Little Endian
-CPU(s):                             64
-On-line CPU(s) list:                0-63
-Vendor ID:                          GenuineIntel
-Model name:                         Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz
-CPU family:                         6
-Model:                              106
-Thread(s) per core:                 2
-Core(s) per socket:                 32
-Socket(s):                          1
-Stepping:                           6
-BogoMIPS:                           5586.87
-Flags:                              fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology cpuid pni pclmulqdq vmx ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch invpcid_single pti tpr_shadow vnmi ept vpid fsgsbase bmi1 hle avx2 smep bmi2 erms invpcid rtm avx512f avx512dq rdseed adx smap clflushopt avx512cd avx512bw avx512vl xsaveopt xsavec xsaves md_clear
-Virtualization:                     VT-x
-Hypervisor vendor:                  Microsoft
-Virtualization type:                full
-L1d cache:                          1.5 MiB (32 instances)
-L1i cache:                          1 MiB (32 instances)
-L2 cache:                           40 MiB (32 instances)
-L3 cache:                           48 MiB (1 instance)
-NUMA node(s):                       1
-NUMA node0 CPU(s):                  0-63
-Vulnerability Gather data sampling: Unknown: Dependent on hypervisor status
-Vulnerability Itlb multihit:        KVM: Mitigation: VMX disabled
-Vulnerability L1tf:                 Mitigation; PTE Inversion; VMX conditional cache flushes, SMT vulnerable
-Vulnerability Mds:                  Mitigation; Clear CPU buffers; SMT Host state unknown
-Vulnerability Meltdown:             Mitigation; PTI
-Vulnerability Mmio stale data:      Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state unknown
-Vulnerability Retbleed:             Not affected
-Vulnerability Spec store bypass:    Vulnerable
-Vulnerability Spectre v1:           Mitigation; usercopy/swapgs barriers and __user pointer sanitization
-Vulnerability Spectre v2:           Mitigation; Retpolines, STIBP disabled, RSB filling, PBRSB-eIBRS Not affected
-Vulnerability Srbds:                Not affected
-Vulnerability Tsx async abort:      Mitigation; Clear CPU buffers; SMT Host state unknown
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Address sizes:                   46 bits physical, 48 bits virtual
+Byte Order:                      Little Endian
+CPU(s):                          32
+On-line CPU(s) list:             0-31
+Vendor ID:                       GenuineIntel
+Model name:                      13th Gen Intel(R) Core(TM) i9-13900K
+CPU family:                      6
+Model:                           183
+Thread(s) per core:              2
+Core(s) per socket:              24
+Socket(s):                       1
+Stepping:                        1
+CPU max MHz:                     4342.1250
+CPU min MHz:                     800.0000
+BogoMIPS:                        5990.40
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb intel_pt sha_ni xsaveopt xsavec xgetbv1 xsaves avx_vnni dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp hwp_pkg_req umip pku ospke waitpkg gfni vaes vpclmulqdq tme rdpid movdiri movdir64b fsrm md_clear serialize pconfig arch_lbr flush_l1d arch_capabilities
+Virtualization:                  VT-x
+L1d cache:                       896 KiB (24 instances)
+L1i cache:                       1.3 MiB (24 instances)
+L2 cache:                        32 MiB (12 instances)
+L3 cache:                        36 MiB (1 instance)
+NUMA node(s):                    1
+NUMA node0 CPU(s):               0-31
+Vulnerability Itlb multihit:     Not affected
+Vulnerability L1tf:              Not affected
+Vulnerability Mds:               Not affected
+Vulnerability Meltdown:          Not affected
+Vulnerability Mmio stale data:   Not affected
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Enhanced IBRS, IBPB conditional, RSB filling
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
 Versions of relevant libraries:
-[pip3] flake8==6.0.0
-[pip3] flake8-bugbear==23.3.23
-[pip3] flake8-comprehensions==3.12.0
-[pip3] flake8-executable==2.1.3
-[pip3] flake8-logging-format==0.9.0
-[pip3] flake8-pyi==23.3.1
-[pip3] flake8-simplify==0.19.3
-[pip3] mypy==1.4.1
-[pip3] mypy-extensions==1.0.0
-[pip3] numpy==1.25.2
-[pip3] pytorch==2.0.0a0+git965c7d6
-[pip3] torch==2.2.0a0+git46a4b14
-[pip3] torchvision==0.15.0a0+32d254b
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.24.1
+[pip3] pytorch-lightning==1.9.0
+[pip3] pytorch-triton==2.0.0+0d7e753227
+[pip3] torchmetrics==0.11.1
 [conda] Could not collect
+cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh @voznesenskym @yanboliang @penguinwu @anijain2305 @EikanWang @jgong5 @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @Xia-Weiwen @wenzhe-nrv @jiayisunx @desertfire
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 4----------------------------------------
 
 🐛 Describe the bug
-The output of a predefined torch.nn.Conv2d is supposed to be constant for the same input in the same model. However, the output of the model differs over multiple runs when model exists other outputs. And it always works properly in eager execution.
-Error logs
-Output of numpy.testing.assert_allclose()
+I have a modified resnet-50 network, which I want to run on android using vulkan backend.
+The custom build of pytorch with USE_VULKAN=1 works fine, but I got the error message "We don't have an op for vulkan_prepack::create_linear_context but it isn't a special case." during "optimize_for_mobile" API invocation.
+What's the problem here, and how to deal with it?
+(I tried on both release 1.13 and release v2.0.1 tags, but got the same error message above).
 
-The mismatch is triggered by chance, maybe have to run the following script multiple times.
-Minified repro
 
-Input data file:
-input_data.zip
 Versions
-PyTorch version: 2.1.0+cu118
+Collecting environment information...
+PyTorch version: 2.0.0a0+gite9ebda2
 Is debug build: False
-CUDA used to build PyTorch: 11.8
+CUDA used to build PyTorch: 12.1
 ROCM used to build PyTorch: N/A
-OS: Ubuntu 22.04.3 LTS (x86_64)
-GCC version: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
+OS: Ubuntu 20.04.6 LTS (x86_64)
+GCC version: (Ubuntu 10.3.0-1ubuntu1~20.04) 10.3.0
 Clang version: Could not collect
-CMake version: Could not collect
-Libc version: glibc-2.35
-Python version: 3.10.12 (main, Jun 11 2023, 05:26:28) [GCC 11.4.0] (64-bit runtime)
-Python platform: Linux-6.1.10-1-pve-x86_64-with-glibc2.35
-Is CUDA available: False
-CUDA runtime version: No CUDA
-CUDA_MODULE_LOADING set to: N/A
-GPU models and configuration: No CUDA
-Nvidia driver version: No CUDA
-cuDNN version: No CUDA
+CMake version: version 3.22.1
+Libc version: glibc-2.31
+Python version: 3.11.3 (main, Apr 19 2023, 23:54:32) [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-73-generic-x86_64-with-glibc2.31
+Is CUDA available: True
+CUDA runtime version: 12.1.105
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: NVIDIA RTX A4000
+Nvidia driver version: 530.30.02
+cuDNN version: Probably one of the following:
+/usr/local/cuda-12.1/targets/x86_64-linux/lib/libcudnn.so.8
+/usr/local/cuda-12.1/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8
+/usr/local/cuda-12.1/targets/x86_64-linux/lib/libcudnn_adv_train.so.8
+/usr/local/cuda-12.1/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8
+/usr/local/cuda-12.1/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8
+/usr/local/cuda-12.1/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8
+/usr/local/cuda-12.1/targets/x86_64-linux/lib/libcudnn_ops_train.so.8
 HIP runtime version: N/A
 MIOpen runtime version: N/A
 Is XNNPACK available: True
 CPU:
-Architecture: x86_64
-CPU op-mode(s): 32-bit, 64-bit
-Address sizes: 43 bits physical, 48 bits virtual
-Byte Order: Little Endian
-CPU(s): 128
-On-line CPU(s) list: 0-127
-Vendor ID: AuthenticAMD
-Model name: AMD EPYC 7742 64-Core Processor
-CPU family: 23
-Model: 49
-Thread(s) per core: 2
-Core(s) per socket: 64
-Socket(s): 1
-Stepping: 0
-Frequency boost: enabled
-CPU max MHz: 2250.0000
-CPU min MHz: 1500.0000
-BogoMIPS: 4500.19
-Flags: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd amd_ppin arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip rdpid overflow_recov succor smca sev sev_es
-Virtualization: AMD-V
-L1d cache: 2 MiB (64 instances)
-L1i cache: 2 MiB (64 instances)
-L2 cache: 32 MiB (64 instances)
-L3 cache: 256 MiB (16 instances)
-NUMA node(s): 1
-NUMA node0 CPU(s): 0-127
-Vulnerability Itlb multihit: Not affected
-Vulnerability L1tf: Not affected
-Vulnerability Mds: Not affected
-Vulnerability Meltdown: Not affected
-Vulnerability Mmio stale data: Not affected
-Vulnerability Retbleed: Mitigation; untrained return thunk; SMT enabled with STIBP protection
-Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl
-Vulnerability Spectre v1: Mitigation; usercopy/swapgs barriers and __user pointer sanitization
-Vulnerability Spectre v2: Mitigation; Retpolines, IBPB conditional, STIBP always-on, RSB filling, PBRSB-eIBRS Not affected
-Vulnerability Srbds: Not affected
-Vulnerability Tsx async abort: Not affected
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   45 bits physical, 48 bits virtual
+CPU(s):                          16
+On-line CPU(s) list:             0-15
+Thread(s) per core:              1
+Core(s) per socket:              16
+Socket(s):                       1
+NUMA node(s):                    1
+Vendor ID:                       GenuineIntel
+CPU family:                      6
+Model:                           85
+Model name:                      Intel(R) Xeon(R) Gold 5218N CPU @ 2.30GHz
+Stepping:                        7
+CPU MHz:                         2294.609
+BogoMIPS:                        4589.21
+Hypervisor vendor:               VMware
+Virtualization type:             full
+L1d cache:                       512 KiB
+L1i cache:                       512 KiB
+L2 cache:                        16 MiB
+L3 cache:                        22 MiB
+NUMA node0 CPU(s):               0-15
+Vulnerability Itlb multihit:     KVM: Mitigation: VMX unsupported
+Vulnerability L1tf:              Not affected
+Vulnerability Mds:               Not affected
+Vulnerability Meltdown:          Not affected
+Vulnerability Mmio stale data:   Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state unknown
+Vulnerability Retbleed:          Mitigation; Enhanced IBRS
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Enhanced IBRS, IBPB conditional, RSB filling, PBRSB-eIBRS SW sequence
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon nopl xtopology tsc_reliable nonstop_tsc cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch cpuid_fault invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced fsgsbase tsc_adjust bmi1 avx2 smep bmi2 invpcid avx512f avx512dq rdseed adx smap clflushopt clwb avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves arat pku ospke avx512_vnni md_clear flush_l1d arch_capabilities
 Versions of relevant libraries:
 [pip3] numpy==1.24.3
-[pip3] onnx==1.14.1
-[pip3] onnxruntime==1.15.1
-[pip3] torch==2.1.0+cu118
-[pip3] torchaudio==2.1.0+cu118
-[pip3] torchvision==0.16.0+cu118
-[pip3] triton==2.1.0
-[conda] Could not collect
-cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @zou3519
+[pip3] torch==1.13.0a0+gitd922c29
+[conda] blas                      1.0                         mkl
+[conda] magma-cuda110             2.5.2                         1    pytorch
+[conda] mkl                       2023.1.0         h6d00ec8_46342
+[conda] mkl-include               2023.1.0         h06a4308_46342
+[conda] mkl-service               2.4.0           py311h5eee18b_1
+[conda] mkl_fft                   1.3.6           py311ha02d727_1
+[conda] mkl_random                1.2.2           py311ha02d727_1
+[conda] numpy                     1.24.3          py311h08b1b3b_1
+[conda] numpy-base                1.24.3          py311hf175353_1
+[conda] torch                     1.13.0a0+gitd922c29          pypi_0    pypi
+cc @malfet @seemethere
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 5----------------------------------------
 
 🐛 Describe the bug
+I am trying to implement a linear scheduler using your functions but it is not working properly.
+Implemented code
 
-Dynamo VariableTracker can't handle device variable in "python_type" method. When I run the above code, it reports error.
+Output
 
+As you can see, it was expected to have a learning rate between 4e-4 to 1e-5, but this didn't happen.
 Versions
+--2023-10-03 17:11:53--  https://raw.githubusercontent.com/pytorch/pytorch/main/torch/utils/collect_env.py
+Resolving raw.githubusercontent.com (raw.githubusercontent.com)... 185.199.109.133, 185.199.111.133, 185.199.110.133, ...
+Connecting to raw.githubusercontent.com (raw.githubusercontent.com)|185.199.109.133|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 21709 (21K) [text/plain]
+Saving to: ‘collect_env.py’
+collect_env.py      100%[===================>]  21,20K  --.-KB/s    in 0,004s
+2023-10-03 17:11:53 (5,59 MB/s) - ‘collect_env.py’ saved [21709/21709]
 Collecting environment information...
-PyTorch version: 2.1.0a0+git11e3669
-Is debug build: True
-CUDA used to build PyTorch: None
-ROCM used to build PyTorch: N/A
-OS: Ubuntu 18.04.6 LTS (x86_64)
-GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
-Clang version: Could not collect
-CMake version: version 3.19.0
-Libc version: glibc-2.27
-Python version: 3.8.0 (default, Dec  9 2021, 17:53:27)  [GCC 8.4.0] (64-bit runtime)
-Python platform: Linux-5.4.0-122-generic-x86_64-with-glibc2.27
-Is CUDA available: False
-CUDA runtime version: No CUDA
-CUDA_MODULE_LOADING set to: N/A
-GPU models and configuration: No CUDA
-Nvidia driver version: No CUDA
-cuDNN version: No CUDA
-HIP runtime version: N/A
-MIOpen runtime version: N/A
-Is XNNPACK available: True
-CPU:
-Architecture:        x86_64
-CPU op-mode(s):      32-bit, 64-bit
-Byte Order:          Little Endian
-CPU(s):              32
-On-line CPU(s) list: 0-31
-Thread(s) per core:  1
-Core(s) per socket:  2
-Socket(s):           16
-NUMA node(s):        2
-Vendor ID:           GenuineIntel
-CPU family:          6
-Model:               85
-Model name:          Intel(R) Xeon(R) Gold 6242 CPU @ 2.80GHz
-Stepping:            7
-CPU MHz:             2793.437
-BogoMIPS:            5586.87
-Virtualization:      VT-x
-Hypervisor vendor:   VMware
-Virtualization type: full
-L1d cache:           32K
-L1i cache:           32K
-L2 cache:            1024K
-L3 cache:            22528K
-NUMA node0 CPU(s):   0-15
-NUMA node1 CPU(s):   16-31
-Flags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon nopl xtopology tsc_reliable nonstop_tsc cpuid pni pclmulqdq vmx ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch cpuid_fault invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 invpcid avx512f avx512dq rdseed adx smap clflushopt clwb avx512cd avx512bw avx512vl xsaveopt xsavec xsaves arat pku ospke md_clear flush_l1d arch_capabilities
-Versions of relevant libraries:
-[pip3] numpy==1.24.4
-[pip3] torch==2.1.0a0+git11e3669
-[pip3] torch-npu==1.11.0
-[pip3] torchvision==0.15.2
-[conda] Could not collect
-cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @voznesenskym @penguinwu @EikanWang @jgong5 @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @Xia-Weiwen @wenzhe-nrv @jiayisunx @chenyang78 @aakhundov
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-When swapping output sequence to (div, pad_1, interpolate) in this model:
-
-The output of torch.interpolate is expected to be the same for the same input. However, it mismatched between the 2 models.
-This mismatch is seen only on cuda.
-Error logs
-
-Minified repro
-
-Versions
-PyTorch version: 2.1.0+cu118
+PyTorch version: 1.12.1
 Is debug build: False
-CUDA used to build PyTorch: 11.8
+CUDA used to build PyTorch: Could not collect
 ROCM used to build PyTorch: N/A
-OS: Ubuntu 22.04.3 LTS (x86_64)
+OS: Ubuntu 22.04.2 LTS (x86_64)
 GCC version: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
 Clang version: Could not collect
 CMake version: Could not collect
 Libc version: glibc-2.35
-Python version: 3.10.12 (main, Jun 11 2023, 05:26:28) [GCC 11.4.0] (64-bit runtime)
-Python platform: Linux-6.2.0-36-generic-x86_64-with-glibc2.35
-Is CUDA available: True
-CUDA runtime version: Could not collect
-CUDA_MODULE_LOADING set to: LAZY
-GPU models and configuration: GPU 0: NVIDIA GeForce GTX 1660 SUPER
-Nvidia driver version: 525.147.05
+Python version: 3.10.9 (main, Mar  1 2023, 18:23:06) [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-6.2.0-33-generic-x86_64-with-glibc2.35
+Is CUDA available: False
+CUDA runtime version: 11.5.119
+CUDA_MODULE_LOADING set to: N/A
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 3090
+Nvidia driver version: 535.113.01
 cuDNN version: Could not collect
 HIP runtime version: N/A
 MIOpen runtime version: N/A
@@ -916,29 +407,30 @@ Is XNNPACK available: True
 CPU:
 Architecture:                       x86_64
 CPU op-mode(s):                     32-bit, 64-bit
-Address sizes:                      39 bits physical, 48 bits virtual
+Address sizes:                      48 bits physical, 48 bits virtual
 Byte Order:                         Little Endian
-CPU(s):                             20
-On-line CPU(s) list:                0-19
-Vendor ID:                          GenuineIntel
-Model name:                         12th Gen Intel(R) Core(TM) i7-12700KF
-CPU family:                         6
-Model:                              151
+CPU(s):                             12
+On-line CPU(s) list:                0-11
+Vendor ID:                          AuthenticAMD
+Model name:                         AMD Ryzen 5 5600X 6-Core Processor
+CPU family:                         25
+Model:                              33
 Thread(s) per core:                 2
-Core(s) per socket:                 12
+Core(s) per socket:                 6
 Socket(s):                          1
 Stepping:                           2
-CPU max MHz:                        5000.0000
-CPU min MHz:                        800.0000
-BogoMIPS:                           7219.20
-Flags:                              fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 sdbg fma cx16 xtpr pdcm sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb intel_pt sha_ni xsaveopt xsavec xgetbv1 xsaves split_lock_detect avx_vnni dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp hwp_pkg_req hfi umip pku ospke waitpkg gfni vaes vpclmulqdq rdpid movdiri movdir64b fsrm md_clear serialize arch_lbr ibt flush_l1d arch_capabilities
-Virtualization:                     VT-x
-L1d cache:                          512 KiB (12 instances)
-L1i cache:                          512 KiB (12 instances)
-L2 cache:                           12 MiB (9 instances)
-L3 cache:                           25 MiB (1 instance)
+Frequency boost:                    enabled
+CPU max MHz:                        5278,7100
+CPU min MHz:                        2200,0000
+BogoMIPS:                           8399.67
+Flags:                              fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
+Virtualization:                     AMD-V
+L1d cache:                          192 KiB (6 instances)
+L1i cache:                          192 KiB (6 instances)
+L2 cache:                           3 MiB (6 instances)
+L3 cache:                           32 MiB (1 instance)
 NUMA node(s):                       1
-NUMA node0 CPU(s):                  0-19
+NUMA node0 CPU(s):                  0-11
 Vulnerability Gather data sampling: Not affected
 Vulnerability Itlb multihit:        Not affected
 Vulnerability L1tf:                 Not affected
@@ -946,97 +438,78 @@ Vulnerability Mds:                  Not affected
 Vulnerability Meltdown:             Not affected
 Vulnerability Mmio stale data:      Not affected
 Vulnerability Retbleed:             Not affected
-Vulnerability Spec rstack overflow: Not affected
 Vulnerability Spec store bypass:    Mitigation; Speculative Store Bypass disabled via prctl
 Vulnerability Spectre v1:           Mitigation; usercopy/swapgs barriers and __user pointer sanitization
-Vulnerability Spectre v2:           Mitigation; Enhanced IBRS, IBPB conditional, RSB filling, PBRSB-eIBRS SW sequence
+Vulnerability Spectre v2:           Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP always-on, RSB filling, PBRSB-eIBRS Not affected
 Vulnerability Srbds:                Not affected
 Vulnerability Tsx async abort:      Not affected
 Versions of relevant libraries:
-[pip3] numpy==1.24.3
-[pip3] onnx==1.14.1
-[pip3] onnxruntime==1.15.1
-[pip3] tf2onnx==1.15.1
-[pip3] torch==2.1.0+cu118
-[pip3] torchaudio==2.1.0+cu118
-[pip3] torchvision==0.16.0+cu118
-[pip3] triton==2.1.0
-[conda] Could not collect
-cc @ptrblck @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @zou3519 @voznesenskym @penguinwu @EikanWang @jgong5 @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @wenzhe-nrv @jiayisunx @peterbell10 @ipiszy @yf225 @chenyang78 @kadeng @muchulee8 @aakhundov @ColinPeppler
+[pip3] flake8==6.0.0
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.23.5
+[pip3] numpydoc==1.5.0
+[pip3] torch==1.12.1
+[conda] blas                      1.0                         mkl
+[conda] mkl                       2021.4.0           h06a4308_640
+[conda] mkl-service               2.4.0           py310h7f8727e_0
+[conda] mkl_fft                   1.3.1           py310hd6ae3a3_0
+[conda] mkl_random                1.2.2           py310h00e6091_0
+[conda] numpy                     1.23.5          py310hd5efca6_0
+[conda] numpy-base                1.23.5          py310h8e6c178_0
+[conda] numpydoc                  1.5.0           py310h06a4308_0
+[conda] pytorch                   1.12.1          cpu_py310hb1f1ab4_1
+cc @vincentqb @jbschlosser @albanD @janeyx99 @crcrpar
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 6----------------------------------------
 
 🐛 Describe the bug
-This code can run normally on the gpu without using compile, but adding compile will cause the following error:
+I am following this example code to save and load optimizer states using load_sharded_optimizer_state_dict: https://github.com/pytorch/pytorch/blob/c75e064dd6a2f800476bc84d4f27d7f49cedd055/torch/distributed/checkpoint/examples/fsdp_checkpoint_example.py
+The resuming went well on 1 node and 8 nodes jobs. But when I tested it on 64 nodes (512 workers) with large model size, two errors appeared on two workers:
+Here is first error:
 
-Error logs
-/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/site-packages/torch/_inductor/compile_fx.py:89: UserWarning: TensorFloat32 tensor cores for float32 matrix multiplication available but not enabled. Consider setting torch.set_float32_matmul_precision('high') for better performance.
-warnings.warn(
-/usr/bin/ld: cannot find -lcuda
-collect2: error: ld returned 1 exit status
-/usr/bin/ld: cannot find -lcuda
-collect2: error: ld returned 1 exit status
-/usr/bin/ld: cannot find -lcuda
-collect2: error: ld returned 1 exit status
-/usr/bin/ld: cannot find -lcuda
-collect2: error: ld returned 1 exit status
-/usr/bin/ld: cannot find -lcuda
-collect2: error: ld returned 1 exit status
-/usr/bin/ld: cannot find -lcuda
-collect2: error: ld returned 1 exit status
-/usr/bin/ld: cannot find -lcuda
-collect2: error: ld returned 1 exit status
-/usr/bin/ld: cannot find -lcuda
-collect2: error: ld returned 1 exit status
-//usrusr//binbin/ld: /cannotld :find  cannot- lcudafind
--lcuda
-collect2: error: ld returned 1 exit status
-collect2: error: ld returned 1 exit status
-/usr/bin/ld: cannot find -lcuda
-collect2: error: ld returned 1 exit status
-/usr/bin/ld: cannot find -lcuda
-/collect2: error: ld returned 1 exit status
-usr/bin/ld: cannot find -lcuda
-collect2: error: ld returned 1 exit status
-/usr/bin/ld: cannot find -lcuda
-collect2: error: ld returned 1 exit status
-concurrent.futures.process._RemoteTraceback:
-"""
-Traceback (most recent call last):
-File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/concurrent/futures/process.py", line 239, in _process_worker
-r = call_item.fn(*call_item.args, **call_item.kwargs)
-File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/site-packages/torch/_inductor/codecache.py", line 548, in _worker_compile
-kernel.precompile(warm_cache_only_with_cc=cc)
-File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/site-packages/torch/_inductor/triton_ops/autotune.py", line 67, in precompile
-self.launchers = [
-File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/site-packages/torch/_inductor/triton_ops/autotune.py", line 68, in 
-self._precompile_config(c, warm_cache_only_with_cc)
-File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/site-packages/torch/_inductor/triton_ops/autotune.py", line 81, in _precompile_config
-triton.compile(
-File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/site-packages/triton/compiler.py", line 1239, in compile
-so = _build(fn.name, src_path, tmpdir)
-File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/site-packages/triton/compiler.py", line 1169, in build
-ret = subprocess.check_call(cc_cmd)
-File "/mnt/data2/wwh/anaconda3/envs/wwh/lib/python3.8/subprocess.py", line 364, in check_call
-raise CalledProcessError(retcode, cmd)
-subprocess.CalledProcessError: Command '['/usr/bin/gcc', '/tmp/tmpg5k_52zd/main.c', '-O3', '-I/usr/local/cuda/include', '-I/mnt/data2/wwh/anaconda3/envs/wwh/include/python3.8', '-I/tmp/tmpg5k_52zd', '-shared', '-fPIC', '-lcuda', '-o', '/tmp/tmpg5k_52zd/triton.cpython-38-x86_64-linux-gnu.so']' returned non-zero exit status 1.
-"""
-Minified repro
-No response
+optim_state = dist_cp_op.load_sharded_optimizer_state_dict(
+File "/opt/conda/lib/python3.9/site-packages/torch/distributed/checkpoint/optimizer.py", line 282, in load_sharded_optimizer_state_dict
+state_dict[key] = _shard_tensor(
+File "/opt/conda/lib/python3.9/site-packages/torch/distributed/_shard/api.py", line 70, in _shard_tensor
+st = sharding_spec.shard(tensor, src_rank=src_rank, process_group=process_group)
+File "/opt/conda/lib/python3.9/site-packages/torch/distributed/_shard/sharding_spec/chunk_sharding_spec.py", line 181, in shard
+dist.scatter(
+File "/opt/conda/lib/python3.9/site-packages/torch/distributed/distributed_c10d.py", line 1451, in wrapper
+return func(*args, **kwargs)
+File "/opt/conda/lib/python3.9/site-packages/torch/distributed/distributed_c10d.py", line 2774, in scatter
+_check_tensor_list(scatter_list, "scatter_list")
+File "/opt/conda/lib/python3.9/site-packages/torch/distributed/distributed_c10d.py", line 599, in _check_tensor_list
+raise RuntimeError(
+RuntimeError: Invalid function argument. Expected parameter scatter_list to be of type List[torch.Tensor].
+
+And second error:
+
+File "/src/shopqa/generative/workflows/seq2seq/train/snapshot.py", line 363, in load_model_optim_final
+optim_state = dist_cp_op.load_sharded_optimizer_state_dict(
+File "/opt/conda/lib/python3.9/site-packages/torch/distributed/checkpoint/optimizer.py", line 282, in load_sharded_optimizer_state_dict
+state_dict[key] = _shard_tensor(
+File "/opt/conda/lib/python3.9/site-packages/torch/distributed/_shard/api.py", line 70, in _shard_tensor
+st = sharding_spec.shard(tensor, src_rank=src_rank, process_group=process_group)
+File "/opt/conda/lib/python3.9/site-packages/torch/distributed/_shard/sharding_spec/chunk_sharding_spec.py", line 172, in shard
+assert local_tensor is not None
+AssertionError
+
+Also to confirm the saved checkpoint is not corrupted, I ran the same resuming job on 8 nodes with 64 workers. The checkpoint was loaded without errors.
+I am wondering is there anything missing when I used load_sharded_optimizer_state_dict in large-scale training?
 Versions
-PyTorch version: 2.0.0.dev20230210+cu117
+PyTorch version: 2.0.1+cu117
 Is debug build: False
 CUDA used to build PyTorch: 11.7
 ROCM used to build PyTorch: N/A
-OS: Ubuntu 20.04.1 LTS (x86_64)
-GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+OS: Amazon Linux 2 (x86_64)
+GCC version: (GCC) 7.3.1 20180712 (Red Hat 7.3.1-15)
 Clang version: Could not collect
-CMake version: version 3.25.0
-Libc version: glibc-2.31
-Python version: 3.8.15 (default, Nov 24 2022, 15:19:38)  [GCC 11.2.0] (64-bit runtime)
-Python platform: Linux-5.4.0-51-generic-x86_64-with-glibc2.17
+CMake version: version 2.8.12.2
+Libc version: glibc-2.26
+Python version: 3.10.6 | packaged by conda-forge | (main, Aug 22 2022, 20:36:39) [GCC 10.4.0] (64-bit runtime)
+Python platform: Linux-4.14.301-224.520.amzn2.x86_64-x86_64-with-glibc2.26
 Is CUDA available: True
-CUDA runtime version: Could not collect
+CUDA runtime version: 11.7.99
 CUDA_MODULE_LOADING set to: LAZY
 GPU models and configuration:
 GPU 0: NVIDIA A100-SXM4-40GB
@@ -1053,81 +526,87 @@ HIP runtime version: N/A
 MIOpen runtime version: N/A
 Is XNNPACK available: True
 CPU:
-Architecture:                    x86_64
-CPU op-mode(s):                  32-bit, 64-bit
-Byte Order:                      Little Endian
-Address sizes:                   40 bits physical, 57 bits virtual
-CPU(s):                          124
-On-line CPU(s) list:             0-123
-Thread(s) per core:              1
-Core(s) per socket:              1
-Socket(s):                       124
-NUMA node(s):                    1
-Vendor ID:                       GenuineIntel
-CPU family:                      6
-Model:                           134
-Model name:                      Intel Xeon Processor (Icelake)
-Stepping:                        0
-CPU MHz:                         2593.894
-BogoMIPS:                        5187.78
-Hypervisor vendor:               KVM
-Virtualization type:             full
-L1d cache:                       3.9 MiB
-L1i cache:                       3.9 MiB
-L2 cache:                        496 MiB
-L3 cache:                        2 GiB
-NUMA node0 CPU(s):               0-123
-Vulnerability Itlb multihit:     Not affected
-Vulnerability L1tf:              Mitigation; PTE Inversion
-Vulnerability Mds:               Vulnerable; SMT Host state unknown
-Vulnerability Meltdown:          Vulnerable
-Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
-Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
-Vulnerability Spectre v2:        Mitigation; Full generic retpoline, IBPB conditional, IBRS_FW, STIBP disabled, RSB filling
-Vulnerability Srbds:             Not affected
-Vulnerability Tsx async abort:   Not affected
-Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology cpuid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch cpuid_fault invpcid_single ssbd ibrs ibpb fsgsbase bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 wbnoinvd arat avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq
+Architecture:        x86_64
+CPU op-mode(s):      32-bit, 64-bit
+Byte Order:          Little Endian
+CPU(s):              96
+On-line CPU(s) list: 0-95
+Thread(s) per core:  2
+Core(s) per socket:  24
+Socket(s):           2
+NUMA node(s):        2
+Vendor ID:           GenuineIntel
+CPU family:          6
+Model:               85
+Model name:          Intel(R) Xeon(R) Platinum 8275CL CPU @ 3.00GHz
+Stepping:            7
+CPU MHz:             1522.122
+BogoMIPS:            5999.99
+Hypervisor vendor:   KVM
+Virtualization type: full
+L1d cache:           32K
+L1i cache:           32K
+L2 cache:            1024K
+L3 cache:            36608K
+NUMA node0 CPU(s):   0-23,48-71
+NUMA node1 CPU(s):   24-47,72-95
+Flags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon rep_good nopl xtopology
+nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq monitor ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch in
+vpcid_single pti fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx avx512f avx512dq rdseed adx smap clflushopt clwb avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves ida arat pku ospke
 Versions of relevant libraries:
-[pip3] numpy==1.24.1
-[pip3] pytorch-lightning==1.9.0
-[pip3] pytorch-triton==2.0.0+0d7e753227
-[pip3] torch==2.0.0.dev20230210+cu117
-[pip3] torchaudio==2.0.0.dev20230209+cu117
-[pip3] torchmetrics==0.11.1
-[pip3] torchvision==0.15.0.dev20230209+cu117
-[conda] numpy                     1.24.1                   pypi_0    pypi
-[conda] pytorch-lightning         1.9.0                    pypi_0    pypi
-[conda] pytorch-triton            2.0.0+0d7e753227          pypi_0    pypi
-[conda] torch                     2.0.0.dev20230210+cu117          pypi_0    pypi
-[conda] torchaudio                2.0.0.dev20230209+cu117          pypi_0    pypi
-[conda] torchmetrics              0.11.1                   pypi_0    pypi
-[conda] torchvision               0.15.0.dev20230209+cu117          pypi_0    pypi
-cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh
+[pip3] botorch==0.6.0
+[pip3] flake8==6.0.0
+[pip3] gpytorch==1.9.1
+[pip3] mypy==0.991
+[pip3] mypy-boto3-batch==1.26.34
+[pip3] mypy-boto3-ec2==1.26.96
+[pip3] mypy-boto3-iam==1.26.91
+[pip3] mypy-boto3-s3==1.26.62
+[pip3] mypy-extensions==1.0.0
+[pip3] numpy==1.23.5
+[pip3] pytorch-lightning==1.5.10
+[pip3] pytorch-triton==2.1.0+7d1a95b046
+[pip3] torch==2.0.1
+[pip3] torch-model-archiver==0.7.1
+[pip3] torch-tb-profiler==0.4.1
+[pip3] torchaudio==2.1.0.dev20230523+cu117
+[pip3] torchdata==0.6.1
+[pip3] torchmetrics==0.10.3
+[pip3] torchserve==0.7.1
+[pip3] torchsnapshot-nightly==2023.3.15
+[pip3] torchtext==0.15.1
+[pip3] torchvision==0.16.0.dev20230523+cu117
+[pip3] torchx-nightly==2023.4.21
+[pip3] triton==2.0.0
+[conda] pytorch-triton            2.1.0+7d1a95b046          pypi_0    pypi
+[conda] torch                     2.0.1                    pypi_0    pypi
+[conda] torch-tb-profiler         0.4.1                    pypi_0    pypi
+[conda] torchaudio                2.1.0.dev20230523+cu117          pypi_0    pypi
+[conda] torchdata                 0.6.1                    pypi_0    pypi
+[conda] torchsnapshot-nightly     2023.3.15                pypi_0    pypi
+[conda] torchvision               0.16.0.dev20230523+cu117          pypi_0    pypi
+[conda] torchx-nightly            2023.4.21                pypi_0    pypi
+cc @zhaojuanmao @mrshenli @rohan-varma @awgu
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 7----------------------------------------
 
 🐛 Describe the bug
-Chaining .to_sparse_{csr,csc,coo}() methods changes the initial matrix.
-For instance, with CSR matrices, the following snippet
+For the following vector, variance returns inf (instead of 0 or something else sensible)
 
-yields different matrices when we actually expect them to be the same:
-
-I observe a similar bug with CSC matrices:
-
-
-I think exploring the conversion steps one by one should yield insight on what needs to be fixed 🙂
+will yield varManual = tensor(0.) but varTorch = tensor(inf).
 Versions
-PyTorch version: 1.13.1+cu117
+Collecting environment information...
+PyTorch version: 2.0.1
 Is debug build: False
-CUDA used to build PyTorch: 11.7
+CUDA used to build PyTorch: None
 ROCM used to build PyTorch: N/A
-OS: elementary OS 7 Horus (x86_64)
-GCC version: (Ubuntu 11.3.0-1ubuntu1~22.04) 11.3.0
+OS: Fedora Linux 38 (Workstation Edition) (x86_64)
+GCC version: (GCC) 13.2.1 20230728 (Red Hat 13.2.1-1)
 Clang version: Could not collect
-CMake version: Could not collect
-Libc version: glibc-2.17
-Python version: 3.7.16 (default, Jan 17 2023, 22:20:44)  [GCC 11.2.0] (64-bit runtime)
-Python platform: Linux-5.15.0-60-generic-x86_64-with-debian-bookworm-sid
+CMake version: version 3.27.6
+Libc version: glibc-2.37
+Python version: 3.11.5 | packaged by conda-forge | (main, Aug 27 2023, 03:34:09) [GCC 12.3.0] (64-bit runtime)
+Python platform: Linux-6.5.5-200.fc38.x86_64-x86_64-with-glibc2.37
 Is CUDA available: False
 CUDA runtime version: No CUDA
 CUDA_MODULE_LOADING set to: N/A
@@ -1138,125 +617,348 @@ HIP runtime version: N/A
 MIOpen runtime version: N/A
 Is XNNPACK available: True
 CPU:
-Architecture:                    x86_64
-CPU op-mode(s):                  32-bit, 64-bit
-Address sizes:                   39 bits physical, 48 bits virtual
-Byte Order:                      Little Endian
-CPU(s):                          8
-On-line CPU(s) list:             0-7
-Vendor ID:                       GenuineIntel
-Model name:                      11th Gen Intel(R) Core(TM) i7-1195G7 @ 2.90GHz
-CPU family:                      6
-Model:                           140
-Thread(s) per core:              2
-Core(s) per socket:              4
-Socket(s):                       1
-Stepping:                        2
-CPU max MHz:                     5000,0000
-CPU min MHz:                     400,0000
-BogoMIPS:                        5836.80
-Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l2 invpcid_single cdp_l2 ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves split_lock_detect dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp hwp_pkg_req avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid movdiri movdir64b fsrm avx512_vp2intersect md_clear flush_l1d arch_capabilities
-Virtualisation:                  VT-x
-L1d cache:                       192 KiB (4 instances)
-L1i cache:                       128 KiB (4 instances)
-L2 cache:                        5 MiB (4 instances)
-L3 cache:                        12 MiB (1 instance)
-NUMA node(s):                    1
-NUMA node0 CPU(s):               0-7
-Vulnerability Itlb multihit:     Not affected
-Vulnerability L1tf:              Not affected
-Vulnerability Mds:               Not affected
-Vulnerability Meltdown:          Not affected
-Vulnerability Mmio stale data:   Not affected
-Vulnerability Retbleed:          Not affected
-Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
-Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
-Vulnerability Spectre v2:        Mitigation; Enhanced IBRS, IBPB conditional, RSB filling, PBRSB-eIBRS SW sequence
-Vulnerability Srbds:             Not affected
-Vulnerability Tsx async abort:   Not affected
+Architecture:                       x86_64
+CPU op-mode(s):                     32-bit, 64-bit
+Address sizes:                      39 bits physical, 48 bits virtual
+Byte Order:                         Little Endian
+CPU(s):                             8
+On-line CPU(s) list:                0-7
+Vendor ID:                          GenuineIntel
+Model name:                         11th Gen Intel(R) Core(TM) i7-1165G7 @ 2.80GHz
+CPU family:                         6
+Model:                              140
+Thread(s) per core:                 2
+Core(s) per socket:                 4
+Socket(s):                          1
+Stepping:                           1
+CPU(s) scaling MHz:                 26%
+CPU max MHz:                        4700.0000
+CPU min MHz:                        400.0000
+BogoMIPS:                           5606.40
+Flags:                              fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l2 invpcid_single cdp_l2 ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves split_lock_detect dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp hwp_pkg_req vnmi avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid movdiri movdir64b fsrm avx512_vp2intersect md_clear ibt flush_l1d arch_capabilities
+Virtualization:                     VT-x
+L1d cache:                          192 KiB (4 instances)
+L1i cache:                          128 KiB (4 instances)
+L2 cache:                           5 MiB (4 instances)
+L3 cache:                           12 MiB (1 instance)
+NUMA node(s):                       1
+NUMA node0 CPU(s):                  0-7
+Vulnerability Gather data sampling: Mitigation; Microcode
+Vulnerability Itlb multihit:        Not affected
+Vulnerability L1tf:                 Not affected
+Vulnerability Mds:                  Not affected
+Vulnerability Meltdown:             Not affected
+Vulnerability Mmio stale data:      Not affected
+Vulnerability Retbleed:             Not affected
+Vulnerability Spec rstack overflow: Not affected
+Vulnerability Spec store bypass:    Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:           Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:           Mitigation; Enhanced / Automatic IBRS, IBPB conditional, RSB filling, PBRSB-eIBRS SW sequence
+Vulnerability Srbds:                Not affected
+Vulnerability Tsx async abort:      Not affected
 Versions of relevant libraries:
-[pip3] mypy-extensions==1.0.0
-[pip3] numpy==1.21.6
-[pip3] numpydoc==1.5.0
-[pip3] torch==1.13.1
-[conda] numpy                     1.21.6                   pypi_0    pypi
-[conda] numpydoc                  1.5.0                    pypi_0    pypi
-[conda] torch                     1.13.1                   pypi_0    pypi
-cc @alexsamardzic @nikitaved @pearu @cpuhrsch @amjames @bhosmer
+[pip3] numpy==1.26.0
+[pip3] torch==2.0.1
+[conda] blas                      2.116                       mkl    conda-forge
+[conda] blas-devel                3.9.0            16_linux64_mkl    conda-forge
+[conda] libblas                   3.9.0            16_linux64_mkl    conda-forge
+[conda] libcblas                  3.9.0            16_linux64_mkl    conda-forge
+[conda] liblapack                 3.9.0            16_linux64_mkl    conda-forge
+[conda] liblapacke                3.9.0            16_linux64_mkl    conda-forge
+[conda] mkl                       2022.1.0           h84fe81f_915    conda-forge
+[conda] mkl-devel                 2022.1.0           ha770c72_916    conda-forge
+[conda] mkl-include               2022.1.0           h84fe81f_915    conda-forge
+[conda] numpy                     1.26.0          py311h64a7726_0    conda-forge
+[conda] pytorch                   2.0.1              py3.11_cpu_0    pytorch
+[conda] pytorch-mutex             1.0                         cpu    pytorch
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 8----------------------------------------
 
 🐛 Describe the bug
-Using PyTorch 1.12.1. Trying distributed training for the first time, using the LambdaLabs AI cloud service. It seems to work well, except at the end of many (but not all) epochs, I get 56 of these complaints (batch size of 32):
+I am training a model with a large nn.Embedding table, where those embeddings are sparse=True since we only a maximum of batch_size embeddings per forward pass. I train the model using DDP with Pytorch Lightning and Ray, and I use the Gloo backend as sparse allreduce is not yet supported on NCCL.
+The way I am passing gloo is through the torch_config kwarg of a Ray TorchTrainer (docs) and my lightning trainer is using the RayDDPStrategy (docs).
+We recently bumped from torch 2.0.1 to torch 2.1.0 and found that our code now crashes on the backward pass:
 
-I've tried all sorts of things to get rid of that. E.g. I tried with and without "drop_last", I've even tweaked the Dataset so that nothing needs to be dropped. I've also switched to only 1 server with only 1 GPU, but still using DDP. The same issue still occurs. Not sure what else to try.
-Maybe I can ignore these complaints? But they scare me, maybe it's a sign of something going wrong?
-Here's the rough skeleton of my code:
-
-To me, this looks like a bug in PyTorch, or am I missing something in my code?
+This seems to come from this change (complete with the missing space between the backend name and does not support). The details of the larger PR are a bit over my head, but it seems like a mistake that this change should break code that was previously successfully using gloo for sparse training on DDP.
+I can try to provide more relevant code if needed.
 Versions
-PyTorch version: 1.12.1
+This is the result of running collect_env.py on our Ray head node. The cuda drivers are missing on the head node but the other dependencies should be the same. Our worker nodes are p3.8xlarge, which have V100 GPUs on them.
+PyTorch version: 2.1.0+cu118
 Is debug build: False
-CUDA used to build PyTorch: 11.6
+CUDA used to build PyTorch: 11.8
 ROCM used to build PyTorch: N/A
-OS: Ubuntu 20.04.5 LTS (x86_64)
-GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+OS: Ubuntu 20.04.6 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0
 Clang version: Could not collect
 CMake version: version 3.16.3
 Libc version: glibc-2.31
-Python version: 3.8.10 (default, Jun 22 2022, 20:18:18)  [GCC 9.4.0] (64-bit runtime)
-Python platform: Linux-5.15.0-52-generic-x86_64-with-glibc2.29
-Is CUDA available: True
-CUDA runtime version: 11.6.124
-CUDA_MODULE_LOADING set to:
-GPU models and configuration: GPU 0: NVIDIA A100-SXM4-40GB
-Nvidia driver version: 515.65.01
-cuDNN version: Could not collect
+Python version: 3.10.8 (main, Nov  4 2022, 13:48:29) [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.10.192-183.736.amzn2.x86_64-x86_64-with-glibc2.31
+Is CUDA available: False
+CUDA runtime version: No CUDA
+CUDA_MODULE_LOADING set to: N/A
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
 HIP runtime version: N/A
 MIOpen runtime version: N/A
-Is XNNPACK available: False
+Is XNNPACK available: True
+CPU:
+Architecture:                       x86_64
+CPU op-mode(s):                     32-bit, 64-bit
+Byte Order:                         Little Endian
+Address sizes:                      46 bits physical, 48 bits virtual
+CPU(s):                             48
+On-line CPU(s) list:                0-47
+Thread(s) per core:                 2
+Core(s) per socket:                 24
+Socket(s):                          1
+NUMA node(s):                       1
+Vendor ID:                          GenuineIntel
+CPU family:                         6
+Model:                              85
+Model name:                         Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz
+Stepping:                           7
+CPU MHz:                            1385.989
+BogoMIPS:                           4999.99
+Hypervisor vendor:                  KVM
+Virtualization type:                full
+L1d cache:                          768 KiB
+L1i cache:                          768 KiB
+L2 cache:                           24 MiB
+L3 cache:                           35.8 MiB
+NUMA node0 CPU(s):                  0-47
+Vulnerability Gather data sampling: Unknown: Dependent on hypervisor status
+Vulnerability Itlb multihit:        KVM: Mitigation: VMX unsupported
+Vulnerability L1tf:                 Mitigation; PTE Inversion
+Vulnerability Mds:                  Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state unknown
+Vulnerability Meltdown:             Mitigation; PTI
+Vulnerability Mmio stale data:      Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state unknown
+Vulnerability Retbleed:             Vulnerable
+Vulnerability Spec rstack overflow: Not affected
+Vulnerability Spec store bypass:    Vulnerable
+Vulnerability Spectre v1:           Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:           Mitigation; Retpolines, STIBP disabled, RSB filling
+Vulnerability Srbds:                Not affected
+Vulnerability Tsx async abort:      Not affected
+Flags:                              fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq monitor ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch invpcid_single pti fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx avx512f avx512dq rdseed adx smap clflushopt clwb avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves ida arat pku ospke
+Versions of relevant libraries:
+[pip3] botorch==0.8.5
+[pip3] gpytorch==1.10
+[pip3] numpy==1.26.1
+[pip3] pytorch-lightning==2.1.0
+[pip3] torch==2.1.0+cu118
+[pip3] torch-cluster==1.6.3+pt21cu118
+[pip3] torch-geometric==2.3.1
+[pip3] torch-scatter==2.1.2+pt21cu118
+[pip3] torch-sparse==0.6.18+pt21cu118
+[pip3] torch-spline-conv==1.2.2+pt21cu118
+[pip3] torchdata==0.7.0
+[pip3] torchmetrics==1.2.0
+[pip3] torchtext==0.16.0+cpu
+[pip3] torchvision==0.16.0+cu118
+[pip3] triton==2.1.0
+[conda] botorch                   0.8.5                    pypi_0    pypi
+[conda] gpytorch                  1.10                     pypi_0    pypi
+[conda] numpy                     1.26.1                   pypi_0    pypi
+[conda] pytorch-lightning         2.1.0                    pypi_0    pypi
+[conda] torch                     2.1.0+cu118              pypi_0    pypi
+[conda] torch-cluster             1.6.3+pt21cu118          pypi_0    pypi
+[conda] torch-geometric           2.3.1                    pypi_0    pypi
+[conda] torch-scatter             2.1.2+pt21cu118          pypi_0    pypi
+[conda] torch-sparse              0.6.18+pt21cu118          pypi_0    pypi
+[conda] torch-spline-conv         1.2.2+pt21cu118          pypi_0    pypi
+[conda] torchdata                 0.7.0                    pypi_0    pypi
+[conda] torchmetrics              1.2.0                    pypi_0    pypi
+[conda] torchtext                 0.16.0+cpu               pypi_0    pypi
+[conda] torchvision               0.16.0+cu118             pypi_0    pypi
+[conda] triton                    2.1.0                    pypi_0    pypi
+cc @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @H-Huang @kwen2501 @awgu @penguinwu @alexsamardzic @nikitaved @pearu @cpuhrsch @amjames @bhosmer
+
+----------------------------------------Comment 9----------------------------------------
+
+🐛 Describe the bug
+Hi! I found the following snippet produces different result before/after compilation.
+
+If commenting out the line highlighted with (*), we can get consistent results. However, a new warning emerges:
+
+Is this normal?
+Error logs
+No response
+Minified repro
+No response
+Versions
+PyTorch version: 2.1.0a0+gitfe05266
+Is debug build: False
+CUDA used to build PyTorch: 11.6
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.4 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+Clang version: 10.0.0-4ubuntu1
+CMake version: version 3.25.2
+Libc version: glibc-2.31
+Python version: 3.9.5 (default, Nov 23 2021, 15:27:38)  [GCC 9.3.0] (64-bit runtime)
+Python platform: Linux-5.15.0-67-generic-x86_64-with-glibc2.31
+Is CUDA available: True
+CUDA runtime version: 11.6.112
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration: GPU 0: NVIDIA GeForce RTX 2070
+Nvidia driver version: 510.108.03
+cuDNN version: Probably one of the following:
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn.so.8.2.4
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.2.4
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.2.4
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.2.4
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.2.4
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.2.4
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.2.4
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn.so.8.6.0
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.6.0
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.6.0
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.6.0
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.6.0
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.6.0
+/usr/local/cuda-11.6/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.6.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.7.0
+/usr/local/cuda-11.7/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.7.0
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
 CPU:
 Architecture:                    x86_64
 CPU op-mode(s):                  32-bit, 64-bit
 Byte Order:                      Little Endian
-Address sizes:                   48 bits physical, 48 bits virtual
-CPU(s):                          30
-On-line CPU(s) list:             0-29
-Thread(s) per core:              1
-Core(s) per socket:              1
-Socket(s):                       30
+Address sizes:                   43 bits physical, 48 bits virtual
+CPU(s):                          32
+On-line CPU(s) list:             0-31
+Thread(s) per core:              2
+Core(s) per socket:              16
+Socket(s):                       1
 NUMA node(s):                    1
 Vendor ID:                       AuthenticAMD
-CPU family:                      25
+CPU family:                      23
 Model:                           1
-Model name:                      AMD EPYC 7J13 64-Core Processor
+Model name:                      AMD Ryzen Threadripper 1950X 16-Core Processor
 Stepping:                        1
-CPU MHz:                         2449.998
-BogoMIPS:                        4899.99
+Frequency boost:                 enabled
+CPU MHz:                         2200.000
+CPU max MHz:                     3400.0000
+CPU min MHz:                     2200.0000
+BogoMIPS:                        6786.49
 Virtualization:                  AMD-V
-Hypervisor vendor:               KVM
-Virtualization type:             full
-L1d cache:                       1.9 MiB
-L1i cache:                       1.9 MiB
-L2 cache:                        15 MiB
-L3 cache:                        480 MiB
-NUMA node0 CPU(s):               0-29
+L1d cache:                       512 KiB
+L1i cache:                       1 MiB
+L2 cache:                        8 MiB
+L3 cache:                        32 MiB
+NUMA node0 CPU(s):               0-31
 Vulnerability Itlb multihit:     Not affected
 Vulnerability L1tf:              Not affected
 Vulnerability Mds:               Not affected
 Vulnerability Meltdown:          Not affected
 Vulnerability Mmio stale data:   Not affected
-Vulnerability Retbleed:          Not affected
+Vulnerability Retbleed:          Mitigation; untrained return thunk; SMT vulnerable
 Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
 Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
-Vulnerability Spectre v2:        Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP disabled, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Spectre v2:        Mitigation; Retpolines, IBPB conditional, STIBP disabled, RSB filling, PBRSB-eIBRS Not affected
 Vulnerability Srbds:             Not affected
 Vulnerability Tsx async abort:   Not affected
-Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm rep_good nopl cpuid extd_apicid tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw perfctr_core invpcid_single ssbd ibrs ibpb stibp vmmcall fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves clzero xsaveerptr wbnoinvd arat npt nrip_save umip pku ospke vaes vpclmulqdq rdpid fsrm arch_capabilities
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid amd_dcm aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb hw_pstate ssbd ibpb vmmcall fsgsbase bmi1 avx2 smep bmi2 rdseed adx smap clflushopt sha_ni xsaveopt xsavec xgetbv1 xsaves clzero irperf xsaveerptr arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif overflow_recov succor smca sme sev
 Versions of relevant libraries:
-[pip3] numpy==1.23.4
-[pip3] torch==1.12.1
-[pip3] torchvision==0.13.1
-[conda] Could not collect
-cc @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @H-Huang @kwen2501 @awgu
+[pip3] numpy==1.24.2
+[pip3] torch==2.1.0a0+git4805441
+[pip3] triton==2.0.0
+cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh @anijain2305
+
+----------------------------------------Comment 10----------------------------------------
+
+🐛 Describe the bug
+Result of torch.asinh on eager mode mismatched result on torch.compile which were supposed to be consistent.
+Interestingly, when I used x1 as input of torch.compile instead of x2 ( defined with x2=x1.clone() ), there was no error.
+
+error trace:
+
+Versions
+Collecting environment information...
+PyTorch version: 2.2.0.dev20231105+cu118
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 22.04.3 LTS (x86_64)
+GCC version: (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
+Clang version: Could not collect
+CMake version: version 3.22.1
+Libc version: glibc-2.35
+Python version: 3.9.18 (main, Sep 11 2023, 13:41:44) [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-86-generic-x86_64-with-glibc2.35
+Is CUDA available: True
+CUDA runtime version: 12.1.105
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration:
+GPU 0: NVIDIA GeForce RTX 2070
+GPU 1: NVIDIA GeForce RTX 2070
+GPU 2: NVIDIA GeForce RTX 2070
+GPU 3: NVIDIA GeForce RTX 2070
+Nvidia driver version: 535.104.12
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture: x86_64
+CPU op-mode(s): 32-bit, 64-bit
+Address sizes: 46 bits physical, 48 bits virtual
+Byte Order: Little Endian
+CPU(s): 32
+On-line CPU(s) list: 0-31
+Vendor ID: GenuineIntel
+Model name: Intel(R) Xeon(R) CPU E5-2630 v3 @ 2.40GHz
+CPU family: 6
+Model: 63
+Thread(s) per core: 2
+Core(s) per socket: 8
+Socket(s): 2
+Stepping: 2
+CPU max MHz: 3200.0000
+CPU min MHz: 1200.0000
+BogoMIPS: 4794.64
+Flags: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm cpuid_fault epb invpcid_single pti ssbd ibrs ibpb stibp tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm xsaveopt cqm_llc cqm_occup_llc dtherm ida arat pln pts md_clear flush_l1d
+Virtualization: VT-x
+L1d cache: 512 KiB (16 instances)
+L1i cache: 512 KiB (16 instances)
+L2 cache: 4 MiB (16 instances)
+L3 cache: 40 MiB (2 instances)
+NUMA node(s): 2
+NUMA node0 CPU(s): 0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30
+NUMA node1 CPU(s): 1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31
+Vulnerability Gather data sampling: Not affected
+Vulnerability Itlb multihit: KVM: Mitigation: VMX disabled
+Vulnerability L1tf: Mitigation; PTE Inversion; VMX conditional cache flushes, SMT vulnerable
+Vulnerability Mds: Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Meltdown: Mitigation; PTI
+Vulnerability Mmio stale data: Mitigation; Clear CPU buffers; SMT vulnerable
+Vulnerability Retbleed: Not affected
+Vulnerability Spec rstack overflow: Not affected
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1: Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2: Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP conditional, RSB filling, PBRSB-eIBRS Not affected
+Vulnerability Srbds: Not affected
+Vulnerability Tsx async abort: Not affected
+Versions of relevant libraries:
+[pip3] numpy==1.26.1
+[pip3] pytorch-triton==2.1.0+6e4932cda8
+[pip3] torch==2.2.0.dev20231105+cu118
+[pip3] torchaudio==2.2.0.dev20231105+cu118
+[pip3] torchvision==0.17.0.dev20231105+cu118
+[conda] cudatoolkit 11.8.0 h6a678d5_0 defaults
+[conda] numpy 1.26.1 pypi_0 pypi
+[conda] pytorch-triton 2.1.0+6e4932cda8 pypi_0 pypi
+[conda] torch 2.2.0.dev20231105+cu118 pypi_0 pypi
+[conda] torchaudio 2.2.0.dev20231105+cu118 pypi_0 pypi
+[conda] torchvision 0.17.0.dev20231105+cu118 pypi_0 pypi
+cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @zou3519
 

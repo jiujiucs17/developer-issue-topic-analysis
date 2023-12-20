@@ -1,336 +1,179 @@
 ----------------------------------------Comment 1----------------------------------------
 
-📚 Documentation
-After the 1.2 version of pytorch release, the torch::Tensor docs(original url:https://pytorch.org/cppdocs/api/classat_1_1_tensor.html) is missing. it does provide much helpful information about class torch::Tensor.
-It was there. (https://github.com/pytorch/cppdocs/blob/59620f68901b1e5f6bc2fa30c9ecbe8d0d86a1c4/api/classat_1_1_tensor.html) but in the latest commit, the file is absent.
-It is really helpful for c++ development. Could you recovery it?
-cc @ezyang @gchanan @zou3519 @yf225
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-det will return wrong gradient for 1x1 matrix with 0 value.
-
-The correct gradient should be 1. Instead, when the value isn't zero, it will return the correct gradient.
-
-Versions
-pytorch: 1.11.0
-cc @ezyang @albanD @zou3519 @gqchen @pearu @nikitaved @soulitzer @lezcano @Varal7
-
-----------------------------------------Comment 1----------------------------------------
-
-While discussing #68433 there appear to be no owners for Bottleneck and it seems to be unmaintained. If this is the case and we are encouraging users to use newer profiling methods we should consider deprecating it ahead of the PyTorch 1.11 release.
-cc @ezyang @gchanan @zou3519 @bdhirsh @jbschlosser @VitalyFedyunin @ngimel @ilia-cher @robieta @chaekit @gdankel @bitfort @orionr @nbcsm @guotuofeng @guyang3532 @gaoteng-git
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-This Runtime error, RuntimeError: Tensor.__contains__ only supports Tensor or scalar, but you passed in a <class 'torch.SymInt'>, happened during compiling EleutherAI/gpt-neo-125M with dynamic=True.
-My minimal repro:
-
-Stacktrace:
-
-However if one tweaks the above repro a little bit. Something like the following:
-
-The stacktrace will look very different with a different DataDepedentOutputExcetpion:
-
-Should a __contains__ method be added to FakeTensor? Thanks!
-cc: @ezyang @jansel @Chillee
-Versions
-PyTorch version: 2.1.0a0+git803a1a0
-Is debug build: False
-CUDA used to build PyTorch: 12.1
-ROCM used to build PyTorch: N/A
-OS: Ubuntu 20.04.5 LTS (x86_64)
-GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
-Clang version: Could not collect
-CMake version: version 3.25.0
-Libc version: glibc-2.31
-Python version: 3.8.15 (default, Nov 24 2022, 15:19:38)  [GCC 11.2.0] (64-bit runtime)
-Python platform: Linux-5.15.0-69-generic-x86_64-with-glibc2.17
-Is CUDA available: True
-CUDA runtime version: 12.1.66
-CUDA_MODULE_LOADING set to: LAZY
-GPU models and configuration: GPU 0: NVIDIA GeForce RTX 3070
-Nvidia driver version: 530.30.02
-cuDNN version: Probably one of the following:
-/usr/lib/x86_64-linux-gnu/libcudnn.so.8.8.1
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.8.1
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.8.1
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.8.1
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.8.1
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.8.1
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.8.1
-HIP runtime version: N/A
-MIOpen runtime version: N/A
-Is XNNPACK available: True
-CPU:
-Architecture:                    x86_64
-CPU op-mode(s):                  32-bit, 64-bit
-Byte Order:                      Little Endian
-Address sizes:                   48 bits physical, 48 bits virtual
-CPU(s):                          24
-On-line CPU(s) list:             0-23
-Thread(s) per core:              2
-Core(s) per socket:              12
-Socket(s):                       1
-NUMA node(s):                    1
-Vendor ID:                       AuthenticAMD
-CPU family:                      25
-Model:                           33
-Model name:                      AMD Ryzen 9 5900X 12-Core Processor
-Stepping:                        0
-Frequency boost:                 enabled
-CPU MHz:                         2200.000
-CPU max MHz:                     3700.0000
-CPU min MHz:                     2200.0000
-BogoMIPS:                        7400.26
-Virtualization:                  AMD-V
-L1d cache:                       384 KiB
-L1i cache:                       384 KiB
-L2 cache:                        6 MiB
-L3 cache:                        64 MiB
-NUMA node0 CPU(s):               0-23
-Vulnerability Itlb multihit:     Not affected
-Vulnerability L1tf:              Not affected
-Vulnerability Mds:               Not affected
-Vulnerability Meltdown:          Not affected
-Vulnerability Mmio stale data:   Not affected
-Vulnerability Retbleed:          Not affected
-Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
-Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
-Vulnerability Spectre v2:        Mitigation; Retpolines, IBPB conditional, IBRS_FW, STIBP always-on, RSB filling, PBRSB-eIBRS Not affected
-Vulnerability Srbds:             Not affected
-Vulnerability Tsx async abort:   Not affected
-Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm
-cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-When a replacement pattern in subgraph_rewriter._replace_pattern removes nodes without replacement, subsequent removals can result in an exponential slowdown due to recursive calls repeatedly traversing the graph. This slowdown is trivial in the example code, but very large in production models.
-For example, in the following graph, removing neighboring slice nodes results in this recursive behavior:
-
-After removing, slice_1 has been removed from the graph, but the InternalMatch object still contains slice_1 in both nodes_map and placeholder_nodes even though it was removed from the graph. Now match.placeholder_nodes contains nodes that were removed from the graph so code added to prevent recursion in #97903 isn't used.
-To reproduce:
-
-If the goal is to keep the InternalMatch up to date, then after completing each replacement then nodes_map and placeholder_nodes could be updated (probably while constructing val_map).
-An alternative is if we don't want to keep InternalMatch updated but only want to prevent recursion, we could add an additional check in get_replacement_nodes:
-
-Versions
-
-cc @ezyang @SherlockNoMad @EikanWang @jgong5 @wenzhe-nrv
-
-----------------------------------------Comment 1----------------------------------------
-
-
-Please provide a brief reason on why you need to mark this job as unstable.
-
-cc @ezyang @gchanan @zou3519 @seemethere @malfet @pytorch/pytorch-dev-infra
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-I passed a BatchEncoding, which is the output of a RobertaTokenizerFast tokenizer, through a distributed data parallel model. I find the variable address is changed and its .encodings attribute is lost.
-The following is a minimize implementation:
-
-The stdout is:
-
-This bug appears when I use pytorch 1.11.0 with cuda 11.3. But when I change to pytorch 1.10.1 with cuda 10.2, the bug disappears. The output is as follow:
-
-Versions
-Env that has this bug
-PyTorch version: 1.11.0
-Is debug build: False
-CUDA used to build PyTorch: 11.3
-ROCM used to build PyTorch: N/A
-OS: Ubuntu 18.04.4 LTS (x86_64)
-GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
-Clang version: Could not collect
-CMake version: version 3.14.0
-Libc version: glibc-2.27
-Python version: 3.8.13 (default, Mar 28 2022, 11:38:47)  [GCC 7.5.0] (64-bit runtime)
-Python platform: Linux-4.19.91-009.ali4000.alios7.x86_64-x86_64-with-glibc2.17
-Is CUDA available: True
-CUDA runtime version: 11.0.194
-GPU models and configuration:
-GPU 0: Tesla V100-SXM2-32GB
-GPU 1: Tesla V100-SXM2-32GB
-Nvidia driver version: 470.82.01
-cuDNN version: Probably one of the following:
-/usr/lib/x86_64-linux-gnu/libcudnn.so.8.0.1
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.0.1
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.0.1
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.0.1
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.0.1
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.0.1
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.0.1
-HIP runtime version: N/A
-MIOpen runtime version: N/A
-Is XNNPACK available: True
-Versions of relevant libraries:
-[pip3] numpy==1.22.3
-[pip3] torch==1.11.0
-[pip3] torchaudio==0.11.0
-[pip3] torchvision==0.12.0
-[conda] blas                      1.0                         mkl
-[conda] cudatoolkit               11.3.1               h2bc3f7f_2
-[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
-[conda] mkl                       2021.4.0           h06a4308_640
-[conda] mkl-service               2.4.0            py38h7f8727e_0
-[conda] mkl_fft                   1.3.1            py38hd3c417c_0
-[conda] mkl_random                1.2.2            py38h51133e4_0
-[conda] numpy                     1.22.3           py38he7a7128_0
-[conda] numpy-base                1.22.3           py38hf524024_0
-[conda] pytorch                   1.11.0          py3.8_cuda11.3_cudnn8.2.0_0    pytorch
-[conda] pytorch-mutex             1.0                        cuda    pytorch
-[conda] torchaudio                0.11.0               py38_cu113    pytorch
-[conda] torchvision               0.12.0               py38_cu113    pytorch
-Env that do not has this bug
-PyTorch version: 1.10.1
-Is debug build: False
-CUDA used to build PyTorch: 10.2
-ROCM used to build PyTorch: N/A
-OS: Ubuntu 18.04.4 LTS (x86_64)
-GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
-Clang version: Could not collect
-CMake version: version 3.14.0
-Libc version: glibc-2.27
-Python version: 3.8.13 (default, Mar 28 2022, 11:38:47)  [GCC 7.5.0] (64-bit runtime)
-Python platform: Linux-4.19.91-009.ali4000.alios7.x86_64-x86_64-with-glibc2.17
-Is CUDA available: True
-CUDA runtime version: 11.0.194
-GPU models and configuration:
-GPU 0: Tesla V100-SXM2-32GB
-GPU 1: Tesla V100-SXM2-32GB
-Nvidia driver version: 470.82.01
-cuDNN version: Probably one of the following:
-/usr/lib/x86_64-linux-gnu/libcudnn.so.8.0.1
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.0.1
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.0.1
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.0.1
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.0.1
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.0.1
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.0.1
-HIP runtime version: N/A
-MIOpen runtime version: N/A
-Is XNNPACK available: True
-Versions of relevant libraries:
-[pip3] numpy==1.22.3
-[pip3] torch==1.10.1
-[pip3] torchaudio==0.10.1
-[pip3] torchvision==0.11.2
-[conda] blas                      1.0                         mkl
-[conda] cudatoolkit               10.2.89              hfd86e86_1
-[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
-[conda] mkl                       2021.4.0           h06a4308_640
-[conda] mkl-service               2.4.0            py38h7f8727e_0
-[conda] mkl_fft                   1.3.1            py38hd3c417c_0
-[conda] mkl_random                1.2.2            py38h51133e4_0
-[conda] numpy                     1.22.3           py38he7a7128_0
-[conda] numpy-base                1.22.3           py38hf524024_0
-[conda] pytorch                   1.10.1          py3.8_cuda10.2_cudnn7.6.5_0    pytorch
-[conda] pytorch-mutex             1.0                        cuda    pytorch
-[conda] torchaudio                0.10.1               py38_cu102    pytorch
-[conda] torchvision               0.11.2               py38_cu102    pytorch
-cc @ezyang @gchanan @zou3519 @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @H-Huang @kwen2501 @awgu @pietern @SciPioneer
-
-----------------------------------------Comment 1----------------------------------------
-
 🐛 Bug
-Hello, DNNL's performance is much worse in the backward pass of a custom convolution operation. When stride > 1 performance further decreases. Number of calls to the dilated_conv2d operation increases heavily and the backward pass is about 100x slow. You can find the profiling data for the forward and backward pass below.
-To Reproduce
+Testing PyTorch on our new cluster with A100 (CC 8.0) GPUs I'm seeing multiple failures in the distributed tests of PyTorch.
+E.g from the TestDistBackendWithFork suite the following tests fail:
 
-Expected behavior
-Number of calls to dilated_conv2d in backward pass should be much less making backward pass much faster
-Environment
-PyTorch version: 1.6.0a0+47fec01
-Is debug build: No
-CUDA used to build PyTorch: Could not collect
-OS: Ubuntu 18.04.2 LTS
-GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
-CMake version: version 3.17.0
-Python version: 3.7
-Is CUDA available: No
-CUDA runtime version: 10.1.243
-GPU models and configuration: GPU 0: GeForce GTX 850M
-Nvidia driver version: 435.21
-cuDNN version: /usr/local/cuda-10.1/targets/x86_64-linux/lib/libcudnn.so.7.6.4
-Versions of relevant libraries:
-[pip3] numpy==1.13.3
-[conda] mkl                       2020.1                      217    conda-forge
-[conda] mkl-include               2020.1                      217    conda-forge
-[conda] torch                     1.6.0a0+47fec01          pypi_0    pypi
-[conda] torchvision               0.7.0a0+c4f77c2          pypi_0    pypi
-Additional Context
-Forward Pass
-
-Backward Pass
-
-cc @ezyang @ssnl @albanD @zou3519 @gqchen @gujinghui @PenghuiCheng @XiaobingSuper @jianyuh @VitalyFedyunin @mruberry
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Bug
-For the same complex dtype and same value, comparing a PyTorch tensor with a NumPy array results in False. Note [5] and [10] in the example below. The issue is gone if complex64 is replaced with float32 (i.e., both [5] and [10] output True for float32).
-
-Environment
-PyTorch version: 1.7.0.dev20200819+cu101
-Is debug build: False
-CUDA used to build PyTorch: 10.1
-OS: Debian GNU/Linux 10 (buster) (x86_64)
-GCC version: (Debian 8.3.0-6) 8.3.0
-Clang version: 7.0.1-8 (tags/RELEASE_701/final)
-CMake version: version 3.16.3
-Python version: 3.7 (64-bit runtime)
-Is CUDA available: True
-CUDA runtime version: 10.1.243
-GPU models and configuration: GPU 0: Quadro P400
-Nvidia driver version: 440.100
-cuDNN version: Could not collect
-Versions of relevant libraries:
-[pip3] numpy==1.19.1
-[pip3] torch==1.7.0.dev20200819+cu101
-[conda] Could not collect
-cc @ezyang @anjali411 @dylanbespalko
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Bug
-If you convert a list of parameters with requires_grad=True into
-a tensor, you lose the gradients.
+The same setup (same version of CUDA, Compiler, NCCL, ...) works on many other systems with e.g. V100 GPUs
 To Reproduce
 Steps to reproduce the behavior:
 
-Expected behavior
-The output should be equivalent with:
+BACKEND=nccl WORLD_SIZE=3 TEST_REPORT_SOURCE_OVERRIDE=dist-nccl python distributed/test_distributed_fork.py
 
-Or the code should raise an exception.
-Reasoning: whatever happens, a transformation
-like this should not silently remove the requires_grad.
-If legal, propagate it, if not, ban the use of it.
+
+AssertionError: False is not true : Tensors failed to compare as equal! With rtol=1.3e-06 and atol=1e-05, found 4 element(s) (out of 200) whose difference(s) exceeded the margin of error (including 0 nan comparisons). The greatest difference was 1.271069049835205e-05 (-0.1342240869998932 vs. -0.13423679769039154), which occurred at index (3, 47).
+AssertionError: False is not true : Tensors failed to compare as equal! With rtol=1.3e-06 and atol=1e-05, found 2 element(s) (out of 80) whose difference(s) exceeded the margin of error (including 0 nan comparisons). The greatest difference was 1.558661460876465e-05 (-0.46960899233818054 vs. -0.4696245789527893), which occurred at index (29, 1).
+AssertionError: False is not true : Tensors failed to compare as equal! With rtol=1.3e-06 and atol=1e-05, found 30 element(s) (out of 160) whose difference(s) exceeded the margin of error (including 0 nan comparisons). The greatest difference was 2.6047229766845703e-05 (-0.050193969160318375 vs. -0.05016792193055153), which occurred at index (1, 33).
+AssertionError: False is not true : Tensors failed to compare as equal! With rtol=1.3e-06 and atol=1e-05, found 4 element(s) (out of 200) whose difference(s) exceeded the margin of error (including 0 nan comparisons). The greatest difference was 1.271069049835205e-05 (-0.1342240869998932 vs. -0.13423679769039154), which occurred at index (3, 47).
+
+More verbose log: error.log
 Environment
-PyTorch version: 1.9.0
-Is debug build: False
-CUDA used to build PyTorch: 11.1
+
+PyTorch Version (e.g., 1.0): 1.7.1
+OS (e.g., Linux): Linux
+How you installed PyTorch (conda, pip, source): source
+Python version: 3.8.6
+CUDA/cuDNN version: 11.1.1, cuDNN 8.0.4.30, NCCL 2.8.3
+GPU models and configuration: 8x A100
+
+cc @ezyang @gchanan @zou3519 @bdhirsh @jbschlosser @albanD @mruberry @VitalyFedyunin @walterddr @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @agolynski @SciPioneer @H-Huang @mrzzd @cbalioglu
+
+----------------------------------------Comment 2----------------------------------------
+
+Hello, I used to use
+
+and Jacfwd takes 3.5s, after the update, I am using
+
+Jacfwd is taking almost 6s, is anyone noticed this?
+cc @ezyang @gchanan @zou3519 @Chillee @samdow @soumith @kshitij12345 @janeyx99
+
+----------------------------------------Comment 3----------------------------------------
+
+TestTypeHints.test_run_mypy_strict should pass with [mypy-torch.quantization.default_mappings.*] deleted from mypy.ini
+cc @ezyang @malfet @rgommers
+
+----------------------------------------Comment 4----------------------------------------
+
+🐛 Bug
+In one of the transformers tests torch.save w/ the new _use_new_zipfile_serialization=True corrupts the data in the state_dict resulting in load returning bogus data that wasn't there on save.
+To Reproduce
+Steps to reproduce the behavior:
+It seems to happen with the specific data only, so at the moment requires a specific sub-test:
+
+Specifically, we have https://github.com/huggingface/transformers/blob/960faaaf28b198c0dd2fcb288fa336a846aed398/src/transformers/modeling_utils.py#L729
+
+(I added the debug prints and load code as part of debug as the problem wasn't manifesting under the debugger)
+What goes in with saving the key embeddings.position_ids:
+
+What comes out after load:
+
+That 512 shouldn't be there. It leads to a CUDA assert and the whole test suite goes kaboom.
+Note 1: One more important detail. if output_model_file is set manually directly inside save/load code above I replace output_model_file - everything works fine. If it is done via the test (regardless whether it does it via tempfile.TemporaryDirectory()` or a hardcoded path it fails.
+Note 2: If I run the code under debugger, the problem doesn't manifest itself.
+These 2 peculiarities are very odd. Is there a race condition here and somehow one or the other changes the timing?
+Also, if I remove all keys but "embeddings.position_ids" the data doesn't get corrupted. So it has to do with a specific data this state_dict happens to have.
+Many thanks to @ptrblck for doing most of the heavy lifting, debugging this on slack.
+t/a @jamesr66a
+Environment
+The problem happens with any pytorch-1.6+ (since _use_new_zipfile_serialization=True has been enabled). all is good with pytorch-1.5. And a variety of nvidia drivers were experimented with with no difference in behavior.
+
+cc @ezyang @gchanan @zou3519 @mruberry
+
+----------------------------------------Comment 5----------------------------------------
+
+📚 The doc issue
+Whilst these titles look nice, it's not obvious without closer inspection what this page actually is for.
+
+
+Suggest a potential alternative/fix
+Don't full-caps the titles of pages, allow them to match the actual case of what they are documenting.
+cc @ezyang @zou3519 @brianjo
+
+----------------------------------------Comment 6----------------------------------------
+
+🐛 Describe the bug
+
+
+Versions
+PyTorch version: N/A
+Is debug build: N/A
+CUDA used to build PyTorch: N/A
 ROCM used to build PyTorch: N/A
-OS: Ubuntu 21.04 (x86_64)
-GCC version: (Ubuntu 10.3.0-1ubuntu1) 10.3.0
-Clang version: Could not collect
-CMake version: Could not collect
-Libc version: glibc-2.33
-Python version: 3.8.10 (default, Jun  4 2021, 15:09:15)  [GCC 7.5.0] (64-bit runtime)
-Python platform: Linux-5.12.0-14.2-liquorix-amd64-x86_64-with-glibc2.17
-Is CUDA available: True
-CUDA runtime version: 11.3.109
-GPU models and configuration: GPU 0: NVIDIA GeForce RTX 2060
-Nvidia driver version: 465.31
+OS: CentOS Linux release 7.6.1810 (Core)  (x86_64)
+GCC version: (Anaconda gcc) 11.2.0
+Clang version: 3.4.2 (tags/RELEASE_34/dot2-final)
+CMake version: version 3.22.1
+Libc version: glibc-2.17
+Python version: 3.9.13 (main, Aug 25 2022, 23:26:10)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-3.10.0-1160.36.2.el7.x86_64-x86_64-with-glibc2.17
+Is CUDA available: N/A
+CUDA runtime version: 11.7.99
+CUDA_MODULE_LOADING set to: N/A
+GPU models and configuration: Could not collect
+Nvidia driver version: Could not collect
 cuDNN version: Could not collect
 HIP runtime version: N/A
 MIOpen runtime version: N/A
+Is XNNPACK available: N/A
 Versions of relevant libraries:
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.21.5
+[pip3] numpydoc==1.4.0
+[pip3] torch==1.13.0
+[pip3] torchaudio==0.13.0
+[pip3] torchvision==0.14.0
+[conda] blas                      1.0                         mkl    https://repo.anaconda.com/pkgs/main
+[conda] ffmpeg                    4.3                  hf484d3e_0    pytorch
+[conda] mkl                       2021.4.0           h06a4308_640    https://repo.anaconda.com/pkgs/main
+[conda] mkl-service               2.4.0            py39h7f8727e_0    https://repo.anaconda.com/pkgs/main
+[conda] mkl_fft                   1.3.1            py39hd3c417c_0    https://repo.anaconda.com/pkgs/main
+[conda] mkl_random                1.2.2            py39h51133e4_0    https://repo.anaconda.com/pkgs/main
+[conda] numpy                     1.21.5           py39h6c91a56_3    https://repo.anaconda.com/pkgs/main
+[conda] numpy-base                1.21.5           py39ha15fc14_3    https://repo.anaconda.com/pkgs/main
+[conda] numpydoc                  1.4.0            py39h06a4308_0    https://repo.anaconda.com/pkgs/main
+[conda] pytorch                   1.13.0          py3.9_cuda11.7_cudnn8.5.0_0    pytorch
+[conda] pytorch-cuda              11.7                 h67b0de4_0    pytorch
+[conda] pytorch-mutex             1.0                        cuda    pytorch
+[conda] torchaudio                0.13.0               py39_cu117    pytorch
+[conda] torchvision               0.14.0               py39_cu117    pytorch
+cc @ezyang @gchanan @zou3519 @seemethere @malfet @ngimel
 
-Additional context
-I don't think this is anyhow related to install or libraries, this should be core autograd issue / property.
-cc @ezyang @albanD @zou3519 @gqchen @pearu @nikitaved @soulitzer @lezcano @Varal7 @gchanan @mruberry @jbschlosser
+----------------------------------------Comment 7----------------------------------------
+
+Running this test with configuration (architecture: x86_64, buildmode: dev-tsan, buildsystem: buck, compiler: clang, sanitizer: tsan) fails with the log below.
+Bisect seems to point to #33157
+
+Facebook employes can get more information here
+cc @ezyang @gchanan @zou3519 @ssnl @albanD @gqchen @wanchaol
+
+----------------------------------------Comment 8----------------------------------------
+
+Platforms: dynamo
+This test was disabled because it is failing in CI. See recent examples and the most recent trunk workflow logs.
+Over the past 3 hours, it has been determined flaky in 4 workflow(s) with 12 failures and 4 successes.
+Debugging instructions (after clicking on the recent samples link):
+DO NOT ASSUME THINGS ARE OKAY IF THE CI IS GREEN. We now shield flaky tests from developers so CI will thus be green but it will be harder to parse the logs.
+To find relevant log snippets:
+
+Click on the workflow logs linked above
+Click on the Test step of the job so that it is expanded. Otherwise, the grepping will not work.
+Grep for test_meta_outplace_nn_functional_margin_ranking_loss_cpu_uint8
+There should be several instances run (as flaky tests are rerun in CI) from which you can study the logs.
+
+Test file path: test_meta.py
+cc @ezyang @mruberry @lezcano @peterbell10 @msaroufim @wconstab @bdhirsh @anijain2305 @zou3519
+
+----------------------------------------Comment 9----------------------------------------
+
+🐛 Bug
+While DecodeMultipleClipsFromVideo and FreeDecodedData was moved from caffe2/video/video_io.h to caffe2/video/video_decoder.h in d2ceab2, CAFFE2_API macros was removed  from functions signature which were added in c2a7592.
+Now building PyTorch with enabled USE_OPENCV=1 and USE_FFMPEG=1 flags fails with
+
+Adding back CAFFE2_API macros to function declarations (probably enough to add only to DecodeMultipleClipsFromVideo) solves the problem.
+To Reproduce
+Build current master from source using command:
+USE_OPENCV=1 USE_FFMPEG=1 python3 setup.py install
+cc @ezyang @gchanan @zou3519 @fmassa
+
+----------------------------------------Comment 10----------------------------------------
+
+For fast_mode=False, there may be failures when the seed is set to certain values. Fast mode on the other hand seems to always succeed on CPU (LAPACK), but may still fail on CUDA.
+
+test_cholesky_solve_autograd_cpu_float64
+
+Though we don't see any failures on CPU for fast_mode=True, there may be failures on CUDA (requires MAGMA):
+
+After making some modifications for gradcheck (fast_mode=False) to print out max element-wise differences on failure, we see that in the vast majority of sampled seeds(89/100), the difference did not exceed <1e-12 (edit: default rtol of 1e-3 is probably playing a role here). However, there were some seeds that you could set to elicit extremely large differences -
+
+cc @ezyang @albanD @zou3519 @gqchen @pearu @nikitaved @soulitzer @lezcano @Varal7 @mruberry @VitalyFedyunin @walterddr @jianyuh @heitorschueroff @IvanYashchuk @xwang233
 

@@ -152,10 +152,9 @@ class plots:
         for word in important_pairs:
             print(f"\nword: {word}")
             for pair in important_pairs[word]:
+                # print the pair and its value
                 print(pair)
         return important_pairs
-
-
 
 def get_first_comments_as_list_of_words(issues_contents: [SingleIssueContent], 
                                         skip_stop_words: bool = True, 
@@ -372,10 +371,12 @@ def get_comment_sample_for_pair(pair_list: list, cooccurence_pairs_origin_issues
     sample_size = min(sample_size, len(comments))
     sample = random.sample(comments, sample_size)
     if dir_path:
+
         with open(dir_path + f"/pair_comments_sample_({pair_list[0]},{pair_list[1]}).txt", "w" ,encoding="utf-8") as f:
             i = 0
             for comment in sample:
                f.write(f"----------------------------------------Comment {str(i+1)}----------------------------------------\n" + comment + "\n")
+               i += 1
     if log:
         print("finished")
     return sample
@@ -384,7 +385,12 @@ def get_pairs_contain_word(cooccurence_pairs: dict, word: str, sort: bool = True
     word_pairs = {}
     for pair in cooccurence_pairs:
         if word in pair:
-            word_pairs[tuple(pair)] = cooccurence_pairs[pair]
+            # make sure the word is the first element in the pair tuple as the key
+            key = tuple(pair)
+            if key[0] != word:
+                key = (key[1], key[0])
+            word_pairs[key] = cooccurence_pairs[pair]
+            # print("word: ", word, "key: ", key, "\n cooccurence_pairs[pair]: ", cooccurence_pairs[pair], "\n")    
     if sort:
         word_pairs = dict(sorted(word_pairs.items(), key=lambda item: item[1], reverse=True))
     return word_pairs
@@ -397,9 +403,9 @@ if __name__ == "__main__":
     output_path = "./scrapper_results/cooccurence_network_results"
 
     # set up pairs to ignore in the cooccurence network
-    pairs_to_ignore = []
-    # pairs_to_ignore = [frozenset(("version", "runtime")),
-    #                    ]
+    # pairs_to_ignore = []
+    pairs_to_ignore = [frozenset(("version", "runtime")),
+                       ]
 
     issues_contents_open = load_saved_results(pickle_path_open)
     issues_contents_closed = load_saved_results(pickle_path_closed)
@@ -457,7 +463,11 @@ if __name__ == "__main__":
     # put the value as the third element of the tuple
     important_pairs = plots_storage.get_important_showed_pairs(number_of_clusters=10)
 
+    # print(important_pairs)
+
     # get the sample origin issues of each pair in important_pairs
+    # remember to delete all existing files in the output_path/important_pairs folder before running this
+    print("\n\n----getting sample origin issues of each pair in important_pairs---")
     samples_of_issues_contain_pairs = {}
     for word in important_pairs:
         samples_of_issues_contain_pairs[word] = []
@@ -468,10 +478,6 @@ if __name__ == "__main__":
                                                  dir_path=output_path + "/important_pairs",
                                                  log = False)
             samples_of_issues_contain_pairs[word].append(sample)
-
-
-
-
 
     # # get origin issues of pairs that are important in the network
     # # this list need to be updated ******************************************************

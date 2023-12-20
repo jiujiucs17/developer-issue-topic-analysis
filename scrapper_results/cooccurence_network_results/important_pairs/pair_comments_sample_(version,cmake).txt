@@ -1,881 +1,45 @@
 ----------------------------------------Comment 1----------------------------------------
 
 🐛 Describe the bug
+When importing the package torch.utils.cpp_extension, it occupies 474MiB GPU memory. The following code should only occupy 2MiB GPU memory normally, but actually it occupies 476MiB / 15360MiB GPU memory when checking with nvidia-smi command.
 
-
-
-batch size
-cuda 11.3 cudnn 8.3.2
-cuda 11.6 cudnn8.4.1
-
-
-
-
-32
-78ms
-101ms
-
-
-64
-226ms
-191ms
-
-
-2x32
-156ms
-199ms
-
-
-
-The above table shows our experiments on A100. We tested timm_regnet's inference mode with different batchsize 32 and 64. The row 2x32 means we run the core computation part twice for batchsize 32.
-In our experiments with cuda 11.3 and cudnn 8.3.2 on A100, the execution time of batchsize 64 is longer than twice executions of batchsize 32. After going through the profiling results, we think the kernel cudnn::ops::genericTranspose_kernel takes too much time on tranpose rather than meaningful computation which doesn't occur on batchsize 32. We know cudnn uses some heuristics methods to try to generate more efficient kernels but looks like it is not so efficient.
-When we change the env to cuda 11.6 and cudnn 8.4.1, the execution time of batchsize 32 is 1.29X longer than the result on cuda 11.3 cudnn 8.3.2. We further investigated the cause of the performance degradation and found that the latest cudnn 8.4.1genereates (ampere_scudnn_winograd_128x128_ldg1_ldg4_relu_tile148t_nt_v1, cudnn::ops::genericTranspose_kernel) to replace the previous combination(cudnn::winograd_nonfused::winogradForwardData4x4, ampere_sgemm_128x128_nn, cudnn::winograd_nonfused::winogradForwardOutput4x4) even for the exact same input. We have trimmed down the code to the following gist.
-https://gist.github.com/FindHao/ff5672d8e87ef09f6ea17dfb7844ad37
-For batchsize 64, there is 1.18X speedup after upgrading to cudnn8.4.1. But it is still longer than twice execution of batchsize 32 on cudnn 8.3.2.
-Reproduce
-To reproduce the key result that cudnn 8.4.1 generates slower kernels for batchsize 32, you can download the example in the above gist, and execute python test_conv2d.py --bs 32. The pytorch profiler results will be generated.
-To fully reproduce the whole results, you need to install pytorch/benchmark and run python3 run.py -d cuda -t eval --bs 32  timm_regnet --precision fp32 for batchsize 32 on different environments.
 Versions
-PyTorch version: 1.13.0.dev20220524+cu113
+PyTorch version: 2.0.1+cu117
 Is debug build: False
-CUDA used to build PyTorch: 11.3
+CUDA used to build PyTorch: 11.7
 ROCM used to build PyTorch: N/A
-OS: Ubuntu 20.04.4 LTS (x86_64)
-GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+OS: Ubuntu 20.04.6 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0
 Clang version: Could not collect
-CMake version: version 3.22.4
+CMake version: version 3.27.4
 Libc version: glibc-2.31
-Python version: 3.8.13 (default, Mar 28 2022, 11:38:47)  [GCC 7.5.0] (64-bit runtime)
-Python platform: Linux-5.13.0-1024-gcp-x86_64-with-glibc2.17
+Python version: 3.9.17 (main, Jul  5 2023, 20:41:20)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.15.0-79-generic-x86_64-with-glibc2.31
 Is CUDA available: True
-CUDA runtime version: 11.3.109
-GPU models and configuration: GPU 0: NVIDIA A100-SXM4-40GB
-Nvidia driver version: 470.82.01
-cuDNN version: Probably one of the following:
-/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn.so.8
-/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8
-/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_adv_train.so.8
-/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8
-/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8
-/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8
-/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_ops_train.so.8
-HIP runtime version: N/A
-MIOpen runtime version: N/A
-Is XNNPACK available: True
-Versions of relevant libraries:
-[pip3] bert-pytorch==0.0.1a4
-[pip3] botorch==0.6.4
-[pip3] flowtorch==0.8
-[pip3] gpytorch==1.6.0
-[pip3] mypy-extensions==0.4.3
-[pip3] numpy==1.21.2
-[pip3] numpyro==0.9.2
-[pip3] pytorch-transformers==1.2.0
-[pip3] torch==1.13.0.dev20220524+cu113
-[pip3] torch-struct==0.5
-[pip3] torch-tb-profiler==0.4.0
-[pip3] torchfile==0.1.0
-[pip3] torchmetrics==0.8.2
-[pip3] torchrec-nightly==2022.4.26
-[pip3] torchtext==0.13.0.dev20220524
-[pip3] torchvision==0.13.0.dev20220524+cu113
-[pip3] torchx-nightly==2022.5.24
-[conda] bert-pytorch              0.0.1a4                   dev_0    
-[conda] botorch                   0.6.4                    pypi_0    pypi
-[conda] flowtorch                 0.8                      pypi_0    pypi
-[conda] gpytorch                  1.6.0                    pypi_0    pypi
-[conda] numpy                     1.21.2                   pypi_0    pypi
-[conda] numpyro                   0.9.2                    pypi_0    pypi
-[conda] pytorch-transformers      1.2.0                    pypi_0    pypi
-[conda] torch                     1.13.0.dev20220524+cu113          pypi_0    pypi
-[conda] torch-struct              0.5                      pypi_0    pypi
-[conda] torch-tb-profiler         0.4.0                    pypi_0    pypi
-[conda] torchfile                 0.1.0                    pypi_0    pypi
-[conda] torchmetrics              0.8.2                    pypi_0    pypi
-[conda] torchrec-nightly          2022.4.26                pypi_0    pypi
-[conda] torchtext                 0.13.0.dev20220524          pypi_0    pypi
-[conda] torchvision               0.13.0.dev20220524+cu113          pypi_0    pypi
-[conda] torchx-nightly            2022.5.24                pypi_0    pypi
-cc @csarofeen @ptrblck @xwang233
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-Python is detecting GPU and CUDA but not the C++ API
-
-Following is the CMake configuration
-
-Following is the main.cpp file contents
-
-Downloaded the libtorch from here and extracted in /opt/libtorch
-Versions
-Collecting environment information...
-PyTorch version: 1.10.1+cu113
-Is debug build: False
-CUDA used to build PyTorch: 11.3
-ROCM used to build PyTorch: N/A
-OS: Manjaro Linux (x86_64)
-GCC version: (GCC) 11.1.0
-Clang version: 13.0.0
-CMake version: version 3.22.1
-Libc version: glibc-2.33
-Python version: 3.9.9 (main, Nov 20 2021, 21:30:06)  [GCC 11.1.0] (64-bit runtime)
-Python platform: Linux-5.4.164-1-MANJARO-x86_64-with-glibc2.33
-Is CUDA available: True
-CUDA runtime version: 11.5.119
-GPU models and configuration: GPU 0: NVIDIA GeForce GTX 1650
-Nvidia driver version: 495.44
-cuDNN version: Probably one of the following:
-/usr/lib/libcudnn.so.8.3.0
-/usr/lib/libcudnn_adv_infer.so.8.3.0
-/usr/lib/libcudnn_adv_train.so.8.3.0
-/usr/lib/libcudnn_cnn_infer.so.8.3.0
-/usr/lib/libcudnn_cnn_train.so.8.3.0
-/usr/lib/libcudnn_ops_infer.so.8.3.0
-/usr/lib/libcudnn_ops_train.so.8.3.0
-HIP runtime version: N/A
-MIOpen runtime version: N/A
-Versions of relevant libraries:
-[pip3] mypy-extensions==0.4.3
-[pip3] numpy==1.21.3
-[pip3] torch==1.10.1+cu113
-[pip3] torchaudio==0.10.1+cu113
-[pip3] torchvision==0.11.2+cu113
-[conda] Could not collect
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-Calling the permute method of a tensor with first-class dimensions using the keyword argument dims does not match the behaviour of torch.Tensor.
-
-In fact, calling permute with dims appears to be a no-op
-
-Ideally the behaviour would be the same, though even a TypeError saying that permute has no keyword dims would be better than accepting the argument but not doing anything.
-CC: @vmoens @zou3519 @ezyang @zdevito
-Versions
-PyTorch version: 1.14.0.dev20221027
-Is debug build: False
-CUDA used to build PyTorch: None
-ROCM used to build PyTorch: N/A
-OS: macOS 12.6.1 (arm64)
-GCC version: Could not collect
-Clang version: 14.0.0 (clang-1400.0.29.102)
-CMake version: version 3.24.0
-Libc version: N/A
-Python version: 3.9.13 | packaged by conda-forge | (main, May 27 2022, 17:01:00)  [Clang 13.0.1 ] (64-bit runtime)
-Python platform: macOS-12.6.1-arm64-arm-64bit
-Is CUDA available: False
-CUDA runtime version: No CUDA
-CUDA_MODULE_LOADING set to: N/A
-GPU models and configuration: No CUDA
-Nvidia driver version: No CUDA
-cuDNN version: No CUDA
-HIP runtime version: N/A
-MIOpen runtime version: N/A
-Is XNNPACK available: True
-Versions of relevant libraries:
-[pip3] mypy==0.982
-[pip3] mypy-extensions==0.4.3
-[pip3] numpy==1.23.4
-[pip3] torch==1.14.0.dev20221027
-[pip3] torchaudio==0.14.0.dev20221025
-[pip3] torchvision==0.15.0.dev20221026
-[conda] cpuonly                   2.0                           0    pytorch-nightly
-[conda] numpy                     1.23.4           py39hefdcf20_1    conda-forge
-[conda] pytorch-mutex             1.0                         cpu    pytorch-nightly
-[conda] torch                     1.14.0.dev20221027          pypi_0    pypi
-[conda] torchaudio                0.14.0.dev20221025          pypi_0    pypi
-[conda] torchvision               0.15.0.dev20221026          pypi_0    pypi
-
-----------------------------------------Comment 1----------------------------------------
-
-Hi, this is embarrassing but I did install with pip3 but I cant import in python3.
-
-PyTorch or Caffe2: PyTorch
-How you installed PyTorch (conda, pip, source): pip3
-Build command you used (if compiling from source):
-OS: ubuntu 16.04
-PyTorch version: none specified
-Python version: 3.5.2
-CUDA/cuDNN version: none
-GPU models and configuration: none
-GCC version (if compiling from source):
-CMake version:
-Versions of any other relevant libraries:
-
-
-----------------------------------------Comment 1----------------------------------------
-
-Issue description
-There is a difference in the fused code generated when using the functional (x + y).relu_() and the module relu = nn.ReLU(inplace=True); relu(x+y)
-Code example
-
-Output:
-
-Note that fusion only occurred in the functional (x + y).relu_() case.
-System Info
-PyTorch version: 0.5.0a0
-Is debug build: No
-CUDA used to build PyTorch: 10.0.122
-OS: Ubuntu 16.04.5 LTS
-GCC version: (Ubuntu 5.4.0-6ubuntu1~16.04.10) 5.4.0 20160609
-CMake version: version 3.5.1
-Python version: 3.6
-Is CUDA available: Yes
-CUDA runtime version: 10.0.122
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Bug
-I’m using PyCharm Pro 2020.2 and in PyTorch v1.5.1, I could type torch.nn and the IDE would suggest Conv1d etc., but after updating to v1.6.0, I don’t see that anymore.
-To Reproduce
-Steps to reproduce the behavior:
-
-Install PyTorch v.1.6.0
-import torch.nn as nn
-Type any class of layer or loss function defined under torch.nn on the PyCharm editor.
-
-Expected behavior
-
-Environment
-PyCharm Professional 2020.2
-PyTorch version: 1.6.0
-Is debug build: False
-CUDA used to build PyTorch: None
-OS: Mac OSX 10.15.6 (x86_64)
-GCC version: Could not collect
-Clang version: 7.0.0 (https://github.com/apple/llvm-project.git b3057cffb63ed229b4552d57264414b4419fdb47)
-CMake version: version 3.16.3
-Python version: 3.7 (64-bit runtime)
-Is CUDA available: False
-CUDA runtime version: No CUDA
-GPU models and configuration: No CUDA
-Nvidia driver version: No CUDA
-cuDNN version: No CUDA
-Versions of relevant libraries:
-[pip3] numpy==1.19.1
-[pip3] torch==1.6.0
-[conda] blas                      1.0                         mkl
-[conda] libblas                   3.8.0                    14_mkl    conda-forge
-[conda] libcblas                  3.8.0                    14_mkl    conda-forge
-[conda] liblapack                 3.8.0                    14_mkl    conda-forge
-[conda] mkl                       2019.4                      233
-[conda] mkl-service               2.0.2            py37h1de35cc_0
-[conda] mkl_fft                   1.0.12           py37h5e564d8_0
-[conda] mkl_random                1.0.2            py37h27c97d8_0
-[conda] numpy                     1.16.4           py37hacdab7b_0
-[conda] numpy-base                1.16.4           py37h6575580_0
-[conda] numpydoc                  0.9.1                      py_0
-Additional context
-cc @albanD @mruberry @ezyang @malfet @rgommers
-
-----------------------------------------Comment 1----------------------------------------
-
-Hi,
-I am building Pytorch 1.7 from source on a raspberry pi zero (raspbian-lite: kernel version 4.19) and the build is hanging at the same spot every single time indefinitely. Here are my steps:
-
-(I have tried not setting these as well and I still get stuck at the same spot so I don't think it's this.I have also tried to run python3 setup.py clean prior and still no luck)
-It always hangs indefinitely (12+ hours) at this line Building CXX object caffe2/CMakeFiles/torch_cpu.dir/__/aten/src/ATen/Functions.cpp.o
-Does anyone have an idea what could be causing this and what I could do to resolve?
-python3 setup.py install --verbose
-Building wheel torch-1.7.0a0+a414bd6
--- Building version 1.7.0a0+a414bd6
-cmake -DBUILD_PYTHON=True -DBUILD_TEST=False -DCMAKE_BUILD_TYPE=Release -DCMAKE_                                                                                                             INSTALL_PREFIX=/home/pi/pytorch/torch -DCMAKE_PREFIX_PATH=/usr/lib/python3/dist-                                                                                                             packages -DNUMPY_INCLUDE_DIR=/usr/lib/python3/dist-packages/numpy/core/include -                                                                                                             DPYTHON_EXECUTABLE=/usr/bin/python3 -DPYTHON_INCLUDE_DIR=/usr/include/python3.7m                                                                                                              -DPYTHON_LIBRARY=/usr/lib/libpython3.7m.so.1.0 -DTORCH_BUILD_VERSION=1.7.0a0+a4                                                                                                             14bd6 -DUSE_CUDA=0 -DUSE_CUDNN=0 -DUSE_DISTRIBUTED=0 -DUSE_MKLDNN=0 -DUSE_NNPACK                                                                                                             =0 -DUSE_NUMPY=True /home/pi/pytorch
--- The CXX compiler identification is GNU 8.3.0
--- The C compiler identification is GNU 8.3.0
--- Check for working CXX compiler: /usr/bin/c++
--- Check for working CXX compiler: /usr/bin/c++ -- works
--- Detecting CXX compiler ABI info
--- Detecting CXX compiler ABI info - done
--- Detecting CXX compile features
--- Detecting CXX compile features - done
--- Check for working C compiler: /usr/bin/cc
--- Check for working C compiler: /usr/bin/cc -- works
--- Detecting C compiler ABI info
--- Detecting C compiler ABI info - done
--- Detecting C compile features
--- Detecting C compile features - done
--- Not forcing any particular BLAS to be found
--- Performing Test COMPILER_WORKS
--- Performing Test COMPILER_WORKS - Success
--- Performing Test SUPPORT_GLIBCXX_USE_C99
--- Performing Test SUPPORT_GLIBCXX_USE_C99 - Success
--- Performing Test CAFFE2_EXCEPTION_PTR_SUPPORTED
--- Performing Test CAFFE2_EXCEPTION_PTR_SUPPORTED - Success
--- std::exception_ptr is supported.
--- Performing Test CAFFE2_NEED_TO_TURN_OFF_DEPRECATION_WARNING
--- Performing Test CAFFE2_NEED_TO_TURN_OFF_DEPRECATION_WARNING - Failed
--- Turning off deprecation warning due to glog.
--- Performing Test CAFFE2_COMPILER_SUPPORTS_AVX2_EXTENSIONS
--- Performing Test CAFFE2_COMPILER_SUPPORTS_AVX2_EXTENSIONS - Failed
--- Performing Test CAFFE2_COMPILER_SUPPORTS_AVX512_EXTENSIONS
--- Performing Test CAFFE2_COMPILER_SUPPORTS_AVX512_EXTENSIONS - Failed
--- Performing Test COMPILER_SUPPORTS_HIDDEN_VISIBILITY
--- Performing Test COMPILER_SUPPORTS_HIDDEN_VISIBILITY - Success
--- Performing Test COMPILER_SUPPORTS_HIDDEN_INLINE_VISIBILITY
--- Performing Test COMPILER_SUPPORTS_HIDDEN_INLINE_VISIBILITY - Success
--- Performing Test COMPILER_SUPPORTS_RDYNAMIC
--- Performing Test COMPILER_SUPPORTS_RDYNAMIC - Success
--- Building using own protobuf under third_party per request.
--- Use custom protobuf build.
--- 3.11.4.0
--- Looking for pthread.h
--- Looking for pthread.h - found
--- Looking for pthread_create
--- Looking for pthread_create - not found
--- Check if compiler accepts -pthread
--- Check if compiler accepts -pthread - yes
--- Found Threads: TRUE
--- Performing Test protobuf_HAVE_BUILTIN_ATOMICS
--- Performing Test protobuf_HAVE_BUILTIN_ATOMICS - Failed
--- Caffe2 protobuf include directory: $&lt;BUILD_INTERFACE:/home/pi/pytorch/third_p                                                                                                             arty/protobuf/src&gt;$&lt;INSTALL_INTERFACE:include>
--- Trying to find preferred BLAS backend of choice: MKL
--- MKL_THREADING = OMP
--- Looking for sys/types.h
--- Looking for sys/types.h - found
--- Looking for stdint.h
--- Looking for stdint.h - found
--- Looking for stddef.h
--- Looking for stddef.h - found
--- Check size of void*
--- Check size of void* - done
--- MKL_THREADING = OMP
-CMake Warning at cmake/Dependencies.cmake:148 (message):
-MKL could not be found.  Defaulting to Eigen
-Call Stack (most recent call first):
-CMakeLists.txt:472 (include)
-CMake Warning at cmake/Dependencies.cmake:172 (message):
-Preferred BLAS (MKL) cannot be found, now searching for a general BLAS
-library
-Call Stack (most recent call first):
-CMakeLists.txt:472 (include)
--- MKL_THREADING = OMP
--- Checking for [mkl_intel - mkl_gnu_thread - mkl_core - gomp - pthread - m - dl]
---   Library mkl_intel: not found
--- Checking for [mkl_intel - mkl_intel_thread - mkl_core - gomp - pthread - m - dl]
---   Library mkl_intel: not found
--- Checking for [mkl_gf - mkl_gnu_thread - mkl_core - gomp - pthread - m - dl]
---   Library mkl_gf: not found
--- Checking for [mkl_gf - mkl_intel_thread - mkl_core - gomp - pthread - m - dl]
---   Library mkl_gf: not found
--- Checking for [mkl_intel - mkl_gnu_thread - mkl_core - iomp5 - pthread - m - dl]
---   Library mkl_intel: not found
--- Checking for [mkl_intel - mkl_intel_thread - mkl_core - iomp5 - pthread - m - dl]
---   Library mkl_intel: not found
--- Checking for [mkl_gf - mkl_gnu_thread - mkl_core - iomp5 - pthread - m - dl]
---   Library mkl_gf: not found
--- Checking for [mkl_gf - mkl_intel_thread - mkl_core - iomp5 - pthread - m - dl]
---   Library mkl_gf: not found
--- Checking for [mkl_intel - mkl_gnu_thread - mkl_core - pthread - m - dl]
---   Library mkl_intel: not found
--- Checking for [mkl_intel - mkl_intel_thread - mkl_core - pthread - m - dl]
---   Library mkl_intel: not found
--- Checking for [mkl_gf - mkl_gnu_thread - mkl_core - pthread - m - dl]
---   Library mkl_gf: not found
--- Checking for [mkl_gf - mkl_intel_thread - mkl_core - pthread - m - dl]
---   Library mkl_gf: not found
--- Checking for [mkl_intel - mkl_sequential - mkl_core - m - dl]
---   Library mkl_intel: not found
--- Checking for [mkl_gf - mkl_sequential - mkl_core - m - dl]
---   Library mkl_gf: not found
--- Checking for [mkl_intel - mkl_core - gomp - pthread - m - dl]
---   Library mkl_intel: not found
--- Checking for [mkl_gf - mkl_core - gomp - pthread - m - dl]
---   Library mkl_gf: not found
--- Checking for [mkl_intel - mkl_core - iomp5 - pthread - m - dl]
---   Library mkl_intel: not found
--- Checking for [mkl_gf - mkl_core - iomp5 - pthread - m - dl]
---   Library mkl_gf: not found
--- Checking for [mkl_intel - mkl_core - pthread - m - dl]
---   Library mkl_intel: not found
--- Checking for [mkl_gf - mkl_core - pthread - m - dl]
---   Library mkl_gf: not found
--- Checking for [mkl - guide - pthread - m]
---   Library mkl: not found
--- MKL library not found
--- Checking for [Accelerate]
---   Library Accelerate: BLAS_Accelerate_LIBRARY-NOTFOUND
--- Checking for [vecLib]
---   Library vecLib: BLAS_vecLib_LIBRARY-NOTFOUND
--- Checking for [openblas]
---   Library openblas: /usr/lib/arm-linux-gnueabihf/libopenblas.so
--- Looking for sgemm_
--- Looking for sgemm_ - found
--- Performing Test BLAS_F2C_DOUBLE_WORKS
--- Performing Test BLAS_F2C_DOUBLE_WORKS - Failed
--- Performing Test BLAS_F2C_FLOAT_WORKS
--- Performing Test BLAS_F2C_FLOAT_WORKS - Success
--- Performing Test BLAS_USE_CBLAS_DOT
--- Performing Test BLAS_USE_CBLAS_DOT - Success
--- Found a library with BLAS API (open).
--- The ASM compiler identification is GNU
--- Found assembler: /usr/bin/cc
-CMake Warning at cmake/Dependencies.cmake:659 (message):
-A compiler with AVX512 support is required for FBGEMM.  Not compiling with
-FBGEMM.  Turn this warning off by USE_FBGEMM=OFF.
-Call Stack (most recent call first):
-CMakeLists.txt:472 (include)
-CMake Warning at cmake/Dependencies.cmake:666 (message):
-x64 operating system is required for FBGEMM.  Not compiling with FBGEMM.
-Turn this warning off by USE_FBGEMM=OFF.
-Call Stack (most recent call first):
-CMakeLists.txt:472 (include)
-CMake Warning at cmake/Dependencies.cmake:698 (message):
-Turning USE_FAKELOWP off as it depends on USE_FBGEMM.
-Call Stack (most recent call first):
-CMakeLists.txt:472 (include)
--- Could NOT find Numa (missing: Numa_INCLUDE_DIR Numa_LIBRARIES)
-CMake Warning at cmake/Dependencies.cmake:748 (message):
-Not compiling with NUMA.  Suppress this warning with -DUSE_NUMA=OFF
-Call Stack (most recent call first):
-CMakeLists.txt:472 (include)
--- Using third party subdirectory Eigen.
--- Found PythonInterp: /usr/bin/python3 (found suitable version "3.7.3", minimum required is "3.0")
--- Found PythonLibs: /usr/lib/libpython3.7m.so.1.0 (found suitable version "3.7.3", minimum required is "3.0")
--- Could NOT find pybind11 (missing: pybind11_DIR)
--- Could NOT find pybind11 (missing: pybind11_INCLUDE_DIR)
--- Using third_party/pybind11.
--- pybind11 include dirs: /home/pi/pytorch/cmake/../third_party/pybind11/include
--- Adding OpenMP CXX_FLAGS: -fopenmp
--- Will link against OpenMP libraries: /usr/lib/gcc/arm-linux-gnueabihf/8/libgomp.so;/usr/lib/arm-linux-gnueabihf/libpthread.so
-CMake Warning at cmake/Dependencies.cmake:1225 (message):
-Not using CUDA/ROCM, so disabling USE_NCCL.  Suppress this warning with
--DUSE_NCCL=OFF.
-Call Stack (most recent call first):
-CMakeLists.txt:472 (include)
-CMake Warning at cmake/Dependencies.cmake:1346 (message):
-Metal is only used in ios builds.
-Call Stack (most recent call first):
-CMakeLists.txt:472 (include)
-Generated: /home/pi/pytorch/build/third_party/onnx/onnx/onnx_onnx_torch-ml.proto
-Generated: /home/pi/pytorch/build/third_party/onnx/onnx/onnx-operators_onnx_torch-ml.proto
--- ******** Summary ********
---   CMake version         : 3.13.4
---   CMake command         : /usr/bin/cmake
---   System                : Linux
---   C++ compiler          : /usr/bin/c++
---   C++ compiler version  : 8.3.0
---   CXX flags             :  -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -Wnon-virtual-dtor
---   Build type            : Release
---   Compile definitions   : ONNX_ML=1;ONNXIFI_ENABLE_EXT=1
---   CMAKE_PREFIX_PATH     : /usr/lib/python3/dist-packages
---   CMAKE_INSTALL_PREFIX  : /home/pi/pytorch/torch
---   CMAKE_MODULE_PATH     : /home/pi/pytorch/cmake/Modules
---   ONNX version          : 1.7.0
---   ONNX NAMESPACE        : onnx_torch
---   ONNX_BUILD_TESTS      : OFF
---   ONNX_BUILD_BENCHMARKS : OFF
---   ONNX_USE_LITE_PROTO   : OFF
---   ONNXIFI_DUMMY_BACKEND : OFF
---   ONNXIFI_ENABLE_EXT    : OFF
---   Protobuf compiler     :
---   Protobuf includes     :
---   Protobuf libraries    :
---   BUILD_ONNX_PYTHON     : OFF
--- ******** Summary ********
---   CMake version         : 3.13.4
---   CMake command         : /usr/bin/cmake
---   System                : Linux
---   C++ compiler          : /usr/bin/c++
---   C++ compiler version  : 8.3.0
---   CXX flags             :  -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -Wnon-virtual-dtor
---   Build type            : Release
---   Compile definitions   : ONNX_ML=1;ONNXIFI_ENABLE_EXT=1
---   CMAKE_PREFIX_PATH     : /usr/lib/python3/dist-packages
---   CMAKE_INSTALL_PREFIX  : /home/pi/pytorch/torch
---   CMAKE_MODULE_PATH     : /home/pi/pytorch/cmake/Modules
---   ONNX version          : 1.4.1
---   ONNX NAMESPACE        : onnx_torch
---   ONNX_BUILD_TESTS      : OFF
---   ONNX_BUILD_BENCHMARKS : OFF
---   ONNX_USE_LITE_PROTO   : OFF
---   ONNXIFI_DUMMY_BACKEND : OFF
---   Protobuf compiler     :
---   Protobuf includes     :
---   Protobuf libraries    :
---   BUILD_ONNX_PYTHON     : OFF
--- Could not find CUDA with FP16 support, compiling without torch.CudaHalfTensor
--- Adding -DNDEBUG to compile flags
--- MAGMA not found. Compiling without MAGMA support
--- Could not find hardware support for NEON on this machine.
--- No OMAP3 processor on this machine.
--- No OMAP4 processor on this machine.
--- Looking for cpuid.h
--- Looking for cpuid.h - not found
--- Performing Test NO_GCC_EBX_FPIC_BUG
--- Performing Test NO_GCC_EBX_FPIC_BUG - Failed
--- Performing Test C_HAS_AVX_1
--- Performing Test C_HAS_AVX_1 - Failed
--- Performing Test C_HAS_AVX_2
--- Performing Test C_HAS_AVX_2 - Failed
--- Performing Test C_HAS_AVX_3
--- Performing Test C_HAS_AVX_3 - Failed
--- Performing Test C_HAS_AVX2_1
--- Performing Test C_HAS_AVX2_1 - Failed
--- Performing Test C_HAS_AVX2_2
--- Performing Test C_HAS_AVX2_2 - Failed
--- Performing Test C_HAS_AVX2_3
--- Performing Test C_HAS_AVX2_3 - Failed
--- Performing Test CXX_HAS_AVX_1
--- Performing Test CXX_HAS_AVX_1 - Failed
--- Performing Test CXX_HAS_AVX_2
--- Performing Test CXX_HAS_AVX_2 - Failed
--- Performing Test CXX_HAS_AVX_3
--- Performing Test CXX_HAS_AVX_3 - Failed
--- Performing Test CXX_HAS_AVX2_1
--- Performing Test CXX_HAS_AVX2_1 - Failed
--- Performing Test CXX_HAS_AVX2_2
--- Performing Test CXX_HAS_AVX2_2 - Failed
--- Performing Test CXX_HAS_AVX2_3
--- Performing Test CXX_HAS_AVX2_3 - Failed
--- Looking for cheev_
--- Looking for cheev_ - found
--- Found a library with LAPACK API (open).
-disabling CUDA because NOT USE_CUDA is set
--- USE_CUDNN is set to 0. Compiling without cuDNN support
-disabling ROCM because NOT USE_ROCM is set
--- MIOpen not found. Compiling without MIOpen support
-disabling MKLDNN because USE_MKLDNN is not set
--- Looking for clock_gettime in rt
--- Looking for clock_gettime in rt - found
--- Looking for mmap
--- Looking for mmap - found
--- Looking for shm_open
--- Looking for shm_open - found
--- Looking for shm_unlink
--- Looking for shm_unlink - found
--- Looking for malloc_usable_size
--- Looking for malloc_usable_size - found
--- Performing Test C_HAS_THREAD
--- Performing Test C_HAS_THREAD - Success
--- Version: 6.2.0
--- Build type: Release
--- CXX_STANDARD: 14
--- Performing Test has_std_14_flag
--- Performing Test has_std_14_flag - Success
--- Performing Test has_std_1y_flag
--- Performing Test has_std_1y_flag - Success
--- Performing Test SUPPORTS_USER_DEFINED_LITERALS
--- Performing Test SUPPORTS_USER_DEFINED_LITERALS - Success
--- Performing Test FMT_HAS_VARIANT
--- Performing Test FMT_HAS_VARIANT - Success
--- Required features: cxx_variadic_templates
--- Looking for strtod_l
--- Looking for strtod_l - not found
--- GCC 8.3.0: Adding gcc and gcc_s libs to link line
--- Performing Test HAS_WERROR_FORMAT
--- Performing Test HAS_WERROR_FORMAT - Success
--- Looking for backtrace
--- Looking for backtrace - found
--- backtrace facility detected in default set of libraries
--- Found Backtrace: /usr/include
--- don't use NUMA
--- Using ATen parallel backend: OMP
-disabling CUDA because USE_CUDA is set false
--- Could NOT find OpenSSL, try to set the path to OpenSSL root folder in the system variable OPENSSL_ROOT_DIR (missing: OPENSSL_CRYPTO_LIBRARY OPENSSL_INCLUDE_DIR)
--- Check size of long double
--- Check size of long double - done
--- Performing Test COMPILER_SUPPORTS_FLOAT128
--- Performing Test COMPILER_SUPPORTS_FLOAT128 - Failed
--- Found OpenMP_C: -fopenmp (found version "4.5")
--- Found OpenMP_CXX: -fopenmp (found version "4.5")
--- Found OpenMP: TRUE (found version "4.5")
--- Performing Test COMPILER_SUPPORTS_OPENMP
--- Performing Test COMPILER_SUPPORTS_OPENMP - Success
--- Performing Test COMPILER_SUPPORTS_WEAK_ALIASES
--- Performing Test COMPILER_SUPPORTS_WEAK_ALIASES - Success
--- Performing Test COMPILER_SUPPORTS_BUILTIN_MATH
--- Performing Test COMPILER_SUPPORTS_BUILTIN_MATH - Success
--- Performing Test COMPILER_SUPPORTS_SYS_GETRANDOM
--- Performing Test COMPILER_SUPPORTS_SYS_GETRANDOM - Success
--- Configuring build for SLEEF-v3.4.0
-Target system: Linux-4.19.118+
-Target processor: armv6l
-Host system: Linux-4.19.118+
-Host processor: armv6l
-Detected C compiler: GNU @ /usr/bin/cc
--- Using option -Wall -Wno-unused -Wno-attributes -Wno-unused-result -Wno-psabi -ffp-contract=off -fno-math-errno -fno-trapping-math to compile libsleef
--- Building shared libs : OFF
--- MPFR : LIB_MPFR-NOTFOUND
--- GMP : LIBGMP-NOTFOUND
--- RT : /usr/lib/arm-linux-gnueabihf/librt.so
--- FFTW3 : LIBFFTW3-NOTFOUND
--- OPENSSL :
--- SDE : SDE_COMMAND-NOTFOUND
--- RUNNING_ON_TRAVIS : 0
--- COMPILER_SUPPORTS_OPENMP : 1
-AT_INSTALL_INCLUDE_DIR include/ATen/core
-core header install: /home/pi/pytorch/build/aten/src/ATen/core/TensorBody.h
--- NCCL operators skipped due to no CUDA support
--- Excluding FakeLowP operators
--- Excluding ideep operators as we are not using ideep
--- Excluding image processing operators due to no opencv
--- Excluding video processing operators due to no opencv
--- MPI operators skipped due to no MPI support
--- Include Observer library
-^[[B-- /usr/bin/c++ /home/pi/pytorch/torch/abi-check.cpp -o /home/pi/pytorch/build/abi-check
--- Determined _GLIBCXX_USE_CXX11_ABI=1
--- pytorch is compiling with OpenMP.
-OpenMP CXX_FLAGS: -fopenmp.
-OpenMP libraries: /usr/lib/gcc/arm-linux-gnueabihf/8/libgomp.so;/usr/lib/arm-linux-gnueabihf/libpthread.so.
--- Caffe2 is compiling with OpenMP.
-OpenMP CXX_FLAGS: -fopenmp.
-OpenMP libraries: /usr/lib/gcc/arm-linux-gnueabihf/8/libgomp.so;/usr/lib/arm-linux-gnueabihf/libpthread.so.
--- Using lib/python3/dist-packages as python relative installation path
-CMake Warning at CMakeLists.txt:703 (message):
-Generated cmake files are only fully tested if one builds with system glog,
-gflags, and protobuf.  Other settings may generate files that are not well
-tested.
---
--- ******** Summary ********
--- General:
---   CMake version         : 3.13.4
---   CMake command         : /usr/bin/cmake
---   System                : Linux
---   C++ compiler          : /usr/bin/c++
---   C++ compiler id       : GNU
---   C++ compiler version  : 8.3.0
---   BLAS                  : MKL
---   CXX flags             :  -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -DUSE_VULKAN_WRAPPER -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-unused-local-typedefs -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow
---   Build type            : Release
---   Compile definitions   : ONNX_ML=1;ONNXIFI_ENABLE_EXT=1;ONNX_NAMESPACE=onnx_torch;HAVE_MMAP=1;_FILE_OFFSET_BITS=64;HAVE_SHM_OPEN=1;HAVE_SHM_UNLINK=1;HAVE_MALLOC_USABLE_SIZE=1;USE_EXTERNAL_MZCRC;MINIZ_DISABLE_ZIP_READER_CRC32_CHECKS
---   CMAKE_PREFIX_PATH     : /usr/lib/python3/dist-packages
---   CMAKE_INSTALL_PREFIX  : /home/pi/pytorch/torch
---   TORCH_VERSION         : 1.7.0
---   CAFFE2_VERSION        : 1.7.0
---   BUILD_CAFFE2_MOBILE   : OFF
---   USE_STATIC_DISPATCH   : OFF
---   BUILD_BINARY          : OFF
---   BUILD_CUSTOM_PROTOBUF : ON
---     Link local protobuf : ON
---   BUILD_DOCS            : OFF
---   BUILD_PYTHON          : True
---     Python version      : 3.7.3
---     Python executable   : /usr/bin/python3
---     Pythonlibs version  : 3.7.3
---     Python library      : /usr/lib/libpython3.7m.so.1.0
---     Python includes     : /usr/include/python3.7m
---     Python site-packages: lib/python3/dist-packages
---   BUILD_CAFFE2_OPS      : ON
---   BUILD_SHARED_LIBS     : ON
---   BUILD_TEST            : False
---   BUILD_JNI             : OFF
---   INTERN_BUILD_MOBILE   :
---   CLANG_CODE_COVERAGE   : OFF
---   USE_ASAN              : OFF
---   USE_CUDA              : 0
---   USE_ROCM              : OFF
---   USE_EIGEN_FOR_BLAS    : ON
---   USE_FBGEMM            : OFF
---     USE_FAKELOWP          : OFF
---   USE_FFMPEG            : OFF
---   USE_GFLAGS            : OFF
---   USE_GLOG              : OFF
---   USE_LEVELDB           : OFF
---   USE_LITE_PROTO        : OFF
---   USE_LMDB              : OFF
---   USE_METAL             : OFF
---   USE_MKL               : OFF
---   USE_MKLDNN            : OFF
---   USE_NCCL              : OFF
---   USE_NNPACK            : 0
---   USE_NUMPY             : ON
---   USE_OBSERVERS         : ON
---   USE_OPENCL            : OFF
---   USE_OPENCV            : OFF
---   USE_OPENMP            : ON
---   USE_TBB               : OFF
---   USE_VULKAN            : OFF
---   USE_PROF              : OFF
---   USE_QNNPACK           : ON
---   USE_PYTORCH_QNNPACK   : ON
---   USE_REDIS             : OFF
---   USE_ROCKSDB           : OFF
---   USE_ZMQ               : OFF
---   USE_DISTRIBUTED       : 0
---   Public Dependencies  : Threads::Threads
---   Private Dependencies : pthreadpool;cpuinfo;qnnpack;pytorch_qnnpack;XNNPACK;fp16;aten_op_header_gen;foxi_loader;rt;fmt::fmt-header-only;gcc_s;gcc;dl
--- Configuring done
--- Generating done
--- Build files have been written to: /home/pi/pytorch/build
-cmake --build . --target install --config Release -- -j 1
-Scanning dependencies of target libprotobuf
-[  0%] Building CXX object third_party/protobuf/cmake/CMakeFiles/libprotobuf.dir//src/google/protobuf/any_lite.cc.o
-[  0%] Building CXX object third_party/protobuf/cmake/CMakeFiles/libprotobuf.dir//src/google/protobuf/arena.cc.o
-[  0%] Building CXX object third_party/protobuf/cmake/CMakeFiles/libprotobuf.dir//src/google/protobuf/extension_set.cc.o
-[  0%] Building CXX object third_party/protobuf/cmake/CMakeFiles/libprotobuf.dir//src/google/protobuf/generated_enum_util.cc.o
-[  0%] Building CXX object third_party/protobuf/cmake/CMakeFiles/libprotobuf.dir//src/google/protobuf/generated_message_table_driven_lite.cc.o
-[  0%] Building CXX object third_party/protobuf/cmake/CMakeFiles/libprotobuf.dir//src/google/protobuf/generated_message_util.cc.o
-[  0%] Building CXX object third_party/protobuf/cmake/CMakeFiles/libprotobuf.dir//src/google/protobuf/implicit_weak_message.cc.o
-[  0%] Building CXX object third_party/protobuf/cmake/CMakeFiles/libprotobuf.dir//src/google/protobuf/io/coded_stream.cc.o
-....
-[ 39%] Built target sleef
-[ 39%] Generating ../../torch/csrc/autograd/generated/Functions.cpp, ../../torch/csrc/jit/generated/generated_unboxing_wrappers_0.cpp, ../../torch/csrc/jit/generated/generated_unboxing_wrappers_1.cpp, ../../torch/csrc/jit/generated/generated_unboxing_wrappers_2.cpp, ../../torch/csrc/autograd/generated/VariableType_0.cpp, ../../torch/csrc/autograd/generated/VariableType_1.cpp, ../../torch/csrc/autograd/generated/VariableType_2.cpp, ../../torch/csrc/autograd/generated/VariableType_3.cpp, ../../torch/csrc/autograd/generated/VariableType_4.cpp, ../../torch/csrc/autograd/generated/TraceType_0.cpp, ../../torch/csrc/autograd/generated/TraceType_1.cpp, ../../torch/csrc/autograd/generated/TraceType_2.cpp, ../../torch/csrc/autograd/generated/TraceType_3.cpp, ../../torch/csrc/autograd/generated/TraceType_4.cpp, ../../torch/csrc/autograd/generated/Functions.h, ../../torch/csrc/autograd/generated/variable_factories.h, ../../torch/csrc/autograd/generated/VariableType.h, ../../torch/csrc/autograd/generated/python_functions.cpp, ../../torch/csrc/autograd/generated/python_variable_methods.cpp, ../../torch/csrc/autograd/generated/python_torch_functions.cpp, ../../torch/csrc/autograd/generated/python_nn_functions.cpp, ../../torch/csrc/autograd/generated/python_fft_functions.cpp, ../../torch/csrc/autograd/generated/python_linalg_functions.cpp, ../../torch/csrc/autograd/generated/python_functions.h, ../../torch/testing/_internal/generated/annotated_fn_args.py
-Writing torch/csrc/autograd/generated/python_functions.h
-Writing torch/csrc/autograd/generated/python_functions.cpp
-Writing torch/csrc/autograd/generated/python_variable_methods.cpp
-Writing torch/csrc/autograd/generated/python_torch_functions.cpp
-Writing torch/csrc/autograd/generated/python_nn_functions.cpp
-Writing torch/csrc/autograd/generated/python_fft_functions.cpp
-Writing torch/csrc/autograd/generated/python_linalg_functions.cpp
-Writing torch/csrc/autograd/generated/VariableType.h
-Writing torch/csrc/autograd/generated/VariableType_0.cpp
-Writing torch/csrc/autograd/generated/TraceType_0.cpp
-Writing torch/csrc/autograd/generated/VariableType_1.cpp
-Writing torch/csrc/autograd/generated/TraceType_1.cpp
-Writing torch/csrc/autograd/generated/VariableType_2.cpp
-Writing torch/csrc/autograd/generated/TraceType_2.cpp
-Writing torch/csrc/autograd/generated/VariableType_3.cpp
-Writing torch/csrc/autograd/generated/TraceType_3.cpp
-Writing torch/csrc/autograd/generated/VariableType_4.cpp
-Writing torch/csrc/autograd/generated/TraceType_4.cpp
-Writing torch/csrc/autograd/generated/VariableTypeEverything.cpp
-Writing torch/csrc/autograd/generated/TraceTypeEverything.cpp
-Writing torch/csrc/autograd/generated/RegistrationDeclarations.h
-Writing torch/csrc/autograd/generated/Functions.h
-Writing torch/csrc/autograd/generated/Functions.cpp
-Writing torch/csrc/autograd/generated/variable_factories.h
-Writing torch/csrc/jit/generated/generated_unboxing_wrappers_0.cpp
-Writing torch/csrc/jit/generated/generated_unboxing_wrappers_1.cpp
-Writing torch/csrc/jit/generated/generated_unboxing_wrappers_2.cpp
-Writing torch/testing/_internal/generated/annotated_fn_args.py
-Scanning dependencies of target torch_cpu
-.....
-[ 48%] Building CXX object caffe2/CMakeFiles/torch_cpu.dir//aten/src/ATen/CPUType.cpp.o
-[ 48%] Building CXX object caffe2/CMakeFiles/torch_cpu.dir//aten/src/ATen/Functions.cpp.o
-Any help would be greatly appreciated!
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-What I am trying to do:
-
-Create an input and target tensor
-Create a list of models for ensemble (dlrm models from torchbench)
-Use vmap (from functorch) to create an ensemble
-Obtain the vmap function and pass it to aot_function (aot_autograd), to obtain the forward and backward graphs
-
-NOTE: This workflow has been tested for hf_Bert, resnet and GPT2, and works fine for them.
-Repro:
-
-Error: Stack Trace
-
-Versions
-Collecting environment information...
-PyTorch version: 1.14.0a0+git97de281
-Is debug build: False
-CUDA used to build PyTorch: 11.6
-ROCM used to build PyTorch: N/A
-OS: Ubuntu 18.04.6 LTS (x86_64)
-GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
-Clang version: 6.0.0-1ubuntu2 (tags/RELEASE_600/final)
-CMake version: version 3.22.5
-Libc version: glibc-2.27
-Python version: 3.9.13 (main, Aug 25 2022, 23:26:10)  [GCC 11.2.0] (64-bit runtime)
-Python platform: Linux-5.4.0-1069-aws-x86_64-with-glibc2.27
-Is CUDA available: True
-CUDA runtime version: 11.6.112
+CUDA runtime version: Could not collect
+CUDA_MODULE_LOADING set to: LAZY
 GPU models and configuration:
-GPU 0: NVIDIA A100-SXM4-40GB
-GPU 1: NVIDIA A100-SXM4-40GB
-GPU 2: NVIDIA A100-SXM4-40GB
-GPU 3: NVIDIA A100-SXM4-40GB
-GPU 4: NVIDIA A100-SXM4-40GB
-GPU 5: NVIDIA A100-SXM4-40GB
-GPU 6: NVIDIA A100-SXM4-40GB
-GPU 7: NVIDIA A100-SXM4-40GB
-Nvidia driver version: 510.47.03
+GPU 0: Tesla T4
+GPU 1: Tesla T4
+GPU 2: Tesla T4
+GPU 3: NVIDIA GeForce RTX 4090
+GPU 4: Tesla T4
+Nvidia driver version: 525.105.17
 cuDNN version: Probably one of the following:
-/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn.so.8.0.5
-/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.0.5
-/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.0.5
-/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.0.5
-/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.0.5
-/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.0.5
-/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.0.5
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn.so.8.0.5
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.0.5
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.0.5
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.0.5
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.0.5
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.0.5
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.0.5
-/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn.so.8.1.1
-/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.1.1
-/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.1.1
-/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.1.1
-/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.1.1
-/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.1.1
-/usr/local/cuda-11.2/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.1.1
-HIP runtime version: N/A
-MIOpen runtime version: N/A
-Is XNNPACK available: False
-Versions of relevant libraries:
-[pip3] bert-pytorch==0.0.1a4
-[pip3] mypy-extensions==0.4.3
-[pip3] numpy==1.23.1
-[pip3] torch==1.14.0a0+git97de281
-[pip3] torchaudio==0.12.0a0+5e96671
-[pip3] torchmetrics==0.9.1
-[pip3] torchrec-nightly==2022.4.26
-[pip3] torchtext==0.14.0a0+8b35599
-[pip3] torchvision==0.14.0a0+d1b2f4a
-[pip3] torchx-nightly==2022.6.15
-[conda] bert-pytorch              0.0.1a4                   dev_0    
-[conda] blas                      1.0                         mkl
-[conda] magma-cuda116             2.6.1                         1    pytorch
-[conda] mkl                       2021.4.0           h06a4308_640
-[conda] mkl-include               2022.0.1           h06a4308_117
-[conda] mkl-service               2.4.0            py39h7f8727e_0
-[conda] mkl_fft                   1.3.1            py39hd3c417c_0
-[conda] mkl_random                1.2.2            py39h51133e4_0
-[conda] numpy                     1.21.2                   pypi_0    pypi
-[conda] numpy-base                1.23.1           py39ha15fc14_0
-[conda] torch                     1.14.0a0+git97de281           dev_0    
-[conda] torchaudio                0.12.0a0+5e96671           dev_0    
-[conda] torchdynamo               0.2.0                     dev_0    
-[conda] torchmetrics              0.9.1                    pypi_0    pypi
-[conda] torchrec-nightly          2022.4.26                pypi_0    pypi
-[conda] torchtext                 0.14.0a0+8b35599           dev_0    
-[conda] torchvision               0.14.0a0+d1b2f4a           dev_0    
-[conda] torchx-nightly            2022.6.15                pypi_0    pyp
-cc @zou3519 @Chillee @samdow @soumith
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-torch.ops.aten.sym_size will get output error when the input dimension is negative number.
-Reproduce
-
-
-
-import torch
-a = torch.randn(2,3,4,5)
-a.size(-2)
-4
-torch.ops.aten.sym_size(a, -2)
-140024983873072
-
-
-
-Versions
-PyTorch version: 2.0.0+cpu
-Is debug build: False
-CUDA used to build PyTorch: None
-ROCM used to build PyTorch: N/A
-OS: Ubuntu 20.04.5 LTS (x86_64)
-GCC version: (Ubuntu 11.1.0-1ubuntu1~20.04) 11.1.0
-Clang version: Could not collect
-CMake version: version 3.22.2
-Libc version: glibc-2.31
-Python version: 3.9.13 | packaged by conda-forge | (main, May 27 2022, 16:58:50)  [GCC 10.3.0] (64-bit runtime)
-Python platform: Linux-5.4.0-137-generic-x86_64-with-glibc2.31
-Is CUDA available: False
-CUDA runtime version: No CUDA
-CUDA_MODULE_LOADING set to: N/A
-GPU models and configuration: No CUDA
-Nvidia driver version: No CUDA
-cuDNN version: No CUDA
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.9.0
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn.so.8.8.1
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8.8.1
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_adv_train.so.8.8.1
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8.8.1
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8.8.1
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8.8.1
+/usr/local/cuda-11.3/targets/x86_64-linux/lib/libcudnn_ops_train.so.8.8.1
 HIP runtime version: N/A
 MIOpen runtime version: N/A
 Is XNNPACK available: True
@@ -883,142 +47,546 @@ CPU:
 Architecture:                    x86_64
 CPU op-mode(s):                  32-bit, 64-bit
 Byte Order:                      Little Endian
-Address sizes:                   46 bits physical, 57 bits virtual
-CPU(s):                          160
-On-line CPU(s) list:             0-159
+Address sizes:                   46 bits physical, 48 bits virtual
+CPU(s):                          80
+On-line CPU(s) list:             0-79
 Thread(s) per core:              2
-Core(s) per socket:              40
+Core(s) per socket:              20
 Socket(s):                       2
 NUMA node(s):                    2
 Vendor ID:                       GenuineIntel
 CPU family:                      6
-Model:                           106
-Model name:                      Intel(R) Xeon(R) Platinum 8380 CPU @ 2.30GHz
-Stepping:                        6
-Frequency boost:                 enabled
-CPU MHz:                         897.750
-CPU max MHz:                     3400.0000
+Model:                           85
+Model name:                      Intel(R) Xeon(R) Gold 5218R CPU @ 2.10GHz
+Stepping:                        7
+CPU MHz:                         4000.000
+CPU max MHz:                     4000.0000
 CPU min MHz:                     800.0000
-BogoMIPS:                        4600.00
+BogoMIPS:                        4200.00
 Virtualization:                  VT-x
-L1d cache:                       3.8 MiB
-L1i cache:                       2.5 MiB
-L2 cache:                        100 MiB
-L3 cache:                        120 MiB
-NUMA node0 CPU(s):               0-39,80-119
-NUMA node1 CPU(s):               40-79,120-159
-Vulnerability Itlb multihit:     Not affected
+L1d cache:                       1.3 MiB
+L1i cache:                       1.3 MiB
+L2 cache:                        40 MiB
+L3 cache:                        55 MiB
+NUMA node0 CPU(s):               0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,78
+NUMA node1 CPU(s):               1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,69,71,73,75,77,79
+Vulnerability Itlb multihit:     KVM: Mitigation: VMX disabled
 Vulnerability L1tf:              Not affected
 Vulnerability Mds:               Not affected
 Vulnerability Meltdown:          Not affected
 Vulnerability Mmio stale data:   Mitigation; Clear CPU buffers; SMT vulnerable
-Vulnerability Retbleed:          Not affected
+Vulnerability Retbleed:          Mitigation; Enhanced IBRS
 Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
 Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
 Vulnerability Spectre v2:        Mitigation; Enhanced IBRS, IBPB conditional, RSB filling, PBRSB-eIBRS SW sequence
 Vulnerability Srbds:             Not affected
-Vulnerability Tsx async abort:   Not affected
-Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 invpcid_single ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local wbnoinvd dtherm ida arat pln pts avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg tme avx512_vpopcntdq rdpid md_clear pconfig flush_l1d arch_capabilities
+Vulnerability Tsx async abort:   Mitigation; TSX disabled
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 cdp_l3 invpcid_single intel_ppin ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm mpx rdt_a avx512f avx512dq rdseed adx smap clflushopt clwb intel_pt avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local dtherm ida arat pln pts pku ospke avx512_vnni md_clear flush_l1d arch_capabilities
 Versions of relevant libraries:
-[pip3] numpy==1.24.2
-[pip3] torch==2.0.0+cpu
-[pip3] torch_geometric==2.4.0
-[pip3] torch-scatter==2.1.1+pt20cpu
-[pip3] torch-sparse==0.6.17+pt20cpu
-[pip3] torchaudio==2.0.1+cpu
-[pip3] torchvision==0.15.1+cpu
-[conda] numpy                     1.24.2                   pypi_0    pypi
-[conda] torch                     2.0.0+cpu                pypi_0    pypi
-[conda] torch-geometric           2.4.0                    pypi_0    pypi
-[conda] torch-scatter             2.1.1+pt20cpu            pypi_0    pypi
-[conda] torch-sparse              0.6.17+pt20cpu           pypi_0    pypi
-[conda] torchaudio                2.0.1+cpu                pypi_0    pypi
-[conda] torchvision               0.15.1+cpu               pypi_0    pypi
-cc @ezyang @bhosmer @smessmer @ljk53 @bdhirsh
+[pip3] numpy==1.22.4
+[pip3] pytorch-lightning==1.4.2
+[pip3] pytorch-msssim==0.2.1
+[pip3] torch==2.0.1
+[pip3] torch-summary==1.4.5
+[pip3] torchmetrics==0.6.0
+[pip3] torchvision==0.15.2
+[pip3] triton==2.0.0
+[conda] numpy                     1.22.4                   pypi_0    pypi
+[conda] pytorch-lightning         1.4.2                    pypi_0    pypi
+[conda] pytorch-msssim            0.2.1                    pypi_0    pypi
+[conda] torch                     2.0.1                    pypi_0    pypi
+[conda] torch-summary             1.4.5                    pypi_0    pypi
+[conda] torchmetrics              0.6.0                    pypi_0    pypi
+[conda] torchvision               0.15.2                   pypi_0    pypi
+[conda] triton                    2.0.0                    pypi_0    pypi
+cc @ptrblck
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 2----------------------------------------
 
 🐛 Describe the bug
-When using deepspeed to train LoRA, I want to use the resume function of the trainer. The sample code is as follows:
+Hi
+I am trying to install Pytorch on my MacBook Pro 2009 with 2.53 GHz Intel Core 2 Duo. I tried several different  python versions, such as python 3.9/3.8/3.7 using Conda/pyenv environment, but it always got the Intel MKL FATAL ERROR:
+$ python -c "import torch; net=torch.nn.Linear(16,16);net(torch.randn(2, 16));"
+Intel MKL FATAL ERROR: This system does not meet the minimum requirements for use of the Intel(R) Math Kernel Library.
+The processor must support the Intel(R) Supplemental Streaming SIMD Extensions 3 (Intel(R) SSSE3) instructions.
+The processor must support the Intel(R) Streaming SIMD Extensions 4.2 (Intel(R) SSE4.2) instructions.
 
-Encountered the following error:
-
-I think it is caused by not placing the step on the corresponding device when loading the optimizer parameters.
-
-But I don't know how to solve this problem.
+After that, I download the the sources,  build and install, but it got illegal hardware instruction :
+$ python -c "import torch"
+zsh: illegal hardware instruction  python
+All of these happen after I reinstall macOS on my MBP.  Before reinstall the OS, Pytorch was working fine on my MBP. I don't know what happened.
+Anybody help me? Thx.
 Versions
 Collecting environment information...
-PyTorch version: 2.0.1+cu118
+PyTorch version: 1.8.0
+Is debug build: False
+CUDA used to build PyTorch: None
+ROCM used to build PyTorch: N/A
+OS: macOS 10.15.5 (x86_64)
+GCC version: Could not collect
+Clang version: 12.0.0 (clang-1200.0.32.29)
+CMake version: Could not collect
+Libc version: N/A
+Python version: 3.8.2 (default, Dec 21 2020, 15:06:04)  [Clang 12.0.0 (clang-1200.0.32.29)] (64-bit runtime)
+Python platform: macOS-10.15.5-x86_64-i386-64bit
+Is CUDA available: False
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip3] numpy==1.21.5
+[pip3] torch==1.8.0
+[conda] Could not collect
+$ sysctl -a|grep cpu.features
+machdep.cpu.features: FPU VME DE PSE TSC MSR PAE MCE CX8 APIC SEP MTRR PGE MCA CMOV PAT PSE36 CLFSH DS ACPI MMX FXSR SSE SSE2 SS HTT TM PBE SSE3 DTES64 MON DSCPL VMX SMX EST TM2 SSSE3 CX16 TPR PDCM SSE4.1 XSAVE
+cc @ezyang @seemethere @malfet @albanD
+
+----------------------------------------Comment 3----------------------------------------
+
+🐛 Describe the bug
+It seems that there is already some interest in offering a type-annotation system for PyTorch.
+This issue mentions torchtyping. However, on trying to save a nn.Module that includes such annotations, to TorchScript, I get an issue that looks like this:
+
+It's very unclear to me why a type annotation would impact the TorchScript saving process, but I don't know anything about TorchScript.
+However, the torchtyping maintainer seems to have looked into it and they mentioned a year ago that the issue lies with the TorchScript implementation. See the full discussion here: patrick-kidger/torchtyping#13. Since they recommended contacting the TorchScript maintainers, and I could not find an issue about it in this project, I'd like to bring this to the attention to whom it may concern, if they're not already aware of this.
+Some kind people have shared workarounds in the comments of this issue, and they seem to work.
+Thanks for your attention!
+Versions
+PyTorch version: 1.12.1
+Is debug build: False
+CUDA used to build PyTorch: None
+ROCM used to build PyTorch: N/A
+OS: macOS 12.5.1 (x86_64)
+GCC version: Could not collect
+Clang version: 14.0.0 (clang-1400.0.29.102)
+CMake version: version 3.24.2
+Libc version: N/A
+Python version: 3.10.7 (main, Sep 15 2022, 01:51:29) [Clang 14.0.0 (clang-1400.0.29.102)] (64-bit runtime)
+Python platform: macOS-12.5.1-x86_64-i386-64bit
+Is CUDA available: False
+CUDA runtime version: No CUDA
+CUDA_MODULE_LOADING set to: N/A
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] numpy==1.23.3
+[pip3] pytorch-lightning==1.7.7
+[pip3] torch==1.12.1
+[pip3] torchmetrics==0.10.0
+[pip3] torchtyping==0.1.4
+[conda] Could not collect
+cc @EikanWang @jgong5 @wenzhe-nrv @sanchitintel
+
+----------------------------------------Comment 4----------------------------------------
+
+🐛 Bug
+Seems that CUDA10.0 could build pytorch objects, but during linkage phase. it failed. could you help to check reason, or give me some hints for solving with it? now my mac with nvidia GPU 1080i can't use torch with GPU.
+To Reproduce
+Steps to reproduce the behavior:
+
+Set  USE_DISTRIBUTED=OFF in CMakeLists.txt
+MACOSX_DEPLOYMENT_TARGET=10.13 CC=clang CXX=clang++ python setup.py bdist_wheel
+
+Expected behavior
+torch wheel should be generated with GPU supported (0.4 torch wheel could be generated in the same way), but failed with following error
+
+Environment
+$ python ~/Downloads/collect_env.py
+Collecting environment information...
+PyTorch version: 1.0.0.dev20181016
+Is debug build: No
+CUDA used to build PyTorch: Could not collect
+OS: Mac OSX 10.13.6
+GCC version: Could not collect
+CMake version: version 3.10.1
+Python version: 3.6
+Is CUDA available: No
+CUDA runtime version: 10.0.130
+GPU models and configuration: Could not collect
+Nvidia driver version: Could not collect
+cuDNN version: Probably one of the following:
+/usr/local/cuda/lib/libcudnn.7.dylib
+/usr/local/cuda/lib/libcudnn.dylib
+/usr/local/cuda/lib/libcudnn_static.a
+Versions of relevant libraries:
+[pip] Could not collect
+[conda] pytorch-nightly           1.0.0.dev20181016         py3.6_0    pytorch
+cc @malfet @seemethere @walterddr
+
+----------------------------------------Comment 5----------------------------------------
+
+🐛 Describe the bug
+When converting my .pth model to onnx, I got the following warning.
+Warning: Constant folding - Only steps=1 can be constant folded for opset >= 10 onnx::Slice op. Constant folding not applied.
+My converting codes:
+`
+set the model to inference mode
+
+`
+The warned code line:
+x = F.pad(x, (0, 1, 0, 1), "constant", 0)
+Does opset11 not support constant padding? Thanks.
+Versions
+PyTorch version: 1.7.1
+Is debug build: False
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: Microsoft Windows 10 IoT 企业版
+GCC version: Could not collect
+Clang version: Could not collect
+CMake version: version 3.17.2
+Libc version: N/A
+Python version: 3.8.2 (tags/v3.8.2:7b3ab59, Feb 25 2020, 23:03:10) [MSC v.1916 64 bit (AMD64)] (64-bit runtime)
+Python platform: Windows-10-10.0.18362-SP0
+Is CUDA available: False
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: False
+Versions of relevant libraries:
+[pip3] numpy==1.19.3
+[pip3] torch==1.7.1
+[pip3] torchaudio==0.7.2
+[pip3] torchvision==0.8.2
+[conda] Could not collect
+
+----------------------------------------Comment 6----------------------------------------
+
+🐛 Bug
+Using torch.median(x) is considerably slower than explicitly sorting the array with torch.sort() and selecting the middle element when the tensor resides on cpu.
+To Reproduce
+Steps to reproduce the behavior:
+
+For CUDA tensors I did not observe this large difference.
+
+Expected behavior
+Since the median operation does not require to sort the whole tensor, it should be at least as fast as the sort operation.
+Environment
+Collecting environment information...
+PyTorch version: 1.7.0
+Is debug build: True
+CUDA used to build PyTorch: 10.2
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.1 LTS (x86_64)
+GCC version: (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
+Clang version: Could not collect
+CMake version: version 3.16.3
+Python version: 3.8 (64-bit runtime)
+Is CUDA available: True
+CUDA runtime version: 10.1.243
+GPU models and configuration:
+GPU 0: GeForce RTX 2080 Ti
+GPU 1: GeForce RTX 2080 Ti
+GPU 2: GeForce RTX 2080 Ti
+GPU 3: GeForce RTX 2080 Ti
+Nvidia driver version: 450.102.04
+cuDNN version: Could not collect
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Versions of relevant libraries:
+[pip] Could not collect
+[conda] Could not collect
+Additional context
+cc @VitalyFedyunin @ngimel @heitorschueroff @mruberry @rgommers
+
+----------------------------------------Comment 7----------------------------------------
+
+🐛 Describe the bug
+Using Enum as a key of the input raises a guards-related error:
+
+Possibly related to #99605 and its fix PR #99680
+Error logs
+
+Minified repro
+No response
+Versions
+Collecting environment information...
+PyTorch version: 2.1.0+cu118
 Is debug build: False
 CUDA used to build PyTorch: 11.8
 ROCM used to build PyTorch: N/A
-OS: Debian GNU/Linux 10 (buster) (x86_64)
-GCC version: (Debian 8.3.0-6) 8.3.0
+OS: Ubuntu 20.04.6 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0
 Clang version: Could not collect
-CMake version: version 3.27.2
-Libc version: glibc-2.28
-Python version: 3.10.12 (main, Jul  5 2023, 18:54:27) [GCC 11.2.0] (64-bit runtime)
-Python platform: Linux-5.4.143.bsk.8-amd64-x86_64-with-glibc2.28
+CMake version: version 3.22.5
+Libc version: glibc-2.31
+Python version: 3.10.12 | packaged by conda-forge | (main, Jun 23 2023, 22:40:32) [GCC 12.3.0] (64-bit runtime)
+Python platform: Linux-5.13.0-1031-aws-x86_64-with-glibc2.31
 Is CUDA available: True
-CUDA runtime version: Could not collect
+CUDA runtime version: 11.5.119
 CUDA_MODULE_LOADING set to: LAZY
-GPU models and configuration: GPU 0: A100-SXM-80GB
-Nvidia driver version: 450.191.01
-cuDNN version: Probably one of the following:
-/usr/lib/x86_64-linux-gnu/libcudnn.so.8.7.0
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.7.0
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.7.0
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.7.0
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.7.0
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.7.0
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.7.0
+GPU models and configuration: GPU 0: Tesla T4
+Nvidia driver version: 510.47.03
+cuDNN version: Could not collect
 HIP runtime version: N/A
 MIOpen runtime version: N/A
 Is XNNPACK available: True
 CPU:
-Architecture:        x86_64
-CPU op-mode(s):      32-bit, 64-bit
-Byte Order:          Little Endian
-Address sizes:       46 bits physical, 57 bits virtual
-CPU(s):              128
-On-line CPU(s) list: 0-127
-Thread(s) per core:  2
-Core(s) per socket:  32
-Socket(s):           2
-NUMA node(s):        4
-Vendor ID:           GenuineIntel
-CPU family:          6
-Model:               106
-Model name:          Intel(R) Xeon(R) Platinum 8336C CPU @ 2.30GHz
-Stepping:            6
-CPU MHz:             3000.014
-CPU max MHz:         3500.0000
-CPU min MHz:         800.0000
-BogoMIPS:            4600.00
-Virtualization:      VT-x
-L1d cache:           48K
-L1i cache:           32K
-L2 cache:            1280K
-L3 cache:            55296K
-NUMA node0 CPU(s):   0-15,64-79
-NUMA node1 CPU(s):   16-31,80-95
-NUMA node2 CPU(s):   32-47,96-111
-NUMA node3 CPU(s):   48-63,112-127
-Flags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid dca sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb cat_l3 invpcid_single ssbd mba ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb intel_pt avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local wbnoinvd dtherm ida arat pln pts hwp hwp_act_window hwp_epp hwp_pkg_req avx512vbmi umip pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg tme avx512_vpopcntdq rdpid md_clear pconfig flush_l1d arch_capabilities
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   46 bits physical, 48 bits virtual
+CPU(s):                          8
+On-line CPU(s) list:             0-7
+Thread(s) per core:              2
+Core(s) per socket:              4
+Socket(s):                       1
+NUMA node(s):                    1
+Vendor ID:                       GenuineIntel
+CPU family:                      6
+Model:                           85
+Model name:                      Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz
+Stepping:                        7
+CPU MHz:                         2499.998
+BogoMIPS:                        4999.99
+Hypervisor vendor:               KVM
+Virtualization type:             full
+L1d cache:                       128 KiB
+L1i cache:                       128 KiB
+L2 cache:                        4 MiB
+L3 cache:                        35.8 MiB
+NUMA node0 CPU(s):               0-7
+Vulnerability Itlb multihit:     KVM: Mitigation: VMX unsupported
+Vulnerability L1tf:              Mitigation; PTE Inversion
+Vulnerability Mds:               Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state unknown
+Vulnerability Meltdown:          Mitigation; PTI
+Vulnerability Mmio stale data:   Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state unknown
+Vulnerability Spec store bypass: Vulnerable
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Retpolines, STIBP disabled, RSB filling
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch invpcid_single pti fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx avx512f avx512dq rdseed adx smap clflushopt clwb avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves ida arat pku ospke avx512_vnni
 Versions of relevant libraries:
-[pip3] flake8==6.1.0
+[pip3] numpy==1.24.1
+[pip3] onnx==1.14.1
+[pip3] onnxruntime==1.16.0
+[pip3] pytorch-lightning==2.0.9.post0
+[pip3] pytorch-memlab==0.3.0
+[pip3] torch==2.1.0+cu118
+[pip3] torch_frame==0.1.0
+[pip3] torch_geometric==2.4.0
+[pip3] torchmetrics==1.2.0
+[pip3] torchvision==0.16.0
+[pip3] triton==2.1.0
+[conda] numpy                     1.24.1                   pypi_0    pypi
+[conda] pytorch-lightning         2.0.9.post0              pypi_0    pypi
+[conda] pytorch-memlab            0.3.0                    pypi_0    pypi
+[conda] torch                     2.1.0+cu118              pypi_0    pypi
+[conda] torch-frame               0.1.0                    pypi_0    pypi
+[conda] torch-geometric           2.4.0                    pypi_0    pypi
+[conda] torchmetrics              1.2.0                    pypi_0    pypi
+[conda] torchvision               0.16.0                   pypi_0    pypi
+[conda] triton                    2.1.0                    pypi_0    pypi
+cc @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @zou3519 @voznesenskym @penguinwu @EikanWang @jgong5 @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @wenzhe-nrv @jiayisunx @chenyang78 @aakhundov @kadeng
+
+----------------------------------------Comment 8----------------------------------------
+
+🐛 Bug
+Please set a random name to all the nodes, for debugging, when opening in netron
+To Reproduce
+Get an error like
+
+Error: Type 'tensor(bool)' of input parameter (253) of operator (Gather) in node () is invali
+
+Expected behavior
+To have a pointer to see which node has issue
+Environment
+PyTorch version: 1.2.0
+Is debug build: No
+CUDA used to build PyTorch: 10.0.130
+OS: Ubuntu 16.04.6 LTS
+GCC version: (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
+CMake version: version 3.14.0
+Python version: 2.7
+Is CUDA available: Yes
+CUDA runtime version: Could not collect
+GPU models and configuration: GPU 0: GeForce GTX 1070
+Nvidia driver version: 418.40.04
+cuDNN version: /usr/local/lib/libcudnn.so.5.1.10
+Versions of relevant libraries:
+[pip] mictorch==0.0.1
+[pip] numpy==1.16.4
+[pip] torch==1.2.0
+[pip] torchvision==0.4.0
+[conda] Could not collect
+Additional context
+This script helps to add thsoe names manually, thanks to @hariharans29
+
+
+----------------------------------------Comment 9----------------------------------------
+
+🐛 Describe the bug
+I modified the Winogrande project to utilize the 'mps' backend.
+https://github.com/allenai/winogrande
+I edited the file ./scripts/run_experiment on line(s) 490:
+E.g.
+
+Ran the training script:
+
+Versions
+'''
+% python collect_env.py
+Collecting environment information...
+PyTorch version: 1.13.0a0+gitcbdb694
+Is debug build: False
+CUDA used to build PyTorch: None
+ROCM used to build PyTorch: N/A
+OS: macOS 12.4 (x86_64)
+GCC version: Could not collect
+Clang version: 13.1.6 (clang-1316.0.21.2.5)
+CMake version: version 3.22.4
+Libc version: N/A
+Python version: 3.8.13 (default, Mar 28 2022, 06:16:26)  [Clang 12.0.0 ] (64-bit runtime)
+Python platform: macOS-10.16-x86_64-i386-64bit
+Is CUDA available: False
+CUDA runtime version: No CUDA
+GPU models and configuration: No CUDA
+Nvidia driver version: No CUDA
+cuDNN version: No CUDA
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] mypy-extensions==0.4.3
+[pip3] numpy==1.22.3
+[pip3] numpydoc==1.2
+[pip3] pytorch-lightning==1.6.3
+[pip3] pytorch-transformers==1.1.0
+[pip3] torch==1.13.0a0+gitcbdb694
+[pip3] torchmetrics==0.8.2
+[pip3] torchtext==0.12.0
+[pip3] torchvision==0.13.0.dev20220517
+[conda] blas                      1.0                         mkl    anaconda
+[conda] libblas                   3.9.0              12_osx64_mkl    conda-forge
+[conda] libcblas                  3.9.0              12_osx64_mkl    conda-forge
+[conda] liblapack                 3.9.0              12_osx64_mkl    conda-forge
+[conda] liblapacke                3.9.0              12_osx64_mkl    conda-forge
+[conda] mkl                       2021.4.0           hecd8cb5_637    anaconda
+[conda] mkl-include               2022.0.0           hecd8cb5_105    anaconda
+[conda] mkl-service               2.4.0            py38h9ed2024_0    anaconda
+[conda] mkl_fft                   1.3.1            py38h4ab4a9b_0    anaconda
+[conda] mkl_random                1.2.2            py38hb2f4e1b_0    anaconda
+[conda] numpy                     1.22.3                   pypi_0    pypi
+[conda] numpy-base                1.21.5           py38h3b1a694_2    anaconda
+[conda] numpydoc                  1.2                pyhd3eb1b0_0    anaconda
+[conda] pytorch                   1.11.0                  py3.8_0    pytorch
+[conda] pytorch-lightning         1.6.3                    pypi_0    pypi
+[conda] pytorch-transformers      1.1.0                    pypi_0    pypi
+[conda] torch                     1.12.0.dev20220517          pypi_0    pypi
+[conda] torchmetrics              0.8.2                    pypi_0    pypi
+[conda] torchtext                 0.12.0                     py38    pytorch
+[conda] torchvision               0.13.0.dev20220517          pypi_0    pypi
+(base) davidlaxer@x86_64-apple-darwin13 winogrande % ipython
+Python 3.8.13 (default, Mar 28 2022, 06:16:26)
+Type 'copyright', 'credits' or 'license' for more information
+IPython 8.2.0 -- An enhanced Interactive Python. Type '?' for help.
+In [1]: import torch
+In [2]: print(torch.version)
+1.13.0a0+gitcbdb694
+'''
+
+----------------------------------------Comment 10----------------------------------------
+
+🐛 Describe the bug
+When doing static quantization with per_tensor_affine quantization for activations adding an offset to to the calibration data affects the calculated quantization scale. This goes against my understanding of affine quantization and what is indicated in this blog.
+This is because in this this function the ranges max_val_pos and min_val_neg always includes 0 even if the min and max of your data is far offset from 0.
+
+I am unsure why this is not this:
+
+Example usage
+
+
+Thanks for your help!
+Versions
+PyTorch version: 2.0.0a0+gitc263bd4
+Is debug build: False
+CUDA used to build PyTorch: 11.8
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.6 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0
+Clang version: 15.0.7
+CMake version: version 3.22.0
+Libc version: glibc-2.31
+Python version: 3.8.10 (default, May 26 2023, 14:05:08)  [GCC 9.4.0] (64-bit runtime)
+Python platform: Linux-5.4.0-77-generic-x86_64-with-glibc2.29
+Is CUDA available: True
+CUDA runtime version: 11.8.89
+CUDA_MODULE_LOADING set to: LAZY
+GPU models and configuration:
+GPU 0: NVIDIA TITAN V
+GPU 1: NVIDIA TITAN V
+GPU 2: NVIDIA TITAN V
+GPU 3: NVIDIA TITAN V
+Nvidia driver version: 525.125.06
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.9.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.9.0
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+CPU:
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   45 bits physical, 48 bits virtual
+CPU(s):                          32
+On-line CPU(s) list:             0-31
+Thread(s) per core:              1
+Core(s) per socket:              16
+Socket(s):                       2
+NUMA node(s):                    2
+Vendor ID:                       GenuineIntel
+CPU family:                      6
+Model:                           79
+Model name:                      Intel(R) Xeon(R) CPU E5-2630 v4 @ 2.20GHz
+Stepping:                        1
+CPU MHz:                         2199.998
+BogoMIPS:                        4399.99
+L1d cache:                       1 MiB
+L1i cache:                       1 MiB
+L2 cache:                        8 MiB
+L3 cache:                        50 MiB
+NUMA node0 CPU(s):               0-15
+NUMA node1 CPU(s):               16-31
+Vulnerability Itlb multihit:     KVM: Vulnerable
+Vulnerability L1tf:              Mitigation; PTE Inversion
+Vulnerability Mds:               Mitigation; Clear CPU buffers; SMT disabled
+Vulnerability Meltdown:          Mitigation; PTI
+Vulnerability Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl and seccomp
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Full generic retpoline, IBPB conditional, IBRS_FW, STIBP disabled, RSB filling
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Not affected
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon nopl xtopology tsc_reliable nonstop_tsc cpuid pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault invpcid_single pti ssbd ibrs ibpb stibp fsgsbase tsc_adjust bmi1 avx2 smep bmi2 invpcid rdseed adx smap xsaveopt arat md_clear flush_l1d arch_capabilities
+Versions of relevant libraries:
+[pip3] mypy==1.5.1
 [pip3] mypy-extensions==1.0.0
-[pip3] numpy==1.25.2
-[pip3] torch==2.0.1+cu118
+[pip3] numpy==1.22.3
+[pip3] pytorch-quantization==2.1.2
+[pip3] torch==2.0.0a0+gitc263bd4
 [pip3] torch-tb-profiler==0.4.1
-[pip3] torchaudio==2.0.2
-[pip3] torchvision==0.15.2
+[pip3] torchaudio==2.0.1+3b40834
+[pip3] torchmetrics==1.1.1
+[pip3] torchpq==0.1.8.3
+[pip3] torchvision==0.15.1a0+42759b1
 [pip3] triton==2.0.0
-[conda] numpy                     1.25.2                   pypi_0    pypi
-[conda] torch                     2.0.1+cu118              pypi_0    pypi
-[conda] torch-tb-profiler         0.4.1                    pypi_0    pypi
-[conda] torchaudio                2.0.2                    pypi_0    pypi
-[conda] torchvision               0.15.2                   pypi_0    pypi
-[conda] triton                    2.0.0                    pypi_0    pypi
-cc @vincentqb @jbschlosser @albanD @janeyx99 @crcrpar
+[pip3] tritonclient==2.25.0
+[conda] Could not collect
+cc @jerryzh168 @jianyuh @raghuramank100 @jamesr66a @vkuzo @jgong5 @Xia-Weiwen @leslie-fang-intel
 

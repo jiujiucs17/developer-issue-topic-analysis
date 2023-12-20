@@ -1,319 +1,201 @@
 ----------------------------------------Comment 1----------------------------------------
 
+Issue description
+#89591 and #93901 added the backward of foreach functions but it turned out that the grad_fn seems to save unwanted SaveTensors to each Tensor of outputs.
+That being said, I'm not quite sure if it'd be an expected behavior where each result Tensor's grad_fn has saved Tensor(s) (and Scalar(s)) with the same index.
+Code example
+The following snippet would tell outputs[0].grad_fn has saved 2 Tensors even though each output Tensor needs one Tensor to compute its gradient (a.k.a. grad_in).
+
+System Info
+
+cc @ezyang @gchanan @zou3519 @albanD @gqchen @pearu @nikitaved @soulitzer @lezcano @Varal7 @vincentqb @jbschlosser @janeyx99 @mcarilli @ngimel
+
+----------------------------------------Comment 2----------------------------------------
+
+The back propagation isn't working properly in the case 0**0. For example in the code below we have an "nan" which should mathematically not be here.
+x = torch.tensor([0., 1.], requires_grad=True)
+loss = sum((x)**0)
+loss.backward()
+print(loss)
+print(x.grad)
+tensor(2.)
+tensor([nan.,   0.])
+It is probably because the derivative of loss is 0*(x^-1) which is 0/0 is the case x=0. The gradient should be 0. In fact the formula (x^n)' = n*x^(n-1) which is probably used, is false for n=0.
+This is a special case but can happen.
+Hope it can help
+Hv0nnus
+
+----------------------------------------Comment 3----------------------------------------
+
+📚 Documentation
+Specifically, why should we use torch.jit.isinstance instead of Python's isinstance? I played around with torch.jit.isinstance as part of another issue I opened, and it didn't seem to make any difference. I also pulled the example code from the documentation and changed all the torch.jit.isinstances to isinstances; it didn't seem to have an effect there either
+cc @brianjo @mruberry @gmagogsfm
+
+----------------------------------------Comment 4----------------------------------------
+
+The Problem:
+Currently if you implement a nonstandard collate function which, for example returns a namedtuple and set pin_memory=True the namedtuple would be "casted" to a list  by the following code.
+Proposed Approach:
+Add another argument to the data loader constructor DataLoader(batch_type_ctor=bt_ctor), where bt_ctor is a callable returning a constructed object. The result of pin_memory_batch should be passed to bt_ctor, and so should be the result of collate_fn if collate_fn is default_collate.
+This approach might seem to add complexity to DataLoader since the connection between batch_type_ctor and collate_fn is non trivial if you don't read the code and may result in some code duplication.
+For example if you implement a nonstandard collate_fn which returns a namedtuple then the return value of the collate_fn should be resupplied via batch_type_ctor if pin_memory is used.
+But this approach seems to result in the most simple api and simple implementation.
+PS
+I would enjoy contributing to the project.
+cc @ssnl
+
+----------------------------------------Comment 5----------------------------------------
+
+I am attempting to save the gradient of a non-leaf node. I attempt to set requires_grad to be true, and receive the following error:
+
+RuntimeError: you can only change requires_grad flags of leaf variables.
+
+Attempting to call retain_grad returns an error because requires_grad is False:
+
+RuntimeError: can't retain_grad on Variable that has requires_grad=False
+
+This makes saving the gradient of an already existing Variable by way of retain_grad impossible. Here's example code that produces these errors:
+
+I am using Python 3.5.2 and PyTorch 0.2.0.post3
+
+----------------------------------------Comment 6----------------------------------------
+
+Issue description
+Since v0.4 returns scalar (0-dim tensor) loss, gathering the scalar loss manually raises an error like the example.
+Unsqueezing the scalar losses back to 1-dim vector like the previous versions works, but is this an intended behavior of nn.parallel.gather?
+The given parallel GPU code scheme is used in Annotated Transformer implementation.
+Code example
+
+
+Traceback (most recent call last):
+File "gather_bug.py", line 43, in 
+loss_gather = nn.parallel.gather(loss, target_device=devices[0])
+File "/home/tkdrlf9202/anaconda3/envs/tkdrlf9202_p36/lib/python3.6/site-packages/torch/nn/parallel/scatter_gather.py", line 68, in gather
+return gather_map(outputs)
+File "/home/tkdrlf9202/anaconda3/envs/tkdrlf9202_p36/lib/python3.6/site-packages/torch/nn/parallel/scatter_gather.py", line 55, in gather_map
+return Gather.apply(target_device, dim, *outputs)
+File "/home/tkdrlf9202/anaconda3/envs/tkdrlf9202_p36/lib/python3.6/site-packages/torch/nn/parallel/_functions.py", line 54, in forward
+ctx.input_sizes = tuple(map(lambda i: i.size(ctx.dim), inputs))
+File "/home/tkdrlf9202/anaconda3/envs/tkdrlf9202_p36/lib/python3.6/site-packages/torch/nn/parallel/_functions.py", line 54, in 
+ctx.input_sizes = tuple(map(lambda i: i.size(ctx.dim), inputs))
+RuntimeError: dimension specified as 0 but tensor has no dimensions
+
+System Info
+PyTorch version: 0.4.0
+Is debug build: No
+CUDA used to build PyTorch: 9.0.176
+OS: Ubuntu 16.04.4 LTS
+GCC version: (Ubuntu 5.4.0-6ubuntu1~16.04.9) 5.4.0 20160609
+CMake version: version 3.5.1
+Python version: 3.6
+Is CUDA available: Yes
+CUDA runtime version: 9.0.176
+GPU models and configuration:
+GPU 0: TITAN Xp
+GPU 1: TITAN Xp
+GPU 2: TITAN Xp
+GPU 3: TITAN Xp
+Nvidia driver version: 390.30
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.6.0.21
+/usr/lib/x86_64-linux-gnu/libcudnn.so.7.0.5
+/usr/lib/x86_64-linux-gnu/libcudnn_static.a
+/usr/local/MATLAB/R2017b/bin/glnxa64/libcudnn.so.5.1.5
+/usr/local/cuda-8.0/targets/x86_64-linux/lib/libcudnn.so.6.0.21
+/usr/local/cuda-8.0/targets/x86_64-linux/lib/libcudnn_static.a
+Versions of relevant libraries:
+[pip] msgpack-numpy (0.4.1)
+[pip] numpy (1.13.3)
+[pip] torch (0.4.0)
+[pip] torchfile (0.1.0)
+[pip] torchnet (0.0.1)
+[pip] torchtext (0.2.3)
+[pip] torchvision (0.2.1)
+[conda] cuda90                    1.0                  h6433d27_0    pytorch
+[conda] pytorch                   0.4.0           py36_cuda9.0.176_cudnn7.1.2_1  [cuda90]  pytorch
+[conda] torchfile                 0.1.0                     
+[conda] torchnet                  0.0.1                     
+[conda] torchtext                 0.2.3                     
+[conda] torchvision               0.2.1                    py36_1    pytorch
+
+PyTorch or Caffe2: PyTorch
+How you installed PyTorch (conda, pip, source): conda
+Build command you used (if compiling from source): NA
+OS: ubuntu 16.04
+PyTorch version: 0.4
+Python version: 3.6
+CUDA/cuDNN version: 9.0.176/7.0.5
+GPU models and configuration: 4x Titan Xp
+GCC version (if compiling from source): N/A
+CMake version: 3.5.1
+Versions of any other relevant libraries: N/A
+
+
+----------------------------------------Comment 7----------------------------------------
+
+Issue description
+aten._fft_c2r and aten._fft_r2c meta implementations currently return contiguous strides in all cases, which is not consistent with eager.
+aten._fft_c2c makes a much better effort, but is still incorrect on CUDA when there are more than 3 transform dimensions or on CPU when using the pocketfft implementation instead of mkl-fft.
+Ref:
+
+c2r
+r2c
+c2c
+
+Code example
+This real-to-complex example falls back to eager with torch.compile due to UnsupportedOperatorException:
+
+This complex-to-complex example compiles, but fails at runtime with stride mismatch:
+
+cc @mruberry @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @nkaretnikov
+
+----------------------------------------Comment 8----------------------------------------
+
+🚀 Feature
+Currently, AWS EC2 instances are able to add GPU accelerators in a plug-and-play fashion. The great thing here is affordability for startups that don't have the cash to burn on ~$1,000+/mo GPU instances.
+However, having built all of AWS's deep learning AMIs, none of them seem to actually support their own Pytorch build (amazonei) to enable pytorch to leverage inference acceleration. All of their code examples use with torch.jit.optimized_execution(True, {'target_device': 'eia:0'}): which fails on all version of pytorch I could find as optimized_execution expects 1 input, not 2 input parameters.  You can find an example here.
+Motivation
+As machine learning continues to become more and more prolific, startups like ours are attempting to leverage ML in their early-stage offerings. The cost requirements are indeed huge unless you're VC backed, which even then, the burn is intense.
+Pitch
+I would like to propose that torch.cuda.is_available() be extended to find elastic inference cuda connections and utilize them the same as you would for instances with built in GPUs.
+This would dramatically improve the ability for Torch to be adapted outside of AWS' sagemaker ecosystem, which itself requires a lot of specialized learning/expertise to become proficient enough with it to use it in production.
+By leveraging existing Torch functions/functionality, these barriers (and time sucks) are removed for a much broader audience of small companies without seasoned architecture experts on the team.
+Additional context
+AWS' documentation is terrible. None of the tutorials that they have out there actually allow you to use gpu accelerated torch with any of their deep learning AMIs. None of them accept a second parameter to optimized_execution which doesn't allow you to use their own products. Kind of insane.
+
+----------------------------------------Comment 9----------------------------------------
+
+📚 The doc issue
+TORCH.USE_DETERMINISTIC_ALGORITHMS
+the code example says index_copy and index_add_cuda do not have a deterministic implementation and will error out under deterministic mode, whereas in the same doc page it says both index_copy and index_add should have deterministic implementation.
+Suggest a potential alternative/fix
+update the code example to use operators that do not have deterministic implementation to illustrate the error out case.
+cc @svekars @holly1238 @mruberry @kurtamohler
+
+----------------------------------------Comment 10----------------------------------------
+
 If you have a question or would like help and support, please ask at our
 forums.
 If you are submitting a feature request, please preface the title with [feature request].
 If you are submitting a bug report, please fill in the following details.
 Issue description
-Provide a short description.
+Low validation score on Pretrained Alexnet and Imagenet 2012 data set.
+I am using pretrained network to validate some prior work.
+My question:
+Am I using the correct data set?
 Code example
-Please try to provide a minimal example to repro the bug.
-Error messages and stack traces are also helpful.
-System Info
-Please copy and paste the output from our
-environment collection script
-(or fill out the checklist below manually).
-You can get the script and run it with:
 
 
-PyTorch or Caffe2:
-How you installed PyTorch (conda, pip, source):
+PyTorch or Caffe2: pytorch
+How you installed PyTorch (conda, pip, source): pip
 Build command you used (if compiling from source):
-OS:
-PyTorch version:
-Python version:
+OS: RHEL
+PyTorch version: 1.6
+Python version: 3.7
 CUDA/cuDNN version:
 GPU models and configuration:
 GCC version (if compiling from source):
 CMake version:
 Versions of any other relevant libraries:
-
-
-----------------------------------------Comment 1----------------------------------------
-
-Issue description
-As in the title.
-Code example
-
-The expected result is
-
-In place addition produces garbage as well:
-
-System Info
-
-PyTorch: master
-
-cc @alexsamardzic @nikitaved @cpuhrsch @amjames @bhosmer
-
-----------------------------------------Comment 1----------------------------------------
-
-🚀 Feature
-Add the ability to subclass torch.Tensor so that you can use isinstance(tensor, CustomTensor) to determine the "context" of the data stored in the subclass object. I think #9515 describes the need for dtype promotion logic, but this proposal is for python type promotion logic.
-The array__wrap method already exists in numpy and ensures that the following ufunc preserves the custom tensor type:
-
-The tensor_wrap method does not exist. As a result, the custom type information is easily lost:
-custom_tensor = CustomTensor(torch.tensor([1, 2, 3, 4])
-new_tensor = custom_tensor.add(1.0) -> Tensor
-isinstance(new_tensor, CustomTensor) #  returns False
-Motivation
-The torch.Tensor class provides a dynamically typed wrapper of statically typed Torch Classes (FloatTensor, DoubleTensor, HalfTensor, etc) using the numpy dtype. While this should save us from ever wanting to subclass the Tensor class, it would be nice to use the subclass of a Tensor to provide custom methods specific to the context of the data.
-For example:
-
-
-
-Pitch
-Custom subclassing is already utilized by the torch.nn.Parameter Class, so most of the heavy lifting is already done. Note that performing a math operation on a Parameter also downcasts the Parameter to a Tensor.
-Alternatives
-Numpy provides the following methods for customizing the output behaviour of a ufunc.
-
-
-def array_wrap(self, array):
-A subclass can override what happens when executing numpy ufuncs after the ufunc is called.
-
-
-def array_ufunc(ufunc, method, *inputs, **kwargs):
-A subclass can override what happens when executing numpy ufuncs before and after the ufunc is called. New in version 1.13.
-
-
-def array_finalize(self, obj):
-The ability to insert any kind of custom attributes, events, io, etc.  This may not work on GPU because this would open up the ability to define highly customized data containers.
-a. explicit constructor call (obj = MySubClass(params)).
-b. View casting
-c. Creating new from template
-
-
-Do Nothing:
-Revert to functional implementation. Simply replace all custom_tensor.method(*args, **kwargs) with method(custom_tensor, *args, **kwargs).
-
-
-The array_wrap method is sufficient for this problem because we want to cast the tensor after the function has been performed. The array_ufunc would also work but could result in compatibility  problems with older versions of numpy. The __array_finalize method may add too much customization that could create a wide range of gotchas and incompatibility between CPU and GPU.
-Example
-Sample code that partially works for add(custom_tensor, other):
-
-Sample Results:
-
-Conclusions
-The above example demonstrates how numpy goes beyond binary operator overloading to ensure that all operations return the highest derived subclass of the ndarray. This is not how pytorch is organized. I think #9515 describes the need for dtype promotion logic, but this proposal is for python type promotion logic.
-
-----------------------------------------Comment 1----------------------------------------
-
-❓ Questions
-For the following example code, the printed graph in torch 1.4.0 is very different from that in torch 1.3.1. I am wondering is this expected? because many useful fields are removed in torch 1.4.0.
-
-output in torch 1.3.1:
-
-output in torch 1.4.0:
-
-cc @suo
-
-----------------------------------------Comment 1----------------------------------------
-
-Issue description
-I think there might be an issue masked_select_. It doesn't seem to work on some source tensors.
-Code example
-
-I get the following error.
- Traceback (most recent call last): File "Untitled.py", line 17, in <module> assert n[i] == n_[i] AssertionError
-This doesn't happen if source is torch.ones(t_size)
-System Info
-
-PyTorch or Caffe2: pytorch
-How you installed PyTorch (conda, pip, source): conda, pip
-Build command you used (if compiling from source): none
-OS: Mac OSX 10.13.5
-PyTorch version: 0.4.0
-Python version: 3.6
-CUDA/cuDNN version: no
-GPU models and configuration: no
-GCC version (if compiling from source): no
-CMake version: 3.11.3
-Versions of any other relevant libraries: numpy 1.14.4
-
-
-----------------------------------------Comment 1----------------------------------------
-
-Editorial note: See #10375 (comment) for the real problem
-Issue description
-I can not get the tensor from queue.
-Code example
-
-I executed this code, and only get and put printed, no end. I use ctrl-c to interrupt it, I find it blocks in result = queue.get(). Any idea?
-System Info
-Collecting environment information...
-PyTorch version: 0.4.0a0+200fb22
-Is debug build: No
-CUDA used to build PyTorch: Could not collect
-OS: Arch Linux
-GCC version: (GCC) 8.1.1 20180531
-CMake version: version 3.11.4
-Python version: 2.7
-Is CUDA available: No
-CUDA runtime version: 9.2.148
-GPU models and configuration: GPU 0: GeForce GTX 1080
-Nvidia driver version: 396.45
-cuDNN version: Could not collect
-Versions of relevant libraries:
-[pip] numpy (1.14.3)
-[pip] torch (0.4.1)
-[pip] torchvision (0.2.1)
-[conda] Could not collect
-cc @ngimel
-
-----------------------------------------Comment 1----------------------------------------
-
-in the blog https://pytorch.org/blog/scaling-vision-model-training-platforms-with-pytorch/
-
-how to Wrap normalization layers like LayerNorm in FP32 when use FSDP, do we have a example code?
-cc @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @H-Huang @kwen2501 @awgu
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-It looks like gradient checkpointing (activation checkpointing) it is not allowed if used with torch.compile. For example this code:
-
-gives the following error:
-
-Versions
-
-cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh
-
-----------------------------------------Comment 1----------------------------------------
-
-Issue description
-Calling an Embedding moved to cuda fails.
-The same code on CPU works.
-Code example
-import torch
-import torch.nn as nn
-e = nn.Embedding(17,50)
-dev = torch.device('cuda')
-e.to(dev, torch.float)
-idx=torch.tensor([1,2,3])
-e(idx)
-Traceback (most recent call last):
-File "", line 1, in 
-File "/usr/local/lib/python3.5/dist-packages/torch/nn/modules/module.py", line  491, in call
-result = self.forward(*input, **kwargs)
-File "/usr/local/lib/python3.5/dist-packages/torch/nn/modules/sparse.py", line  108, in forward
-self.norm_type, self.scale_grad_by_freq, self.sparse)
-File "/usr/local/lib/python3.5/dist-packages/torch/nn/functional.py", line 107 6, in embedding
-return torch.embedding(weight, input, padding_idx, scale_grad_by_freq, spars e)
-RuntimeError: Expected object of type torch.cuda.LongTensor but found type torch .LongTensor for argument #3 'index'
-System Info
-PyTorch version: 0.4.0
-Is debug build: No
-CUDA used to build PyTorch: 9.1.85
-OS: Ubuntu 16.04.4 LTS
-GCC version: (Ubuntu 5.4.0-6ubuntu1~16.04.9) 5.4.0 20160609
-CMake version: version 3.5.1
-Python version: 3.5
-Is CUDA available: Yes
-CUDA runtime version: 8.0.61
-GPU models and configuration:
-GPU 0: Tesla P100-PCIE-16GB
-GPU 1: Tesla P100-PCIE-16GB
-GPU 2: Tesla P100-PCIE-16GB
-GPU 3: Tesla P100-PCIE-16GB
-Nvidia driver version: 390.30
-cuDNN version: Probably one of the following:
-/usr/lib/x86_64-linux-gnu/libcudnn.so.6.0.21
-/usr/lib/x86_64-linux-gnu/libcudnn.so.7.0.5
-/usr/lib/x86_64-linux-gnu/libcudnn_static_v7.a
-/usr/local/MATLAB/R2017a/bin/glnxa64/libcudnn.so.5.1.5
-Versions of relevant libraries:
-[pip3] numpy (1.14.0)
-[pip3] torch (0.4.0)
-[pip3] torchvision (0.2.1)
-
-----------------------------------------Comment 1----------------------------------------
-
-Issue description
-torch.distributions.uniform.Uniform.cdf() can return negative values or values above one because it does not do a range check like log_prob() in the same class does.
-Relevant code in cdf():
-
-
-
-pytorch/torch/distributions/uniform.py
-
-
-        Lines 70 to 74
-      in
-      825c3ca
-
-
-
-
-
-
- def cdf(self, value): 
-
-
-
- if self._validate_args: 
-
-
-
- self._validate_sample(value) 
-
-
-
- result = (value - self.low) / (self.high - self.low) 
-
-
-
- return result 
-
-
-
-
-
-Range checking in log_prob():
-
-
-
-pytorch/torch/distributions/uniform.py
-
-
-        Lines 63 to 68
-      in
-      825c3ca
-
-
-
-
-
-
- def log_prob(self, value): 
-
-
-
- if self._validate_args: 
-
-
-
- self._validate_sample(value) 
-
-
-
- lb = value.ge(self.low).type_as(self.low) 
-
-
-
- ub = value.lt(self.high).type_as(self.low) 
-
-
-
- return torch.log(lb.mul(ub)) - torch.log(self.high - self.low) 
-
-
-
-
-
-I can provide a pull request based on the range checking as done in the log_prob() method of the same class (although log_prob() throws an exception with scalar arguments because of these range checks while cdf() accepts scalar arguments).
-Code example
-
-will give
-
-System Info
 
 

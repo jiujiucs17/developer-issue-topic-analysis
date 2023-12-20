@@ -1,577 +1,207 @@
 ----------------------------------------Comment 1----------------------------------------
 
-🐛 Describe the bug
-``
- 
-`import torch
-class TestSig(torch.nn.Module):
-def init(self):
-super().init()
-def forward(self, x):
-return torch.sigmoid(x)
-torch._dynamo.config.verbose=True
-opt_cpu = torch.compile(TestSig())
-print("cpu:", opt_cpu(torch.randn(1)))
-cuda_eager = TestSig().cuda()
-print("cuda eager:", cuda_eager(torch.randn(1).cuda()))
-opt_cuda = torch.compile(TestSig()).cuda() #torch.compile(TestSig().cuda()) also fails
-print("cuda opt:", opt_cuda(torch.randn(1).cuda()))`
-and I get:
-cpu: tensor([0.3198])
-cuda eager: tensor([0.4224], device='cuda:0')
-/usr/bin/ld: cannot find -lcuda: No such file or directory
-collect2: error: ld returned 1 exit status
-concurrent.futures.process._RemoteTraceback:
-"""
-Traceback (most recent call last):
-File "/root/anaconda3/lib/python3.9/concurrent/futures/process.py", line 246, in _process_worker
-r = call_item.fn(*call_item.args, **call_item.kwargs)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/codecache.py", line 549, in _worker_compile
-kernel.precompile(warm_cache_only_with_cc=cc)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/triton_ops/autotune.py", line 69, in precompile
-self.launchers = [
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/triton_ops/autotune.py", line 70, in 
-self._precompile_config(c, warm_cache_only_with_cc)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/triton_ops/autotune.py", line 83, in _precompile_config
-triton.compile(
-File "/root/anaconda3/lib/python3.9/site-packages/triton/compiler.py", line 1587, in compile
-so_path = make_stub(name, signature, constants)
-File "/root/anaconda3/lib/python3.9/site-packages/triton/compiler.py", line 1476, in make_stub
-so = _build(name, src_path, tmpdir)
-File "/root/anaconda3/lib/python3.9/site-packages/triton/compiler.py", line 1391, in build
-ret = subprocess.check_call(cc_cmd)
-File "/root/anaconda3/lib/python3.9/subprocess.py", line 373, in check_call
-raise CalledProcessError(retcode, cmd)
-subprocess.CalledProcessError: Command '['/usr/bin/gcc', '/tmp/tmphttesy02/main.c', '-O3', '-I/root/anaconda3/lib/python3.9/site-packages/triton/third_party/cuda/include', '-I/root/anaconda3/include/python3.9', '-I/tmp/tmphttesy02', '-shared', '-fPIC', '-lcuda', '-o', '/tmp/tmphttesy02/triton.cpython-39-x86_64-linux-gnu.so']' returned non-zero exit status 1.
-"""
-The above exception was the direct cause of the following exception:
-Traceback (most recent call last):
-File "/root/anaconda3/lib/python3.9/site-packages/torch/dynamo/output_graph.py", line 670, in call_user_compiler
-compiled_fn = compiler_fn(gm, self.fake_example_inputs())
-File "/root/anaconda3/lib/python3.9/site-packages/torch/dynamo/debug_utils.py", line 1055, in debug_wrapper
-compiled_gm = compiler_fn(gm, example_inputs)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/init.py", line 1390, in call
-return compile_fx(model, inputs, config_patches=self.config)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/compile_fx.py", line 455, in compile_fx
-return aot_autograd(
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/backends/common.py", line 48, in compiler_fn
-cg = aot_module_simplified(gm, example_inputs, **kwargs)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_functorch/aot_autograd.py", line 2805, in aot_module_simplified
-compiled_fn = create_aot_dispatcher_function(
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/utils.py", line 163, in time_wrapper
-r = func(*args, **kwargs)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_functorch/aot_autograd.py", line 2498, in create_aot_dispatcher_function
-compiled_fn = compiler_fn(flat_fn, fake_flat_args, aot_config)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_functorch/aot_autograd.py", line 1713, in aot_wrapper_dedupe
-return compiler_fn(flat_fn, leaf_flat_args, aot_config)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_functorch/aot_autograd.py", line 1326, in aot_dispatch_base
-compiled_fw = aot_config.fw_compiler(fw_module, flat_args_with_views_handled)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/utils.py", line 163, in time_wrapper
-r = func(*args, **kwargs)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/compile_fx.py", line 430, in fw_compiler
-return inner_compile(
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/debug_utils.py", line 595, in debug_wrapper
-compiled_fn = compiler_fn(gm, example_inputs)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/debug.py", line 239, in inner
-return fn(*args, **kwargs)
-File "/root/anaconda3/lib/python3.9/contextlib.py", line 79, in inner
-return func(*args, **kwds)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/compile_fx.py", line 177, in compile_fx_inner
-compiled_fn = graph.compile_to_fn()
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/graph.py", line 586, in compile_to_fn
-return self.compile_to_module().call
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/utils.py", line 163, in time_wrapper
-r = func(*args, **kwargs)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/graph.py", line 575, in compile_to_module
-mod = PyCodeCache.load(code)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/codecache.py", line 528, in load
-exec(code, mod.dict, mod.dict)
-File "/tmp/torchinductor_root/fl/cflyzetaelrdigwqk7eeqcd4ltjygnu2ngsoprkrcxeecyg274xg.py", line 42, in 
-async_compile.wait(globals())
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/codecache.py", line 715, in wait
-scope[key] = result.result()
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_inductor/codecache.py", line 573, in result
-self.future.result()
-File "/root/anaconda3/lib/python3.9/concurrent/futures/_base.py", line 446, in result
-return self.__get_result()
-File "/root/anaconda3/lib/python3.9/concurrent/futures/_base.py", line 391, in __get_result
-raise self.exception
-subprocess.CalledProcessError: Command '['/usr/bin/gcc', '/tmp/tmphttesy02/main.c', '-O3', '-I/root/anaconda3/lib/python3.9/site-packages/triton/third_party/cuda/include', '-I/root/anaconda3/include/python3.9', '-I/tmp/tmphttesy02', '-shared', '-fPIC', '-lcuda', '-o', '/tmp/tmphttesy02/triton.cpython-39-x86_64-linux-gnu.so']' returned non-zero exit status 1.
-The above exception was the direct cause of the following exception:
-Traceback (most recent call last):
-File "/data/py_projects/pegasus/test4.py", line 15, in 
-print("cuda opt:", opt_cuda(torch.randn(1).cuda()))
-File "/root/anaconda3/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
-return forward_call(*args, **kwargs)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/eval_frame.py", line 82, in forward
-return self.dynamo_ctx(self._orig_mod.forward)(*args, **kwargs)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/eval_frame.py", line 209, in _fn
-return fn(*args, **kwargs)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/eval_frame.py", line 337, in catch_errors
-return callback(frame, cache_size, hooks)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/convert_frame.py", line 404, in _convert_frame
-result = inner_convert(frame, cache_size, hooks)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/convert_frame.py", line 104, in _fn
-return fn(*args, **kwargs)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/convert_frame.py", line 262, in _convert_frame_assert
-return _compile(
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/utils.py", line 163, in time_wrapper
-r = func(*args, **kwargs)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/convert_frame.py", line 324, in _compile
-out_code = transform_code_object(code, transform)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/bytecode_transformation.py", line 445, in transform_code_object
-transformations(instructions, code_options)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/convert_frame.py", line 311, in transform
-tracer.run()
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/symbolic_convert.py", line 1726, in run
-super().run()
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/symbolic_convert.py", line 576, in run
-and self.step()
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/symbolic_convert.py", line 540, in step
-getattr(self, inst.opname)(inst)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/symbolic_convert.py", line 1792, in RETURN_VALUE
-self.output.compile_subgraph(
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/output_graph.py", line 517, in compile_subgraph
-self.compile_and_call_fx_graph(tx, list(reversed(stack_values)), root)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/output_graph.py", line 588, in compile_and_call_fx_graph
-compiled_fn = self.call_user_compiler(gm)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/utils.py", line 163, in time_wrapper
-r = func(*args, **kwargs)
-File "/root/anaconda3/lib/python3.9/site-packages/torch/_dynamo/output_graph.py", line 675, in call_user_compiler
-raise BackendCompilerFailed(self.compiler_fn, e) from e
-torch.dynamo.exc.BackendCompilerFailed: debug_wrapper raised CalledProcessError: Command '['/usr/bin/gcc', '/tmp/tmphttesy02/main.c', '-O3', '-I/root/anaconda3/lib/python3.9/site-packages/triton/third_party/cuda/include', '-I/root/anaconda3/include/python3.9', '-I/tmp/tmphttesy02', '-shared', '-fPIC', '-lcuda', '-o', '/tmp/tmphttesy02/triton.cpython-39-x86_64-linux-gnu.so']' returned non-zero exit status 1.
-Set torch._dynamo.config.verbose=True for more information
-You can suppress this exception and fall back to eager by setting:
-torch._dynamo.config.suppress_errors = True
-Versions
-wsl2 pytorch2.0 cuda11.7
-cc @peterjc123 @mszhanyi @skyline75489 @nbcsm @vladimir-aubrecht @iremyux @Blackhex @cristianPanaite @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @soumith @ngimel
-
-----------------------------------------Comment 1----------------------------------------
-
-Steps to reproduce the behavior:
-Call torch.abs on a sparse tensor
-Below is a code sample:
-import torch
-i = torch.LongTensor([[0, 1, 1],
-[2, 0, 2],
-[2, 0, 2]])
-v  = torch.FloatTensor([3, -44, -5])
-s = torch.sparse.FloatTensor(i, v, torch.Size([2, 4, 4]))
-print(s.abs())
-Actual behavior
-Traceback (most recent call last):
-File "sparse_torch_abs.py", line 11, in 
-print(s.abs())
-RuntimeError: unsupported tensor layout: Sparse
-Expected behavior
-The absolute value Sparse Tensor should get printed properly as below:
-tensor(indices=tensor([[0, 1, 1],
-[2, 0, 2],
-[2, 0, 2]]),
-values=tensor([ 3., 44.,  5.]),
-size=(2, 4, 4), nnz=3, layout=torch.sparse_coo)
-Environment
-Versions of relevant libraries:
-[pip3] numpy==1.19.1
-[pip3] torch==1.8.0a0
-[pip3] torchtext==0.8.0a0+7e267d2
-[pip3] torchvision==0.8.0a0+be8192e
-[conda] blas 1.0 mkl
-[conda] cudatoolkit 10.2.89 hfd86e86_1
-[conda] magma-cuda102 2.5.2 1 pytorch
-[conda] mkl 2020.1 217
-[conda] mkl-include 2020.1 217
-[conda] mkl-service 2.3.0 py38he904b0f_0
-[conda] mkl_fft 1.1.0 py38h23d657b_0
-[conda] mkl_random 1.1.1 py38h0573a6f_0
-[conda] numpy 1.19.1 py38hbc911f0_0
-[conda] numpy-base 1.19.1 py38hfa32c7d_0
-[conda] torch 1.8.0a0 dev_0
-[conda] torchtext 0.8.0a0+7e267d2 pypi_0 pypi
-[conda] torchvision 0.8.0a0+be8192e pypi_0 pypi
-PyTorch Version: 1.8.0a0
-OS: Linux
-How you installed PyTorch (conda, pip, source): source
-Build command you used (if compiling from source): python setup.py develop
-Python version: 3.8
-CUDA/cuDNN version: 10.2
-cc @aocsa @nikitaved @pearu @mruberry
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-The following operation failed in the TorchScript interpreter.
- 
-Traceback of TorchScript, serialized code (most recent call last):
- 
-  File "code/torch/ai360_net.py", line 34, in forward
- 
-    confidences = []
- 
-    locations = []
- 
-    x0 = (self.base_net).forward(x, )
- 
-          ~~~~~~~~~~~~~~~~~~~~~~ <--- HERE
- 
-    _1 = self.extras
- 
-    _2 = getattr(_1, "0")
- 
-  File "code/torch/torch/nn/modules/container/___torch_mangle_189.py", line 47, in forward
- 
-    input0 = (_0).forward(input, )
- 
-    input1 = (_1).forward(input0, )
- 
-    input2 = (_2).forward(input1, )
- 
-              ~~~~~~~~~~~ <--- HERE
- 
-    input3 = (_3).forward(input2, )
- 
-    input4 = (_4).forward(input3, )
- 
-  File "code/torch/ai360_net/___torch_mangle_16.py", line 13, in forward
- 
-      _0 = torch.add(x, (self.conv).forward(x, ), alpha=1)
- 
-    else:
- 
-      _0 = (self.conv).forward(x, )
- 
-            ~~~~~~~~~~~~~~~~~~ <--- HERE
- 
-    return _0
- 
-  File "code/torch/torch/nn/modules/container/___torch_mangle_15.py", line 23, in forward
- 
-    _6 = getattr(self, "6")
- 
-    _7 = getattr(self, "7")
- 
-    input0 = (_0).forward(input, )
- 
-              ~~~~~~~~~~~ <--- HERE
- 
-    input1 = (_1).forward(input0, )
- 
-    input2 = (_2).forward(input1, )
- 
-  File "code/torch/torch/nn/modules/conv/___torch_mangle_10.py", line 9, in forward
- 
-  def forward(self: torch.torch.nn.modules.conv.___torch_mangle_10.Conv2d,
- 
-    input: Tensor) -> Tensor:
- 
-    _0 = (self).conv2d_forward(input, self.weight, )
- 
-          ~~~~~~~~~~~~~~~~~~~~ <--- HERE
- 
-    return _0
- 
-  def conv2d_forward(self: torch.torch.nn.modules.conv.___torch_mangle_10.Conv2d,
- 
-  File "code/torch/torch/nn/modules/conv/___torch_mangle_10.py", line 29, in conv2d_forward
- 
-      _11 = _4
- 
-    else:
- 
-      _11 = torch.conv2d(input, weight, None, [1, 1], [0, 0], [1, 1], 1)
- 
-            ~~~~~~~~~~~~ <--- HERE
- 
-    return _11
- 
- 
- 
-Traceback of TorchScript, original code (most recent call last):
- 
-  File "/home/tony/anaconda3/envs/pytorch1.4/lib/python3.6/site-packages/torch/nn/modules/container.py", line 100, in forward
- 
-    def forward(self, input):
- 
-        for module in self:
- 
-            input = module(input)
- 
-                    ~~~~~~ <--- HERE
- 
-        return input
- 
-  File "/home/tony/anaconda3/envs/pytorch1.4/lib/python3.6/site-packages/torch/nn/modules/container.py", line 100, in forward
- 
-    def forward(self, input):
- 
-        for module in self:
- 
-            input = module(input)
- 
-                    ~~~~~~ <--- HERE
- 
-        return input
- 
-  File "/home/tony/anaconda3/envs/pytorch1.4/lib/python3.6/site-packages/torch/nn/modules/conv.py", line 345, in forward
- 
-    def forward(self, input):
- 
-        return self.conv2d_forward(input, self.weight)
- 
-               ~~~~~~~~~~~~~~~~~~~ <--- HERE
- 
-  File "/home/tony/anaconda3/envs/pytorch1.4/lib/python3.6/site-packages/torch/nn/modules/conv.py", line 341, in conv2d_forward
- 
-                            weight, self.bias, self.stride,
- 
-                            _pair(0), self.dilation, self.groups)
- 
-        return F.conv2d(input, weight, self.bias, self.stride,
- 
-               ~~~~~~~~ <--- HERE
- 
-                        self.padding, self.dilation, self.groups)
- 
-RuntimeError: [enforce fail at CPUAllocator.cpp:68] . DefaultCPUAllocator: can't allocate memory: you tried to allocate 4860032 bytes. Error code 12 (Cannot allocate memory)
- 
-Versions
-Pytorch 3.0
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-When I try to compile the ddp + amp model using torch.compile, I get the following error：
-
-Can you help me with this error?
-Error logs
-eager train time 0: 2.062772216796875 loss: 12.34566593170166
-eager train time 29: 0.12792012786865234 loss: 12.378190040588379
-~~~~~~~~~~
-
-[rank0]:[2023-10-20 15:17:41,173] [1/0] torch._dynamo.variables.torch: [WARNING] Profiler function <class 'torch.autograd.profiler.record_function'> will be ignored
-Traceback (most recent call last):
-  File "elastic_ddp.py", line 347, in <module>
-    demo_basic()
-  File "elastic_ddp.py", line 330, in demo_basic
-    loss, compile_time = timed(
-  File "elastic_ddp.py", line 288, in timed
-    result = fn()
-  File "elastic_ddp.py", line 331, in <lambda>
-    lambda: train_opt(ddp_model, inp, opt, grad_scaler))
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 328, in _fn
-    return fn(*args, **kwargs)
-  File "elastic_ddp.py", line 267, in train
-    opt.zero_grad(True)
-  File "elastic_ddp.py", line 269, in <resume in train>
-    predict = model(data[0])
-  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
-    return forward_call(*args, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/nn/parallel/distributed.py", line 1519, in forward
-    else self._run_ddp_forward(*inputs, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/nn/parallel/distributed.py", line 1355, in _run_ddp_forward
-    return self.module(*inputs, **kwargs)  # type: ignore[index]
-  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
-    return forward_call(*args, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 487, in catch_errors
-    return hijacked_callback(frame, cache_entry, hooks, frame_state)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 641, in _convert_frame
-    result = inner_convert(frame, cache_size, hooks, frame_state)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 133, in _fn
-    return fn(*args, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 389, in _convert_frame_assert
-    return _compile(
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 569, in _compile
-    guarded_code = compile_inner(code, one_graph, hooks, transform)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/utils.py", line 189, in time_wrapper
-    r = func(*args, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 491, in compile_inner
-    out_code = transform_code_object(code, transform)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/bytecode_transformation.py", line 1028, in transform_code_object
-    transformations(instructions, code_options)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 458, in transform
-    tracer.run()
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 2074, in run
-    super().run()
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 724, in run
-    and self.step()
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 688, in step
-    getattr(self, inst.opname)(inst)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 2162, in RETURN_VALUE
-    self.output.compile_subgraph(
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/output_graph.py", line 833, in compile_subgraph
-    self.compile_and_call_fx_graph(tx, list(reversed(stack_values)), root)
-  File "/opt/conda/lib/python3.8/contextlib.py", line 75, in inner
-    return func(*args, **kwds)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/output_graph.py", line 957, in compile_and_call_fx_graph
-    compiled_fn = self.call_user_compiler(gm)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/utils.py", line 189, in time_wrapper
-    r = func(*args, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/output_graph.py", line 1024, in call_user_compiler
-    raise BackendCompilerFailed(self.compiler_fn, e).with_traceback(
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/output_graph.py", line 1009, in call_user_compiler
-    compiled_fn = compiler_fn(gm, self.example_inputs())
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/backends/distributed.py", line 436, in compile_fn
-    submod_compiler.run(*example_inputs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/fx/interpreter.py", line 138, in run
-    self.env[node] = self.run_node(node)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/backends/distributed.py", line 417, in run_node
-    compiled_submod_real = self.compile_submod(
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/backends/distributed.py", line 361, in compile_submod
-    self.compiler(input_mod, args),
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/repro/after_dynamo.py", line 117, in debug_wrapper
-    compiled_gm = compiler_fn(gm, example_inputs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/__init__.py", line 1568, in __call__
-    return compile_fx(model_, inputs_, config_patches=self.config)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_inductor/compile_fx.py", line 961, in compile_fx
-    return compile_fx(
-  File "/opt/conda/lib/python3.8/site-packages/torch/_inductor/compile_fx.py", line 1150, in compile_fx
-    return aot_autograd(
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/backends/common.py", line 55, in compiler_fn
-    cg = aot_module_simplified(gm, example_inputs, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 3891, in aot_module_simplified
-    compiled_fn = create_aot_dispatcher_function(
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/utils.py", line 189, in time_wrapper
-    r = func(*args, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 3429, in create_aot_dispatcher_function
-    compiled_fn = compiler_fn(flat_fn, fake_flat_args, aot_config, fw_metadata=fw_metadata)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 2212, in aot_wrapper_dedupe
-    return compiler_fn(flat_fn, leaf_flat_args, aot_config, fw_metadata=fw_metadata)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 2392, in aot_wrapper_synthetic_base
-    return compiler_fn(flat_fn, flat_args, aot_config, fw_metadata=fw_metadata)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 2804, in aot_dispatch_autograd
-    fx_g = aot_dispatch_autograd_graph(flat_fn, flat_args, aot_config, fw_metadata=fw_metadata)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 2781, in aot_dispatch_autograd_graph
-    fx_g = create_functionalized_graph(
-  File "/opt/conda/lib/python3.8/site-packages/torch/_functorch/aot_autograd.py", line 1420, in create_functionalized_graph
-    fx_g = make_fx(helper, decomposition_table=aot_config.decompositions)(*args)
-  File "/opt/conda/lib/python3.8/site-packages/torch/fx/experimental/proxy_tensor.py", line 809, in wrapped
-    t = dispatch_trace(wrap_key(func, args, fx_tracer, pre_dispatch), tracer=fx_tracer, concrete_args=tuple(phs))
-  File "/opt/conda/lib/python3.8/site-packages/torch/_compile.py", line 24, in inner
-    return torch._dynamo.disable(fn, recursive)(*args, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 328, in _fn
-    return fn(*args, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/external_utils.py", line 17, in inner
-    return fn(*args, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/fx/experimental/proxy_tensor.py", line 468, in dispatch_trace
-    graph = tracer.trace(root, concrete_args)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 328, in _fn
-    return fn(*args, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/_dynamo/external_utils.py", line 17, in inner
-    return fn(*args, **kwargs)
-  File "/opt/conda/lib/python3.8/site-packages/torch/fx/_symbolic_trace.py", line 817, in trace
-    (self.create_arg(fn(*args)),),
-  File "/opt/conda/lib/python3.8/site-packages/torch/fx/experimental/proxy_tensor.py", line 451, in create_arg
-    return super().create_arg(a)
-  File "/opt/conda/lib/python3.8/site-packages/torch/fx/_symbolic_trace.py", line 385, in create_arg
-    return super().create_arg(a)
-  File "/opt/conda/lib/python3.8/site-packages/torch/fx/proxy.py", line 255, in create_arg
-    return type(a)(self.create_arg(elem) for elem in a)
-  File "/opt/conda/lib/python3.8/site-packages/torch/fx/proxy.py", line 255, in <genexpr>
-    return type(a)(self.create_arg(elem) for elem in a)
-  File "/opt/conda/lib/python3.8/site-packages/torch/fx/experimental/proxy_tensor.py", line 451, in create_arg
-    return super().create_arg(a)
-  File "/opt/conda/lib/python3.8/site-packages/torch/fx/_symbolic_trace.py", line 385, in create_arg
-    return super().create_arg(a)
-  File "/opt/conda/lib/python3.8/site-packages/torch/fx/proxy.py", line 291, in create_arg
-    raise NotImplementedError(f"argument of type: {type(a)}")
-torch._dynamo.exc.BackendCompilerFailed: backend='compile_fn' raised:
-
-While executing %submod_0 : [num_users=3] = call_module[target=submod_0](args = (%l_x_,), kwargs = {})
-Original traceback:
-None
-
-Set TORCH_LOGS="+dynamo" and TORCHDYNAMO_VERBOSE=1 for more information
-
-
-You can suppress this exception and fall back to eager by setting:
-    import torch._dynamo
-    torch._dynamo.config.suppress_errors = True
-
-233522-10ea61f2-6f10-11ee-9682-4ee5ea5d12cf-6mprp:6107:6116 [0] NCCL INFO [Service thread] Connection closed by localRank 0
-233522-10ea61f2-6f10-11ee-9682-4ee5ea5d12cf-6mprp:6107:6107 [0] NCCL INFO comm 0x55b1609f2ad0 rank 0 nranks 1 cudaDev 0 busId b1000 - Abort COMPLETE
-
-
-Minified repro
-The code for elastic_ddp.py is shown below.
-
-The running commands are as follows:
-
-Versions
-
-cc @mcarilli @ptrblck @leslie-fang-intel @jgong5 @ezyang @msaroufim @wconstab @bdhirsh @anijain2305 @zou3519 @voznesenskym @penguinwu @EikanWang @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @wenzhe-nrv @jiayisunx @chenyang78 @aakhundov @kadeng
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-
-Traceback (most recent call last):
-File "/scratch/anijain/work/pytorch/repro.py", line 58, in 
-run_repro(mod, load_args, accuracy=False, command='run', save_dir='/scratch/anijain/work/pytorch/torch_compile_debug/run_2023_06_12_21_07_15_426800-pid_3076854/minifier/checkpoints', tracing_mode='real')
-File "/scratch/anijain/work/pytorch/torch/_dynamo/repro/after_aot.py", line 903, in run_repro
-COMMAND_FNS[options.command](options, mod, load_args)
-File "/scratch/anijain/work/pytorch/torch/_dynamo/repro/after_aot.py", line 691, in repro_run
-ref = compiled(args)
-File "/scratch/anijain/work/pytorch/torch/_inductor/compile_fx.py", line 437, in run
-return model(new_inputs)
-File "/tmp/torchinductor_anijain/ht/chtqnrybmli6m5weq3royxscgqsxzjj7dxzfracjhf2pe2f4xdpx.py", line 130, in call
-del buf0
-UnboundLocalError: local variable 'buf0' referenced before assignment
-
-
-----------------------------------------Comment 1----------------------------------------
-
-Hi,when I try to use data distributed parallel to speed up training model, an error occurs: AttributeError: '_MultiProcessingDataLoaderIter' object has no attribute '_workers_status'. But it's ok to use data parallel. I have been struggling for this bug for several days, thanks for provides any hints or some informations!
-The output of  python -m torch.utils.collect_env is as followed:
+I am currently using Windows 7, Pytorch version 1.1.0,
+It seems from what I have read this error should have been fixed
+in 1.1.0?
+Here is the environment:
 Collecting environment information...
-PyTorch version: 1.9.0+cu102
-Is debug build: False
-CUDA used to build PyTorch: 10.2
-ROCM used to build PyTorch: N/A
-OS: Ubuntu 18.04.5 LTS (x86_64)
-GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
-Clang version: Could not collect
-CMake version: version 3.18.20200915-gb7590b8
-Libc version: glibc-2.17
-Python version: 3.7 (64-bit runtime)
-Python platform: Linux-3.10.0-957.el7.x86_64-x86_64-with-debian-buster-sid
-Is CUDA available: True
-CUDA runtime version: 10.2.89
-GPU models and configuration:
-GPU 0: GeForce RTX 2080 Ti
-GPU 1: GeForce RTX 2080 Ti
-GPU 2: GeForce RTX 2080 Ti
-GPU 3: GeForce RTX 2080 Ti
-Nvidia driver version: 450.80.02
-cuDNN version: Probably one of the following:
-/usr/lib/x86_64-linux-gnu/libcudnn.so.8.0.2
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.0.2
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.0.2
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.0.2
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.0.2
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.0.2
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.0.2
-HIP runtime version: N/A
-MIOpen runtime version: N/A
+PyTorch version: 1.1.0
+Is debug build: No
+CUDA used to build PyTorch: 9.0
+OS: Microsoft Windows 7 Professional
+GCC version: (tdm64-1) 5.1.0
+CMake version: version 3.7.0-rc1
+Python version: 3.6
+Is CUDA available: Yes
+CUDA runtime version: 10.0.130
+GPU models and configuration: GPU 0: GeForce GTX 1070
+Nvidia driver version: 411.31
+cuDNN version: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.0\bin\cudnn64_7.dll
 Versions of relevant libraries:
-[pip3] numpy==1.21.2
-[pip3] pytorch-transformers==1.2.0
-[pip3] torch==1.9.0
-[pip3] torchtext==0.10.0
-[pip3] torchvision==0.10.0
-[conda] numpy                     1.21.2                   pypi_0    pypi
-[conda] pytorch-transformers      1.2.0                    pypi_0    pypi
-[conda] torch                     1.9.0                    pypi_0    pypi
-[conda] torchtext                 0.10.0                   pypi_0    pypi
-[conda] torchvision               0.10.0                   pypi_0    pypi1
-And the all error infomation is as followed:
- Exception ignored in: <function _MultiProcessingDataLoaderIter.__del__ at 0x7fb1d6035d40> Traceback (most recent call last): File "/root/anaconda3/envs/m4c/lib/python3.7/site-packages/torch-1.9.0-py3.7-linux-x86_64.egg/torch/utils/data/dataloader.py", line 1328, in __del__ self._shutdown_workers() File "/root/anaconda3/envs/m4c/lib/python3.7/site-packages/torch-1.9.0-py3.7-linux-x86_64.egg/torch/utils/data/dataloader.py", line 1295, in _shutdown_workers if self._persistent_workers or self._workers_status[worker_id]: AttributeError: '_MultiProcessingDataLoaderIter' object has no attribute '_workers_status'
+[pip3] numpy==1.16.4
+[pip3] torch==1.1.0
+[pip3] torchsummary==1.5.1
+[pip3] torchvision==0.3.0
+[conda] Could not collect
+Here is the traceback:
+Traceback (most recent call last): File "C:\Users\Moondra\Desktop\PYTORCH\PYTORCH BASICS\PYTORCH ENVIRONMENTS\PYTORCH STUFF\pytorch_test.py", line 191, in <module> num_epochs=3) File "C:\Users\Moondra\Desktop\PYTORCH\PYTORCH BASICS\PYTORCH ENVIRONMENTS\PYTORCH STUFF\pytorch_test.py", line 52, in train_model outputs = model(inputs) File "C:\Users\Moondra\Desktop\PYTORCH\PYTORC~1\PYTORC~2\test1\lib\site-packages\torch\nn\modules\module.py", line 493, in __call__ result = self.forward(*input, **kwargs) File "C:\Users\Moondra\Desktop\PYTORCH\PYTORC~1\PYTORC~2\test1\lib\site-packages\torchvision\models\densenet.py", line 119, in forward features = self.features(x) File "C:\Users\Moondra\Desktop\PYTORCH\PYTORC~1\PYTORC~2\test1\lib\site-packages\torch\nn\modules\module.py", line 493, in __call__ result = self.forward(*input, **kwargs) File "C:\Users\Moondra\Desktop\PYTORCH\PYTORC~1\PYTORC~2\test1\lib\site-packages\torch\nn\modules\container.py", line 92, in forward input = module(input) File "C:\Users\Moondra\Desktop\PYTORCH\PYTORC~1\PYTORC~2\test1\lib\site-packages\torch\nn\modules\module.py", line 493, in __call__ result = self.forward(*input, **kwargs) File "C:\Users\Moondra\Desktop\PYTORCH\PYTORC~1\PYTORC~2\test1\lib\site-packages\torch\nn\modules\conv.py", line 338, in forward self.padding, self.dilation, self.groups) RuntimeError: cuDNN error: CUDNN_STATUS_INTERNAL_ERROR
+I have multiple versions of CUDA installed for compatibility
+with Tensorflow, Keras and Pytorch.
+Thank you.
+The script I am running is the transfer learning script using Densenet
+https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 2----------------------------------------
+
+runned on
+pytorch 1.4
+cuda 10.1
+tesla K80
+I thought K80 is 3.7 already but still get this error
+error message:
+THCudaCheck FAIL file=/pytorch/aten/src/ATen/native/cuda/Dropout.cu line=147 error=209 : no kernel image is available for execution on the device
+Traceback (most recent call last):
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/bin/tape-train-distributed", line 8, in 
+sys.exit(run_train_distributed())
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/main.py", line 252, in run_train_distributed
+args.node_rank, args.master_addr, args.master_port)
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/utils/distributed_utils.py", line 169, in launch_process_group
+while not process_context.join():
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/utils/distributed_utils.py", line 122, in join
+raise Exception(msg)
+Exception:
+-- Process 0 terminated with the following error:
+Traceback (most recent call last):
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/utils/distributed_utils.py", line 38, in _wrap
+fn(**kwargs)
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/main.py", line 191, in run_train
+training.run_train(**train_args)
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/training.py", line 508, in run_train
+viz, num_log_iter, gradient_accumulation_steps)
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/training.py", line 299, in run_train_epoch
+loss, metrics = runner.forward(batch)  # type: ignore
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/training.py", line 85, in forward
+outputs = self.model(**batch)
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in call
+result = self.forward(*input, **kwargs)
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/lib/python3.6/site-packages/apex/amp/_initialize.py", line 197, in new_fwd
+**applier(kwargs, input_caster))
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/models/modeling_bert.py", line 484, in forward
+outputs = self.bert(input_ids, input_mask=input_mask)
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in call
+result = self.forward(*input, **kwargs)
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/models/modeling_bert.py", line 446, in forward
+embedding_output = self.embeddings(input_ids)
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in call
+result = self.forward(*input, **kwargs)
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/models/modeling_bert.py", line 142, in forward
+embeddings = self.dropout(embeddings)
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in call
+result = self.forward(*input, **kwargs)
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/lib/python3.6/site-packages/torch/nn/modules/dropout.py", line 54, in forward
+return F.dropout(input, self.p, self.training, self.inplace)
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/lib/python3.6/site-packages/torch/nn/functional.py", line 807, in dropout
+else _VF.dropout(input, p, training))
+RuntimeError: cuda runtime error (209) : no kernel image is available for execution on the device at /pytorch/aten/src/ATen/native/cuda/Dropout.cu:147
+cc @ngimel
+
+----------------------------------------Comment 3----------------------------------------
+
+Windows build of caffe2 fails. Errors in running build_windows.bat:
+[1121/1204] Linking CXX executable bin\data_filler_test.exe
+FAILED: bin/data_filler_test.exe
+Cmd.exe /C "cd . && "C:\Program Files\CMake\bin\cmake.exe" -E vs_link_exe --intdir=caffe2\CMakeFiles\data_filler_test.dir --manifests -- C:\PROGRA2\ MIB0551\2017\ENTERP1\VC\Tools\MSVC\14161.270\bin\Hostx64\x64\link.exe /nologo caffe2\CMakeFiles\data_filler_test.dir\predictor\emulator\data_filler_test.cc.obj /out :bin\data_filler_test.exe /implib:lib\data_filler_test.lib /pdb:bin\data_filler_test.pdb /version:0.0 /INCREMENTAL:NO /subsystem:console lib\gtest_main.lib -WHOLEARCHIVE:E:/opencv_build/caffe2/try /pytorch/lib/caffe2.lib -WHOLEARCHIVE:E:/opencv_build/caffe2/try/pytorch/lib/caffe2_protos.lib lib\cpuinfo.lib lib\clog.lib lib\foxi_loader.lib -WHOLEARCHIVE:E:/opencv_build/ caffe2/try/pytorch/lib/onnx.lib lib\onnx_proto.lib lib\libprotobuf.lib -WHOLEARCHIVE:E:/opencv_build/caffe2/try/pytorch/lib/Caffe2_perfkernels_avx.lib -WHOLEARCHIVE:E:/opencv_build/caffe2/ Try/pytorch/lib/Caffe2_perfkernels_avx2.lib lib\c10.lib -WHOLEARCHIVE:E:/opencv_build/caffe2/try/pytorch/lib/C Affe2_perfkernels_avx512.lib lib\gtest.lib kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib && cd ."
+LINK: command "C:\PROGRA2\MIB0551\2017\ENTERP1\VC\Tools\MSVC\14161.270\bin\Hostx64\x64\link.exe /nologo caffe2\CMakeFiles\data_filler_test.dir\ Predictor\emulator\data_filler_test.cc.obj /out:bin\data_filler_test.exe /implib:lib\data_filler_test.lib /pdb:bin\data_filler_test.pdb /version:0.0 /INCREMENTAL:NO /subsystem:console lib\gtest_main.lib -WHOLEARCHIVE:E:/opencv_build/caffe2/try/pytorch/lib/caffe2.lib -WHOLEARCHIVE:E:/opencv_build/caffe2/try/pytorch/lib/caffe2_protos.lib lib\cpuinfo.lib lib\clog.lib lib\ Foxi_loader.lib -WHOLEARCHIVE:E:/opencv_build/caffe2/try/pytorch/lib/onnx.lib lib\onnx_proto.lib lib\libprotobuf.lib -WHOLEARCHIVE:E:/opencv_build/caffe2/try/pytorch/lib/Caffe2_perfkernels_avx. Lib -WHOLEARCHIVE:E:/opencv_build/caffe2/try/pytorch/lib/Caffe2_perfkernels_avx2.lib lib\c10.lib -WHOLEARCHIVE:E:/opencv_build/caffe2/try/pytorch/lib/Caffe2_perfkernels_avx512.lib lib\gtest.lib kernel32 .lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib u Uid.lib comdlg32.lib advapi32.lib /MANIFEST /MANIFESTFILE:bin\data_filler_test.exe.manifest" failed (exit code 1120) with the following output:
+LINK : warning LNK4098: The default library "MSVCRT" conflicts with the use of other libraries; please use /NODEFAULTLIB:library
+Caffe2.lib(miniz.c.obj) : warning LNK4217: Locally defined symbol _localtime64_s is imported in function localtime_s
+Caffe2.lib(miniz.c.obj) : warning LNK4217: Locally defined symbol _time64 is imported in function mz_zip_writer_add_mem_ex_v2
+Caffe2.lib(miniz.c.obj) : warning LNK4217: Locally defined symbol _wassert is imported in function mz_zip_array_ensure_capacity
+Caffe2.lib(miniz.c.obj) : warning LNK4217: Locally defined symbol free Imported in function miniz_def_free_func
+Caffe2.lib(miniz.c.obj) : warning LNK4217: The locally defined symbol malloc is imported in the function miniz_def_alloc_func
+Caffe2.lib(miniz.c.obj) : warning LNK4217: Locally defined symbol realloc is imported in function miniz_def_realloc_func
+Caffe2.lib(miniz.c.obj) : error LNK2019: Unresolved external symbol _imp__mktime64, this symbol is referenced in function mktime
+Bin\data_filler_test.exe : fatal error LNK1120: 1 external command that cannot be resolved
+Ninja: build stopped: subcommand failed.
+Traceback (most recent call last):
+  File "tools\build_libtorch.py", line 22, in 
+    Build_python=False, rerun_cmake=True, build_dir='.')
+  File "E:\opencv_build_caffe2\try\pytorch\tools\build_pytorch_libs.py", line 268, in build_caffe2
+    Check_call(build_cmd, cwd=build_dir, env=my_env)
+  File "C:\Users\84206\Anaconda3\lib\subprocess.py", line 311, in check_call
+    Raise CalledProcessError(retcode, cmd)
+subprocess.CalledProcessError: Command '['cmake', '--build', '.', '--target', 'install', '--config', 'Release', '--', '-j' , '7']' returned non-zero exit status 1.
+"Caffe2 building failed"
+
+----------------------------------------Comment 4----------------------------------------
+
+File "train.py", line 226, in 
+main()
+File "train.py", line 94, in main
+train_phase(model, optimizer, scheduler, epoch, data_loaders, data_size)
+File "train.py", line 138, in train_phase
+anc_embed, pos_embed, neg_embed = model(anc_img), model(pos_img), model(neg_img)
+File "/home/kelvinheng/anaconda3/envs/proj1/lib/python3.7/site-packages/torch/nn/modules/module.py", line 489, in call
+result = self.forward(*input, **kwargs)
+File "/home/kelvinheng/proj1_code/models.py", line 37, in forward
+embed = self.resnet50(images)
+File "/home/kelvinheng/anaconda3/envs/proj1/lib/python3.7/site-packages/torch/nn/modules/module.py", line 489, in call
+result = self.forward(*input, **kwargs)
+File "/home/kelvinheng/anaconda3/envs/proj1/lib/python3.7/site-packages/torchvision/models/resnet.py", line 157, in forward
+x = self.layer3(x)
+File "/home/kelvinheng/anaconda3/envs/proj1/lib/python3.7/site-packages/torch/nn/modules/module.py", line 489, in call
+result = self.forward(*input, **kwargs)
+File "/home/kelvinheng/anaconda3/envs/proj1/lib/python3.7/site-packages/torch/nn/modules/container.py", line 92, in forward
+input = module(input)
+File "/home/kelvinheng/anaconda3/envs/proj1/lib/python3.7/site-packages/torch/nn/modules/module.py", line 489, in call
+result = self.forward(*input, **kwargs)
+File "/home/kelvinheng/anaconda3/envs/proj1/lib/python3.7/site-packages/torchvision/models/resnet.py", line 84, in forward
+out = self.bn2(out)
+File "/home/kelvinheng/anaconda3/envs/proj1/lib/python3.7/site-packages/torch/nn/modules/module.py", line 489, in call
+result = self.forward(*input, **kwargs)
+File "/home/kelvinheng/anaconda3/envs/proj1/lib/python3.7/site-packages/torch/nn/modules/batchnorm.py", line 76, in forward
+exponential_average_factor, self.eps)
+File "/home/kelvinheng/anaconda3/envs/proj1/lib/python3.7/site-packages/torch/nn/functional.py", line 1623, in batch_norm
+training, momentum, eps, torch.backends.cudnn.enabled
+RuntimeError: CUDA out of memory. Tried to allocate 5.75 MiB (GPU 0; 10.73 GiB total capacity; 9.64 GiB already allocated; 3.25 MiB free; 121.92 MiB cached)
+The above is my error. The training runs for 60 epochs before CUDA runs out of memory. Not sure whether it is due to batchnorm. If i decrease my batch size, i can run for a few more epochs before CUDA is out of memory. Can anyone help?
+I am using RTX 2080TI and pytorch 1.0, python 3.7, CUDA 10.0. It is just a basic resnet50 from torchvision.models and i change the last fc layer to output 256 embeddings and train with triplet loss.
+Thanks
+
+----------------------------------------Comment 5----------------------------------------
+
+runned on
+pytorch 1.4
+cuda 10.1
+tesla K80
+I thought K80 is 3.7 already but still get this error
+error message:
+THCudaCheck FAIL file=/pytorch/aten/src/ATen/native/cuda/Dropout.cu line=147 error=209 : no kernel image is available for execution on the device
+Traceback (most recent call last):
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/bin/tape-train-distributed", line 8, in 
+sys.exit(run_train_distributed())
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/main.py", line 252, in run_train_distributed
+args.node_rank, args.master_addr, args.master_port)
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/utils/distributed_utils.py", line 169, in launch_process_group
+while not process_context.join():
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/utils/distributed_utils.py", line 122, in join
+raise Exception(msg)
+Exception:
+-- Process 0 terminated with the following error:
+Traceback (most recent call last):
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/utils/distributed_utils.py", line 38, in _wrap
+fn(**kwargs)
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/main.py", line 191, in run_train
+training.run_train(**train_args)
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/training.py", line 508, in run_train
+viz, num_log_iter, gradient_accumulation_steps)
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/training.py", line 299, in run_train_epoch
+loss, metrics = runner.forward(batch)  # type: ignore
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/training.py", line 85, in forward
+outputs = self.model(**batch)
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in call
+result = self.forward(*input, **kwargs)
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/lib/python3.6/site-packages/apex/amp/_initialize.py", line 197, in new_fwd
+**applier(kwargs, input_caster))
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/models/modeling_bert.py", line 484, in forward
+outputs = self.bert(input_ids, input_mask=input_mask)
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in call
+result = self.forward(*input, **kwargs)
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/models/modeling_bert.py", line 446, in forward
+embedding_output = self.embeddings(input_ids)
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in call
+result = self.forward(*input, **kwargs)
+File "/dartfs-hpc/rc/lab/C/CBKlab/Bdai/bertprotein/tape/models/modeling_bert.py", line 142, in forward
+embeddings = self.dropout(embeddings)
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/lib/python3.6/site-packages/torch/nn/modules/module.py", line 532, in call
+result = self.forward(*input, **kwargs)
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/lib/python3.6/site-packages/torch/nn/modules/dropout.py", line 54, in forward
+return F.dropout(input, self.p, self.training, self.inplace)
+File "/dartfs-hpc/rc/home/w/f00355w/.conda/envs/tape/lib/python3.6/site-packages/torch/nn/functional.py", line 807, in dropout
+else _VF.dropout(input, p, training))
+RuntimeError: cuda runtime error (209) : no kernel image is available for execution on the device at /pytorch/aten/src/ATen/native/cuda/Dropout.cu:147
+cc @ngimel
+
+----------------------------------------Comment 6----------------------------------------
 
 LR: 2e-06
 V2: False
@@ -772,207 +402,139 @@ File "/root/miniconda3/lib/python3.8/site-packages/torch/_inductor/compile_fx.py
 assert dst.data_ptr() == src.data_ptr()
 AssertionError
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 7----------------------------------------
 
-@peterjc123, @yf225
-When we call
-
-it will show errors:
+🐛 Describe the bug
+[root@centos pytorch]# !123
+python setup.py build --cmake-only
 Traceback (most recent call last):
+File "setup.py", line 219, in 
 Traceback (most recent call last):
-File "", line 1, in 
-File "", line 1, in 
-File "C:\C:\Python36_X64\lib\multiprocessing\forking.py", line 381, in main
-File "C:\C:\Python36_X64\lib\multiprocessing\forking.py", line 381, in main
-self = load(from_parent)
-File "C:\C:\Python36_X64\lib\pickle.py", line 1384, in load
-self = load(from_parent)
-File "C:\C:\Python36_X64\lib\pickle.py", line 1384, in load
-return Unpickler(file).load()
-File "C:\C:\Python36_X64\lib\pickle.py", line 864, in load
-return Unpickler(file).load()
-File "C:\C:\Python36_X64\lib\pickle.py", line 864, in load
-dispatchkey
-File "C:\C:\Python36_X64\lib\pickle.py", line 1221, in load_build
-setstate = getattr(inst, "setstate", None)
-dispatchkey
-File "C:\C:\Python36_X64\lib\site-packages\torch\multiprocessing\queue.py", line 27, in getattr
-File "C:\C:\Python36_X64\lib\pickle.py", line 1221, in load_build
-return getattr(self.conn, name)
-File "C:\C:\Python36_X64\lib\site-packages\torch\multiprocessing\queue.py", line 27, in getattr
-return getattr(self.conn, name)
-File "C:\C:\Python36_X64\lib\site-packages\torch\multiprocessing\queue.py", line 27, in getattr
-return getattr(self.conn, name)
-File "C:\C:\Python36_X64\lib\site-packages\torch\multiprocessing\queue.py", line 27, in getattr
-...
-return getattr(self.conn, name)
-RuntimeError: maximum recursion depth exceeded
-if we set num_workers=2, the code can run.
+File "setup.py", line 219, in 
+from setuptools import setup, Extension, find_packages
+File "/usr/local/lib/python3.8/site-packages/setuptools/init.py", line 18, in 
+from setuptools.dist import Distribution
+File "/usr/local/lib/python3.8/site-packages/setuptools/dist.py", line 34, in 
+from setuptools import windows_support
+File "/usr/local/lib/python3.8/site-packages/setuptools/windows_support.py", line 2, in 
+import ctypes
+File "/usr/local/lib/python3.8/ctypes/init.py", line 7, in 
+from _ctypes import Union, Structure, Array
+ModuleNotFoundError: No module named '_ctypes'
+Versions
+python --version
+Python 3.8.12
+uname -r
+4.18.0-365.el8.x86_64
+cc @malfet @seemethere
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 8----------------------------------------
+
+
+OS: macOS 10.13.3
+PyTorch version: 0.3.1
+How you installed PyTorch (conda, pip, source): pip
+Python version: 3.6.4
+CUDA/cuDNN version: NA
+GPU models and configuration: NA
+
+Hello,
+I'm trying to restore a trained model with:
+
+But I'm getting a:
+Traceback (most recent call last):
+  File "srgan.py", line 160, in <module>
+    main()
+  File "srgan.py", line 154, in main
+    evaluate(args)
+  File "srgan.py", line 75, in evaluate
+    ModelSaverCallback.restore_model([netG], saved_model_dir.absolute())
+  File "/Users/Ekami/workspace/Torchlight/examples/torchlight/nn/train_callbacks.py", line 269, in restore_model
+      File "/Users/Ekami/Programs/anaconda/envs/dl/lib/python3.6/site-packages/torch/serialization.py", line 267, in load
+    return _load(f, map_location, pickle_module)
+  File "/Users/Ekami/Programs/anaconda/envs/dl/lib/python3.6/site-packages/torch/serialization.py", line 420, in _load
+    result = unpickler.load()
+  File "/Users/Ekami/Programs/anaconda/envs/dl/lib/python3.6/site-packages/torch/serialization.py", line 389, in persistent_load
+    data_type(size), location)
+  File "/Users/Ekami/Programs/anaconda/envs/dl/lib/python3.6/site-packages/torch/serialization.py", line 87, in default_restore_location
+    result = fn(storage, location)
+  File "/Users/Ekami/Programs/anaconda/envs/dl/lib/python3.6/site-packages/torch/serialization.py", line 69, in _cuda_deserialize
+    return obj.cuda(device)
+  File "/Users/Ekami/Programs/anaconda/envs/dl/lib/python3.6/site-packages/torch/_utils.py", line 61, in _cuda
+    with torch.cuda.device(device):
+  File "/Users/Ekami/Programs/anaconda/envs/dl/lib/python3.6/site-packages/torch/cuda/__init__.py", line 207, in __enter__
+    self.prev_idx = torch._C._cuda_getDevice()
+AttributeError: module 'torch._C' has no attribute '_cuda_getDevice'
+
+The model was trained on a cuda device but it shouldn't be an issue to restore it from a non-cuda device right? It seems to be an internal error where _cuda_getDevice is called but it shouldn't. The error is very easily reproductible as my code is here. All you have to do is to clone it with: git clone -b showcase/memory-leak git@github.com:EKami/Torchlight.git, cd into the examples folder and run the script on a non-cuda computer with python srgan.py eval --on_cpu. You should get the error immediately.
+
+----------------------------------------Comment 9----------------------------------------
+
+Hi,
+I faced this problem when exporting the pytorch model for FlowNetS with BatchNorm, mainly when checking the IR
+The pytorch model is,  https://github.com/ClementPinard/FlowNetPytorch
+PyTorch version: 0.4.0a0+2e156f3 (No GPU, CPU only)
+The repo steps I followed,
+
+
+Cloned the model: https://github.com/ClementPinard/FlowNetPytorch
+git clone https://github.com/ClementPinard/FlowNetPytorch.git
+
+
+Downloaded pretrained weights for the BatchNorm variant, and placed it in the main repo folder:
+https://drive.google.com/drive/folders/16eo3p9dO_vmssxRoZCmWkTpNjKRzJzn5
+
+
+Script to create onnx file (again in the same folder), check IR, recreate error:
+
+
+
+Traceback message,
+Traceback (most recent call last):
+File "onnx_example.py", line 29, in 
+onnx.checker.check_model(model)
+File "/usr/local/lib/python2.7/dist-packages/onnx/checker.py", line 77, in check_model
+C.check_model(model.SerializeToString())
+onnx.onnx_cpp2py_export.checker.ValidationError: Input index 3 must be set to consumed for operator BatchNormalization
+==> Context: Bad node spec: input: "64" input: "2" input: "3" input: "4" input: "5" output: "65" op_type: "BatchNormalization" attribute { name: "epsilon" f: 1e-05 type: FLOAT } attribute { name: "is_test" i: 1 type: INT } attribute { name: "momentum" f: 0.9 type: FLOAT } doc_string: "/usr/local/lib/python2.7/dist-packages/torch/nn/functional.py(1206): batch_norm\n/usr/local/lib/python2.7/dist-packages/torch/nn/modules/batchnorm.py(49): forward\n/usr/local/lib/python2.7/dist-packages/torch/nn/modules/module.py(359): _slow_forward\n/usr/local/lib/python2.7/dist-packages/torch/nn/modules/module.py(369): call\n/usr/local/lib/python2.7/dist-packages/torch/nn/modules/container.py(91): forward\n/usr/local/lib/python2.7/dist-packages/torch/nn/modules/module.py(359): _slow_forward\n/usr/local/lib/python2.7/dist-packages/torch/nn/modules/module.py(369): call\n/media/epiception/Windows/Ganesh/Datasets/Weights/flownet/FlowNetPytorch/models/FlowNetS.py(86): forward\n/usr/local/lib/python2.7/dist-packages/torch/nn/modules/module.py(359): _slow_forward\n/usr/local/lib/python2.7/dist-packages/torch/nn/modules/module.py(369): call\n/usr/local/lib/python2.7/dist-packages/torch/jit/init.py(286): forward\n/usr/local/lib/python2.7/dist-packages/torch/nn/modules/module.py(371): call\n/usr/local/lib/python2.7/dist-packages/torch/jit/init.py(253): get_trace_graph\n/usr/local/lib/python2.7/dist-packages/torch/onnx/utils.py(133): _export\n/usr/local/lib/python2.7/dist-packages/torch/onnx/utils.py(84): export\n/usr/local/lib/python2.7/dist-packages/torch/onnx/init.py(21): export\nonnx_example.py(23): \n"
+Thank You!
+
+----------------------------------------Comment 10----------------------------------------
 
 🐛 Bug
-I run the server-side program on one GPU server, and run the client-side program on another GPU server,using rpc.init_rpc(), but 127.0.1.1:xxxx (xxxx is the port number, different each time) appears after the startup, refused connection on the server side, it is used by default The agreement is gloo, and the error is reported in the gloo file.
+torch.hub treats tag or branch names as file paths; if the tag or branch has a path separator (e.g. "/" on Linux) in it e.g. branch ìssues/4 as in
+
+then torch hub integration fails e.g. see
+>>> Downloading: "https://github.com/moabitcoin/ig65m-pytorch/archive/issues/4.zip" to /root/.cache/torch/hub/issues/4.zip
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/usr/local/lib/python3.6/dist-packages/torch/hub.py", line 272, in list
+    repo_dir = _get_cache_or_reload(github, force_reload, True)
+  File "/usr/local/lib/python3.6/dist-packages/torch/hub.py", line 153, in _get_cache_or_reload
+    download_url_to_file(url, cached_file, progress=False)
+  File "/usr/local/lib/python3.6/dist-packages/torch/hub.py", line 398, in download_url_to_file
+    f = tempfile.NamedTemporaryFile(delete=False, dir=dst_dir)
+  File "/usr/lib/python3.6/tempfile.py", line 690, in NamedTemporaryFile
+    (fd, name) = _mkstemp_inner(dir, prefix, suffix, flags, output_type)
+  File "/usr/lib/python3.6/tempfile.py", line 401, in _mkstemp_inner
+    fd = _os.open(file, flags, 0o600)
+FileNotFoundError: [Errno 2] No such file or directory: '/root/.cache/torch/hub/issues/tmpq24habt0'
+
 To Reproduce
 Steps to reproduce the behavior:
 
-put server code on one server, put client server on another server
-2.on server machine run script python server.py
-3.on client machine run script python client.py
+add a simple hubconf.py to your repository
+create a tag or branch with a path separator in its name
+use torch hub functionality with that tag or branch
 
-server.py
-import os
-import torch.distributed.rpc as rpc
-os.environ['MASTER_ADDR'] = '192.168.1.130'
-os.environ['MASTER_PORT'] = '8880'
-def my_script_add(t1, t2):
-return torch.add(t1, t2)
-rpc.init_rpc("worker0", rank=0, world_size=2)
-print("init success")
-ret = rpc.rpc_sync("worker1", my_script_add, args=(torch.ones(2), 3))
-print("worker1 success")
-rpc.shutdown()
-client.py
-import os
-import torch.distributed.rpc as rpc
-os.environ['MASTER_ADDR'] = '192.168.1.130'
-os.environ['MASTER_PORT'] = '8880'
-def my_script_add(t1, t2):
-return torch.add(t1, t2)
-rpc.init_rpc("worker1", rank=1, world_size=2)
-print("success")
-rpc.shutdown()
-error information
-Traceback (most recent call last):
-File "server.py", line 10, in 
-rpc.init_rpc("worker0", rank=0, world_size=2)
-File "/home/haozhao/software/anaconda3/lib/python3.7/site-packages/torch/distributed/rpc/init.py", line 78, in init_rpc
-_init_rpc_backend(backend, store, name, rank, world_size, rpc_backend_options)
-File "/home/haozhao/software/anaconda3/lib/python3.7/site-packages/torch/distributed/rpc/api.py", line 146, in _init_rpc_backend
-rpc_backend_options=rpc_backend_options,
-File "/home/haozhao/software/anaconda3/lib/python3.7/site-packages/torch/distributed/rpc/backend_registry.py", line 75, in init_backend
-return backend.value.init_backend_handler(*args, **kwargs)
-File "/home/haozhao/software/anaconda3/lib/python3.7/site-packages/torch/distributed/rpc/backend_registry.py", line 105, in _process_group_init_backend_handler
-backend="gloo", store=store, rank=rank, world_size=world_size
-File "/home/haozhao/software/anaconda3/lib/python3.7/site-packages/torch/distributed/distributed_c10d.py", line 407, in init_process_group
-timeout=timeout)
-File "/home/haozhao/software/anaconda3/lib/python3.7/site-packages/torch/distributed/distributed_c10d.py", line 475, in _new_process_group_helper
-timeout=timeout)
-RuntimeError: [/pytorch/third_party/gloo/gloo/transport/tcp/pair.cc:761] connect [127.0.1.1]:21400: Connection refused
+Expected behavior
+torch.hub works with arbitrary git tags and branches
 Environment
-Collecting environment information...
-PyTorch version: 1.4.0+cu100
-Is debug build: False
-CUDA used to build PyTorch: 10.0
-ROCM used to build PyTorch: N/A
-OS: Ubuntu 16.04.6 LTS (x86_64)
-GCC version: (Ubuntu 5.4.0-6ubuntu1~16.04.12) 5.4.0 20160609
-Clang version: Could not collect
-CMake version: version 3.3.2
-Python version: 3.7 (64-bit runtime)
-Is CUDA available: True
-CUDA runtime version: 10.0.130
-GPU models and configuration:
-GPU 0: GeForce GTX 1080 Ti
-GPU 1: GeForce GTX 1080 Ti
-GPU 2: GeForce GTX 1080 Ti
-GPU 3: GeForce GTX 1080 Ti
-Nvidia driver version: 410.73
-cuDNN version: Could not collect
-HIP runtime version: N/A
-MIOpen runtime version: N/A
-Versions of relevant libraries:
-[pip] numpy==1.17.2
-[pip] numpydoc==0.9.1
-[pip] torch==1.4.0+cu100
-[pip] torchvision==0.5.0+cu100
-[conda] blas                      1.0                         mkl
-[conda] cudatoolkit               10.0.130                      0
-[conda] mkl                       2019.4                      243
-[conda] mkl-service               2.3.0            py37he904b0f_0
-[conda] mkl_fft                   1.0.14           py37ha843d7b_0
-[conda] mkl_random                1.1.0            py37hd6b4f25_0
-[conda] numpy                     1.17.2           py37haad9e8e_0
-[conda] numpy-base                1.17.2           py37hde5b4d6_0
-[conda] numpydoc                  0.9.1                      py_0
-[conda] torch                     1.4.0+cu100              pypi_0    pypi
-[conda] torchvision               0.5.0+cu100              pypi_0    pypi
-cc @pietern @mrshenli @pritamdamania87 @zhaojuanmao @satgera @gqchen @aazzolini @rohan-varma @xush6528 @jjlilley @osalpekar @jiayisuse
 
-----------------------------------------Comment 1----------------------------------------
+env
 
-🐛 Describe the bug
-def get_density(sampled_xyzs, xyzs):
-# input: (b, m,3), (b, n, 3)
-batch_size = xyzs.shape[0]
-sample_num = sampled_xyzs.shape[1]
-xyzs_trans = xyzs
-sampled_xyzs_trans = sampled_xyzs
-ori2sample_idx = knnquery_heap(xyzs_trans, sampled_xyzs_trans, 1)
-print('ori2sample_idx shape is:', ori2sample_idx.shape)
-downsample_num = torch.zeros((batch_size, sample_num)).cuda()
-for i in range(batch_size):
-uniques, counts = torch.unique(ori2sample_idx[i], return_counts=True)
-downsample_num[i][uniques.long()] = counts.float()
 
-Traceback (most recent call last):
-File "train.py", line 258, in 
-main(args)
-File "train.py", line 201, in main
-bpp, coor_recon, cd, gt_xyzs, gt_dnums, gt_mdis, pred_dnum, pred_dis = model(points, global_step=global_step)
-File "/home/zhe/anaconda3/envs/PCT_PCC/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
-result = self.forward(*input, **kwargs)
-File "/home/zhe/Downloads/PCTPCC/PCT_PCC_density_loss/models/PCT_PCC.py", line 117, in forward
-pred_dnum, pred_dis = get_density(pred_dnum, pred_xyzs)
-File "/home/zhe/Downloads/PCTPCC/PCT_PCC_density_loss/models/utils.py", line 87, in get_density
-uniques, counts = torch.unique(ori2sample_idx[i], return_counts=True)
-File "/home/zhe/anaconda3/envs/PCT_PCC/lib/python3.7/site-packages/torch/_jit_internal.py", line 267, in fn
-return if_false(*args, **kwargs)
-File "/home/zhe/anaconda3/envs/PCT_PCC/lib/python3.7/site-packages/torch/_jit_internal.py", line 265, in fn
-return if_true(*args, **kwargs)
-File "/home/zhe/anaconda3/envs/PCT_PCC/lib/python3.7/site-packages/torch/functional.py", line 756, in _return_counts
-output, _, counts = _unique_impl(input, sorted, return_inverse, return_counts, dim)
-File "/home/zhe/anaconda3/envs/PCT_PCC/lib/python3.7/site-packages/torch/functional.py", line 682, in _unique_impl
-return_counts=return_counts,
-RuntimeError: isDifferentiableType(variable.scalar_type()) INTERNAL ASSERT FAILED at "/opt/conda/conda-bld/pytorch_1603729047590/work/torch/csrc/autograd/functions/utils.h":64, please report a bug to PyTorch.
-Versions
-Collecting environment information...
-PyTorch version: 1.7.0
-Is debug build: True
-CUDA used to build PyTorch: 11.0
-ROCM used to build PyTorch: N/A
-OS: Ubuntu 18.04.6 LTS (x86_64)
-GCC version: (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
-Clang version: Could not collect
-CMake version: version 3.10.2
-Libc version: glibc-2.17
-Python version: 3.7.15 (default, Nov  7 2022, 22:00:21)  [GCC 11.2.0] (64-bit runtime)
-Python platform: Linux-5.4.0-122-generic-x86_64-with-debian-buster-sid
-Is CUDA available: True
-CUDA runtime version: 11.0.194
-CUDA_MODULE_LOADING set to:
-GPU models and configuration: GPU 0: NVIDIA GeForce RTX 3080
-Nvidia driver version: 515.48.07
-cuDNN version: Could not collect
-HIP runtime version: N/A
-MIOpen runtime version: N/A
-Is XNNPACK available: True
-Versions of relevant libraries:
-[pip3] numpy==1.21.5
-[pip3] pytorch3d==0.3.0
-[pip3] torch==1.7.0
-[pip3] torchaudio==0.7.0a0+ac17b64
-[pip3] torchvision==0.8.0
-[conda] blas                      1.0                         mkl
-[conda] cudatoolkit               11.0.221             h6bb024c_0
-[conda] mkl                       2021.4.0           h06a4308_640
-[conda] mkl-service               2.4.0            py37h7f8727e_0
-[conda] mkl_fft                   1.3.1            py37hd3c417c_0
-[conda] mkl_random                1.2.2            py37h51133e4_0
-[conda] numpy                     1.21.5           py37h6c91a56_3
-[conda] numpy-base                1.21.5           py37ha15fc14_3
-[conda] pytorch                   1.7.0           py3.7_cuda11.0.221_cudnn8.0.3_0    pytorch
-[conda] pytorch3d                 0.3.0           py37_cu110_pyt170    pytorch3d
-[conda] torchaudio                0.7.0                      py37    pytorch
-[conda] torchvision               0.8.0                py37_cu110    pytorch
+Additional context
+Workaround: create a tag or branch alias without the path separator in it.
+cc @ailzhang
 

@@ -1,638 +1,1103 @@
 ----------------------------------------Comment 1----------------------------------------
 
-Help! My computer is equipped with two 2080ti GPUs. However, when I train my algorithm on GPU 0, and somebody trains another algorithm (different project) on GPU 1, then error occurs:
+🐛 Describe the bug
+RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation: [torch.cuda.HalfTensor [1024]] is at version 24; expected version 23 instead. Hint: enable anomaly detection to find the operation that failed to compute its gradient, with torch.autograd.set_detect_anomaly(True).
+Error logs
+[2023-01-17 16:14:06,580] torch._inductor.ir: [WARNING] DeviceCopy
+[2023-01-17 16:14:06,584] torch._inductor.ir: [WARNING] DeviceCopy
+[2023-01-17 16:14:06,587] torch._inductor.ir: [WARNING] DeviceCopy
+[2023-01-17 16:14:06,617] torch._inductor.ir: [WARNING] DeviceCopy
+[2023-01-17 16:14:06,638] torch._inductor.ir: [WARNING] DeviceCopy
+[2023-01-17 16:14:06,638] torch._inductor.ir: [WARNING] DeviceCopy
+[2023-01-17 16:14:06,671] torch._inductor.ir: [WARNING] DeviceCopy
+[2023-01-17 16:14:06,679] torch._inductor.ir: [WARNING] DeviceCopy
+[2023-01-17 16:14:06,726] torch._inductor.compile_fx: [WARNING] skipping cudagraphs due to multiple devices
+[2023-01-17 16:14:06,736] torch._inductor.compile_fx: [WARNING] skipping cudagraphs due to multiple devices
+[2023-01-17 16:14:06,743] torch._inductor.compile_fx: [WARNING] skipping cudagraphs due to multiple devices
+[2023-01-17 16:14:06,759] torch._inductor.compile_fx: [WARNING] skipping cudagraphs due to multiple devices
+[2023-01-17 16:14:06,778] torch._inductor.compile_fx: [WARNING] skipping cudagraphs due to multiple devices
+[2023-01-17 16:14:06,787] torch._inductor.compile_fx: [WARNING] skipping cudagraphs due to multiple devices
+[2023-01-17 16:14:06,820] torch._inductor.compile_fx: [WARNING] skipping cudagraphs due to multiple devices
+[2023-01-17 16:14:06,831] torch._inductor.compile_fx: [WARNING] skipping cudagraphs due to multiple devices
+/home/tiger/.local/lib/python3.7/site-packages/torch/cuda/graphs.py:82: UserWarning: The CUDA Graph is empty. This ususally means that the graph was attempted to be captured on wrong device or stream. (Triggered internally at ../aten/src/ATen/cuda/CUDAGraph.cpp:191.)
+super(CUDAGraph, self).capture_end()
+/home/tiger/.local/lib/python3.7/site-packages/torch/cuda/graphs.py:82: UserWarning: The CUDA Graph is empty. This ususally means that the graph was attempted to be captured on wrong device or stream. (Triggered internally at ../aten/src/ATen/cuda/CUDAGraph.cpp:191.)
+super(CUDAGraph, self).capture_end()
+/home/tiger/.local/lib/python3.7/site-packages/torch/cuda/graphs.py:82: UserWarning: The CUDA Graph is empty. This ususally means that the graph was attempted to be captured on wrong device or stream. (Triggered internally at ../aten/src/ATen/cuda/CUDAGraph.cpp:191.)
+super(CUDAGraph, self).capture_end()
+/home/tiger/.local/lib/python3.7/site-packages/torch/cuda/graphs.py:82: UserWarning: The CUDA Graph is empty. This ususally means that the graph was attempted to be captured on wrong device or stream. (Triggered internally at ../aten/src/ATen/cuda/CUDAGraph.cpp:191.)
+super(CUDAGraph, self).capture_end()
+/home/tiger/.local/lib/python3.7/site-packages/torch/cuda/graphs.py:82: UserWarning: The CUDA Graph is empty. This ususally means that the graph was attempted to be captured on wrong device or stream. (Triggered internally at ../aten/src/ATen/cuda/CUDAGraph.cpp:191.)
+super(CUDAGraph, self).capture_end()
+/home/tiger/.local/lib/python3.7/site-packages/torch/cuda/graphs.py:82: UserWarning: The CUDA Graph is empty. This ususally means that the graph was attempted to be captured on wrong device or stream. (Triggered internally at ../aten/src/ATen/cuda/CUDAGraph.cpp:191.)
+super(CUDAGraph, self).capture_end()
+/home/tiger/.local/lib/python3.7/site-packages/torch/cuda/graphs.py:82: UserWarning: The CUDA Graph is empty. This ususally means that the graph was attempted to be captured on wrong device or stream. (Triggered internally at ../aten/src/ATen/cuda/CUDAGraph.cpp:191.)
+super(CUDAGraph, self).capture_end()
+/home/tiger/.local/lib/python3.7/site-packages/torch/cuda/graphs.py:82: UserWarning: The CUDA Graph is empty. This ususally means that the graph was attempted to be captured on wrong device or stream. (Triggered internally at ../aten/src/ATen/cuda/CUDAGraph.cpp:191.)
+super(CUDAGraph, self).capture_end()
 Traceback (most recent call last):
-File "D:/wangyingqian/DeOccNet/train.py", line 132, in 
-main()
-File "D:/wangyingqian/DeOccNet/train.py", line 129, in main
-train(train_loader, 1, 500)
-File "D:/wangyingqian/DeOccNet/train.py", line 49, in train
-for idx_iter, (data, label, mask) in enumerate(train_loader):
-File "D:\Anaconda3\envs\YingqianWang_base\lib\site-packages\torch\utils\data\dataloader.py", line 637, in next
-return self._process_next_batch(batch)
-File "D:\Anaconda3\envs\YingqianWang_base\lib\site-packages\torch\utils\data\dataloader.py", line 658, in _process_next_batch
-raise batch.exc_type(batch.exc_msg)
-RuntimeError: Traceback (most recent call last):
-File "D:\Anaconda3\envs\YingqianWang_base\lib\site-packages\torch\utils\data\dataloader.py", line 138, in _worker_loop
-samples = collate_fn([dataset[i] for i in batch_indices])
-File "D:\Anaconda3\envs\YingqianWang_base\lib\site-packages\torch\utils\data\dataloader.py", line 232, in default_collate
-return [default_collate(samples) for samples in transposed]
-File "D:\Anaconda3\envs\YingqianWang_base\lib\site-packages\torch\utils\data\dataloader.py", line 232, in 
-return [default_collate(samples) for samples in transposed]
-File "D:\Anaconda3\envs\YingqianWang_base\lib\site-packages\torch\utils\data\dataloader.py", line 207, in default_collate
-storage = batch[0].storage()._new_shared(numel)
-File "D:\Anaconda3\envs\YingqianWang_base\lib\site-packages\torch\storage.py", line 120, in _new_shared
-return cls._new_using_filename(size)
-RuntimeError: Couldn't open shared file mapping: <torch_21720_2430665410>, error code: <0>
-Same error offen occurs when I use DataParallel to train one algorithm on two GPUs...
+File "fsdp_pretrain.py", line 423, in 
+Traceback (most recent call last):
+File "fsdp_pretrain.py", line 423, in 
+main(args)
+File "fsdp_pretrain.py", line 318, in main
+main(args)
+File "fsdp_pretrain.py", line 318, in main
+scaler.scale(loss).backward()
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_tensor.py", line 489, in backward
+self, gradient, retain_graph, create_graph, inputs=inputsscaler.scale(loss).backward()
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/init.py", line 199, in backward
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_tensor.py", line 489, in backward
+allow_unreachable=True, accumulate_grad=True)  # Calls into the C++ engine to run the backward pass
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/function.py", line 276, in apply
+self, gradient, retain_graph, create_graph, inputs=inputs
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/init.py", line 199, in backward
+return user_fn(self, *args)
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_functorch/aot_autograd.py", line 1848, in backward
+allow_unreachable=True, accumulate_grad=True)  # Calls into the C++ engine to run the backward pass
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/function.py", line 276, in apply
+return user_fn(self, *args)
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_functorch/aot_autograd.py", line 1848, in backward
+list(ctx.symints) + list(ctx.saved_tensors) + list(contiguous_args)
+RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation: [torch.cuda.HalfTensor [1024]] is at version 24; expected version 23 instead. Hint: enable anomaly detection to find the operation that failed to compute its gradient, with torch.autograd.set_detect_anomaly(True).
+list(ctx.symints) + list(ctx.saved_tensors) + list(contiguous_args)
+RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation: [torch.cuda.HalfTensor [1024]] is at version 24; expected version 23 instead. Hint: enable anomaly detection to find the operation that failed to compute its gradient, with torch.autograd.set_detect_anomaly(True).
+Traceback (most recent call last):
+File "fsdp_pretrain.py", line 423, in 
+Traceback (most recent call last):
+File "fsdp_pretrain.py", line 423, in 
+main(args)
+File "fsdp_pretrain.py", line 318, in main
+scaler.scale(loss).backward()
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_tensor.py", line 489, in backward
+self, gradient, retain_graph, create_graph, inputs=inputs
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/init.py", line 199, in backward
+allow_unreachable=True, accumulate_grad=True)  # Calls into the C++ engine to run the backward pass
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/function.py", line 276, in apply
+return user_fn(self, *args)
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_functorch/aot_autograd.py", line 1848, in backward
+list(ctx.symints) + list(ctx.saved_tensors) + list(contiguous_args)main(args)
+RuntimeError  File "fsdp_pretrain.py", line 318, in main
+: one of the variables needed for gradient computation has been modified by an inplace operation: [torch.cuda.HalfTensor [1024]] is at version 24; expected version 23 instead. Hint: enable anomaly detection to find the operation that failed to compute its gradient, with torch.autograd.set_detect_anomaly(True).
+scaler.scale(loss).backward()
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_tensor.py", line 489, in backward
+self, gradient, retain_graph, create_graph, inputs=inputs
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/init.py", line 199, in backward
+allow_unreachable=True, accumulate_grad=True)  # Calls into the C++ engine to run the backward pass
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/function.py", line 276, in apply
+return user_fn(self, *args)
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_functorch/aot_autograd.py", line 1848, in backward
+list(ctx.symints) + list(ctx.saved_tensors) + list(contiguous_args)
+RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation: [torch.cuda.HalfTensor [1024]] is at version 24; expected version 23 instead. Hint: enable anomaly detection to find the operation that failed to compute its gradient, with torch.autograd.set_detect_anomaly(True).
+Traceback (most recent call last):
+File "fsdp_pretrain.py", line 423, in 
+main(args)
+File "fsdp_pretrain.py", line 318, in main
+scaler.scale(loss).backward()
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_tensor.py", line 489, in backward
+self, gradient, retain_graph, create_graph, inputs=inputs
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/init.py", line 199, in backward
+allow_unreachable=True, accumulate_grad=True)  # Calls into the C++ engine to run the backward pass
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/function.py", line 276, in apply
+return user_fn(self, *args)
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_functorch/aot_autograd.py", line 1848, in backward
+list(ctx.symints) + list(ctx.saved_tensors) + list(contiguous_args)
+RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation: [torch.cuda.HalfTensor [1024]] is at version 24; expected version 23 instead. Hint: enable anomaly detection to find the operation that failed to compute its gradient, with torch.autograd.set_detect_anomaly(True).
+Traceback (most recent call last):
+File "fsdp_pretrain.py", line 423, in 
+main(args)
+File "fsdp_pretrain.py", line 318, in main
+scaler.scale(loss).backward()
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_tensor.py", line 489, in backward
+self, gradient, retain_graph, create_graph, inputs=inputs
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/init.py", line 199, in backward
+allow_unreachable=True, accumulate_grad=True)  # Calls into the C++ engine to run the backward pass
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/function.py", line 276, in apply
+return user_fn(self, *args)
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_functorch/aot_autograd.py", line 1848, in backward
+list(ctx.symints) + list(ctx.saved_tensors) + list(contiguous_args)
+RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation: [torch.cuda.HalfTensor [1024]] is at version 24; expected version 23 instead. Hint: enable anomaly detection to find the operation that failed to compute its gradient, with torch.autograd.set_detect_anomaly(True).
+text: Unable to write to output stream.
+text: Unable to write to output stream.
+text: Unable to write to output stream.
+text: Unable to write to output stream.
+text: Unable to write to output stream.
+text: Unable to write to output stream.
+text: Unable to write to output stream.
+text: Unable to write to output stream.
+text: Unable to write to output stream.
+text: Unable to write to output stream.
+text: Unable to write to output stream.
+text: Unable to write to output stream.
+text: Unable to write to output stream.
+Traceback (most recent call last):
+File "fsdp_pretrain.py", line 423, in 
+Traceback (most recent call last):
+File "fsdp_pretrain.py", line 423, in 
+text: Unable to write to output stream.
+text: Unable to write to output stream.
+main(args)
+File "fsdp_pretrain.py", line 318, in main
+main(args)
+File "fsdp_pretrain.py", line 318, in main
+scaler.scale(loss).backward()
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_tensor.py", line 489, in backward
+self, gradient, retain_graph, create_graph, inputs=inputs
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/init.py", line 199, in backward
+allow_unreachable=True, accumulate_grad=True)  # Calls into the C++ engine to run the backward pass
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/function.py", line 276, in apply
+return user_fn(self, *args)
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_functorch/aot_autograd.py", line 1848, in backward
+scaler.scale(loss).backward()
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_tensor.py", line 489, in backward
+self, gradient, retain_graph, create_graph, inputs=inputs
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/init.py", line 199, in backward
+allow_unreachable=True, accumulate_grad=True)  # Calls into the C++ engine to run the backward pass
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/autograd/function.py", line 276, in apply
+return user_fn(self, *args)
+File "/home/tiger/.local/lib/python3.7/site-packages/torch/_functorch/aot_autograd.py", line 1848, in backward
+list(ctx.symints) + list(ctx.saved_tensors) + list(contiguous_args)
+RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation: [torch.cuda.HalfTensor [1024]] is at version 24; expected version 23 instead. Hint: enable anomaly detection to find the operation that failed to compute its gradient, with torch.autograd.set_detect_anomaly(True).
+list(ctx.symints) + list(ctx.saved_tensors) + list(contiguous_args)
+RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation: [torch.cuda.HalfTensor [1024]] is at version 24; expected version 23 instead. Hint: enable anomaly detection to find the operation that failed to compute its gradient, with torch.autograd.set_detect_anomaly(True).
+cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 2----------------------------------------
+
+Python version:3.6
+Pytorch: 1.0
+Hi, I'm using dataloader with 60060 images, with batch size set to 5, so the length of my dataloader is 12012.
+I got the error :
+
+More detailed traceback:
+Traceback (most recent call last):
+  File "Training.py", line 141, in <module>
+    for i_batch, sample_batched in enumerate(dataloader):
+  File "/home/xiaoyu/miniconda3/envs/deep_mol/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 637, in __next__
+    return self._process_next_batch(batch)
+  File "/home/xiaoyu/miniconda3/envs/deep_mol/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 658, in _process_next_batch
+    raise batch.exc_type(batch.exc_msg)
+RecursionError: Traceback (most recent call last):
+  File "/home/xiaoyu/miniconda3/envs/deep_mol/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 138, in _worker_loop
+    samples = collate_fn([dataset[i] for i in batch_indices])
+  File "/home/xiaoyu/miniconda3/envs/deep_mol/lib/python3.6/site-packages/torch/utils/data/dataloader.py", line 138, in <listcomp>
+    samples = collate_fn([dataset[i] for i in batch_indices])
+  File "/home/xiaoyu/miniconda3/envs/deep_mol/lib/python3.6/site-packages/torch/utils/data/dataset.py", line 81, in __getitem__
+    return self.datasets[dataset_idx][sample_idx]
+  File "/home/xiaoyu/miniconda3/envs/deep_mol/lib/python3.6/site-packages/torch/utils/data/dataset.py", line 81, in __getitem__
+    return self.datasets[dataset_idx][sample_idx]
+  File "/home/xiaoyu/miniconda3/envs/deep_mol/lib/python3.6/site-packages/torch/utils/data/dataset.py", line 81, in __getitem__
+    return self.datasets[dataset_idx][sample_idx]
+  [Previous line repeated 321 more times]
+  File "Training.py", line 67, in __getitem__
+    T1a_arr = io.imread(os.path.join(T1a_dir, T1a_str))
+  File "/home/xiaoyu/miniconda3/envs/deep_mol/lib/python3.6/site-packages/skimage/io/_io.py", line 61, in imread
+    with file_or_url_context(fname) as fname:
+  File "/home/xiaoyu/miniconda3/envs/deep_mol/lib/python3.6/contextlib.py", line 159, in helper
+    return _GeneratorContextManager(func, args, kwds)
+
+
+----------------------------------------Comment 3----------------------------------------
 
 🐛 Describe the bug
-from torch.nn import functional as F
-x = F.interpolate(x, scale_factor=scale_factor,mode='bilinear', align_corners=False, recompute_scale_factor=False)
-Versions
-tested：torch1.9-1.12：
-when use model.half()，F.interpolate can not surport float16.
-bug report：
-Traceback (most recent call last):
-File "pth_to_pt_fp16.py", line 21, in 
-traced_script_module = torch.jit.trace(model, (src, *rec, downsample_ratio))
-File "/home/.conda/envs/rvm_fp16/lib/python3.8/site-packages/torch/jit/_trace.py", line 750, in trace
-return trace_module(
-File "/home/.conda/envs/rvm_fp16/lib/python3.8/site-packages/torch/jit/_trace.py", line 967, in trace_module
-module._c._create_method_from_trace(
-File "/home/.conda/envs/rvm_fp16/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1130, in _call_impl
-return forward_call(*input, **kwargs)
-File "/home/.conda/envs/rvm_fp16/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1118, in _slow_forward
-result = self.forward(*input, **kwargs)
-File "/home/matt_mobile/RobustVideoMatting/pth_to_pt/model/model.py", line 50, in forward
-src_sm = self._interpolate(src, scale_factor=downsample_ratio)
-File "/home/matt_mobile/RobustVideoMatting/pth_to_pt/model/model.py", line 77, in _interpolate
-x = F.interpolate(x, scale_factor=scale_factor),
-File "/home/.conda/envs/rvm_fp16/lib/python3.8/site-packages/torch/nn/functional.py", line 3938, in interpolate
-return torch._C._nn.upsample_bilinear2d(input, output_size, align_corners, scale_factors)
-RuntimeError: "compute_indices_weights_linear" not implemented for 'Half'
+Here, onnx.export fails if called on a ScriptedModule that has been frozen:
 
-----------------------------------------Comment 1----------------------------------------
+Result:
+python3 not-part.py
+Traceback (most recent call last):
+File "not-part.py", line 26, in 
+torch.onnx.export(m, (x,), 'test.onnx')
+File "/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py", line 479, in export
+_export(
+File "/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py", line 1390, in _export
+with exporter_context(model, training, verbose):
+File "/opt/conda/lib/python3.8/contextlib.py", line 113, in enter
+return next(self.gen)
+File "/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py", line 175, in exporter_context
+with select_model_mode_for_export(
+File "/opt/conda/lib/python3.8/contextlib.py", line 113, in enter
+return next(self.gen)
+File "/opt/conda/lib/python3.8/site-packages/torch/onnx/utils.py", line 93, in select_model_mode_for_export
+originally_training = model.training
+File "/opt/conda/lib/python3.8/site-packages/torch/jit/_script.py", line 785, in getattr
+return super(RecursiveScriptModule, self).getattr(attr)
+File "/opt/conda/lib/python3.8/site-packages/torch/jit/_script.py", line 502, in getattr
+return super(ScriptModule, self).getattr(attr)
+File "/opt/conda/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1261, in getattr
+raise AttributeError("'{}' object has no attribute '{}'".format(
+AttributeError: 'RecursiveScriptModule' object has no attribute 'training'
+Versions
+Collecting environment information...
+PyTorch version: 1.13.0a0+d321be6
+Is debug build: False
+CUDA used to build PyTorch: 11.7
+ROCM used to build PyTorch: N/A
+OS: Ubuntu 20.04.4 LTS (x86_64)
+GCC version: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0
+Clang version: Could not collect
+CMake version: version 3.23.3
+Libc version: glibc-2.31
+Python version: 3.8.13 | packaged by conda-forge | (default, Mar 25 2022, 06:04:10)  [GCC 10.3.0] (64-bit runtime)
+Python platform: Linux-5.15.0-46-generic-x86_64-with-glibc2.10
+Is CUDA available: True
+CUDA runtime version: 11.7.99
+GPU models and configuration: GPU 0: NVIDIA RTX A5000
+Nvidia driver version: 515.65.01
+cuDNN version: Probably one of the following:
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.5.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.5.0
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.5.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.5.0
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.5.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.5.0
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.5.0
+HIP runtime version: N/A
+MIOpen runtime version: N/A
+Is XNNPACK available: True
+Versions of relevant libraries:
+[pip3] k2==1.19.dev20220911+cuda11.7.torch1.13.0a0
+[pip3] numpy==1.22.4
+[pip3] pytorch-lightning==1.7.5
+[pip3] pytorch-quantization==2.1.2
+[pip3] torch==1.13.0a0+d321be6
+[pip3] torch-tensorrt==1.2.0a0
+[pip3] torchaudio==0.13.0
+[pip3] torchmetrics==0.9.3
+[pip3] torchvision==0.14.0a0
+[conda] k2                        1.19.dev20220911+cuda11.7.torch1.13.0a0          pypi_0    pypi
+[conda] mkl                       2020.4             h726a3e6_304    conda-forge
+[conda] mkl-include               2020.4             h726a3e6_304    conda-forge
+[conda] numpy                     1.22.4           py38h99721a1_0    conda-forge
+[conda] pytorch-lightning         1.7.5                    pypi_0    pypi
+[conda] pytorch-quantization      2.1.2                    pypi_0    pypi
+[conda] torch                     1.13.0a0+d321be6          pypi_0    pypi
+[conda] torch-tensorrt            1.2.0a0                  pypi_0    pypi
+[conda] torchaudio                0.13.0                   pypi_0    pypi
+[conda] torchmetrics              0.9.3                    pypi_0    pypi
+[conda] torchvision               0.14.0a0                 pypi_0    pypi
+
+----------------------------------------Comment 4----------------------------------------
+
+Whenever i run the faster RCNN model provided in pytorch pretrained models list i get the following stacktrace when running the exe generated
+File "site-packages\flask\app.py", line 2447, in wsgi_app
+File "site-packages\flask\app.py", line 1952, in full_dispatch_request
+File "site-packages\flask\app.py", line 1821, in handle_user_exception
+File "site-packages\flask_compat.py", line 39, in reraise
+File "site-packages\flask\app.py", line 1950, in full_dispatch_request
+File "site-packages\flask\app.py", line 1936, in dispatch_request
+File "pytorchVizTool\flaskr\ModelServer.py", line 95, in GeneratePredsForFile
+File "pytorchVizTool\flaskr\ModelServer.py", line 95, in 
+File "pytorchVizTool\flaskr\FasterRCNN.py", line 100, in predict
+File "pytorchVizTool\flaskr\FasterRCNN.py", line 142, in get_bounding_box_prediction
+File "site-packages\torch\nn\modules\module.py", line 550, in call
+File "site-packages\torchvision\models\detection\generalized_rcnn.py", line 70, in forward
+File "site-packages\torch\nn\modules\module.py", line 550, in call
+File "site-packages\torchvision\models\detection\rpn.py", line 488, in forward
+File "site-packages\torchvision\models\detection\rpn.py", line 410, in filter_proposals
+File "site-packages\torchvision\ops\boxes.py", line 75, in batched_nms
+File "site-packages\torchvision\ops\boxes.py", line 35, in nms
+File "site-packages\torch_ops.py", line 61, in getattr
+RuntimeError: No such operator torchvision::nms
+Running the python files directly doesnt give that error.
+During the build i got these warnings
+59296 WARNING: lib not found: impi.dll dependency of c:\users\a-kahas\appdata\local\continuum\anaconda3\envs\exe_creator\Library\bin\mkl_blacs_intelmpi_ilp64.dll
+59552 WARNING: lib not found: msmpi.dll dependency of c:\users\a-kahas\appdata\local\continuum\anaconda3\envs\exe_creator\Library\bin\mkl_blacs_msmpi_ilp64.dll
+59600 WARNING: lib not found: mpich2mpi.dll dependency of c:\users\a-kahas\appdata\local\continuum\anaconda3\envs\exe_creator\Library\bin\mkl_blacs_mpich2_lp64.dll
+59776 WARNING: lib not found: msmpi.dll dependency of c:\users\a-kahas\appdata\local\continuum\anaconda3\envs\exe_creator\Library\bin\mkl_blacs_msmpi_lp64.dll
+59829 WARNING: lib not found: pgc14.dll dependency of c:\users\a-kahas\appdata\local\continuum\anaconda3\envs\exe_creator\Library\bin\mkl_pgi_thread.dll
+59833 WARNING: lib not found: pgf90rtl.dll dependency of c:\users\a-kahas\appdata\local\continuum\anaconda3\envs\exe_creator\Library\bin\mkl_pgi_thread.dll
+59846 WARNING: lib not found: pgf90.dll dependency of c:\users\a-kahas\appdata\local\continuum\anaconda3\envs\exe_creator\Library\bin\mkl_pgi_thread.dll
+60129 WARNING: lib not found: mpich2mpi.dll dependency of c:\users\a-kahas\appdata\local\continuum\anaconda3\envs\exe_creator\Library\bin\mkl_blacs_mpich2_ilp64.dll
+60181 WARNING: lib not found: impi.dll dependency of c:\users\a-kahas\appdata\local\continuum\anaconda3\envs\exe_creator\Library\bin\mkl_blacs_intelmpi_lp64.dll
+60702 WARNING: lib not found: torch_python.dll dependency of c:\users\a-kahas\appdata\local\continuum\anaconda3\envs\exe_creator\lib\site-packages\torch_C.cp35-win_amd64.pyd
+I have checked, my pc does indeed have torch_python.dll so am quite confused by the error message
+cc @peterjc123 @maxluk @nbcsm @guyang3532 @gunandrose4u @smartcat2010 @mszhanyi
+
+----------------------------------------Comment 5----------------------------------------
+
+Hello,
+I am trying to train with 4 V100 GPU. What I have observe is that when the multiplication of batch size with number of workers exceeds some limit, I get the following error below. I cannot understand what is the limiting fact. One reason can be the RAM size because the system gives me a warning that swap + memory has exceeds the limits at least one even if the code does not stop because of the error specified below. Or is it the memory limit in GPU? Thanx in advance for your help.
+I am using,
+Torch 1.1.0,
+Cuda9.0
+If you need further package details, I can provide.
+Thanx in advance
+Traceback (most recent call last):
+File "two_stream_bert.py", line 713, in 
+main()
+File "two_stream_bert.py", line 297, in main
+train(train_loader, model, criterion,criterion2, optimizer, epoch,setMseCoeff,modality)
+File "two_stream_bert.py", line 451, in train
+output, input_vectors, sequenceOut, maskSample = model(inputs)
+File "/truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/nn/modules/module.py", line 493, in call
+result = self.forward(*input, *kwargs)
+File "/truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/nn/parallel/data_parallel.py", line 148, in forward
+inputs, kwargs = self.scatter(inputs, kwargs, self.device_ids)
+File "/truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/nn/parallel/data_parallel.py", line 159, in scatter
+return scatter_kwargs(inputs, kwargs, device_ids, dim=self.dim)
+File "/truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/nn/parallel/scatter_gather.py", line 35, in scatter_kwargs
+inputs = scatter(inputs, target_gpus, dim) if inputs else []
+File "/truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/nn/parallel/scatter_gather.py", line 28, in scatter
+return scatter_map(inputs)
+File "/truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/nn/parallel/scatter_gather.py", line 15, in scatter_map
+return list(zip(map(scatter_map, obj)))
+File "/truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/nn/parallel/scatter_gather.py", line 13, in scatter_map
+return Scatter.apply(target_gpus, None, dim, obj)
+File "/truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/nn/parallel/_functions.py", line 89, in forward
+outputs = comm.scatter(input, target_gpus, chunk_sizes, ctx.dim, streams)
+File "/truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/cuda/comm.py", line 147, in scatter
+return tuple(torch._C._scatter(tensor, devices, chunk_sizes, dim, streams))
+RuntimeError: CUDA error: out of memory (malloc at /pytorch/c10/cuda/CUDACachingAllocator.cpp:241)
+frame #0: std::function<std::string ()>::operator()() const + 0x11 (0x2ad6b175f441 in /truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/lib/libc10.so)
+frame #1: c10::Error::Error(c10::SourceLocation, std::string const&) + 0x2a (0x2ad6b175ed7a in /truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/lib/libc10.so)
+frame #2:  + 0x1581d (0x2ad6b381481d in /truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/lib/libc10_cuda.so)
+frame #3:  + 0x16247 (0x2ad6b3815247 in /truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/lib/libc10_cuda.so)
+frame #4: at::native::empty_cuda(c10::ArrayRef, c10::TensorOptions const&) + 0x121 (0x2ad674e42f81 in /truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/lib/libcaffe2_gpu.so)
+frame #5: at::CUDAType::empty(c10::ArrayRef, c10::TensorOptions const&) const + 0x19b (0x2ad673a8a6fb in /truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/lib/libcaffe2_gpu.so)
+frame #6: torch::autograd::VariableType::empty(c10::ArrayRef, c10::TensorOptions const&) const + 0x284 (0x2ad6b2522094 in /truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/lib/libtorch.so.1)
+frame #7: at::native::to(at::Tensor const&, c10::TensorOptions const&, bool, bool) + 0x506 (0x2ad6a7b67666 in /truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/lib/libcaffe2.so)
+frame #8: at::TypeDefault::to(at::Tensor const&, c10::TensorOptions const&, bool, bool) const + 0x17 (0x2ad6a7de6857 in /truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/lib/libcaffe2.so)
+frame #9: torch::autograd::VariableType::to(at::Tensor const&, c10::TensorOptions const&, bool, bool) const + 0x2c2 (0x2ad6b240bb52 in /truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/lib/libtorch.so.1)
+frame #10: torch::cuda::scatter(at::Tensor const&, c10::ArrayRef, c10::optional<std::vector<long, std::allocator > > const&, long, c10::optional<std::vector<c10::optionalc10::cuda::CUDAStream, std::allocator<c10::optionalc10::cuda::CUDAStream > > > const&) + 0x389 (0x2ad6b295ffd9 in /truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/lib/libtorch.so.1)
+frame #11:  + 0x5a27bf (0x2ad6720a27bf in /truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/lib/libtorch_python.so)
+frame #12:  + 0x130cfc (0x2ad671c30cfc in /truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/lib/libtorch_python.so)
+frame #13: _PyCFunction_FastCallDict + 0x154 (0x2ad6591c0b94 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #14:  + 0x19e67c (0x2ad65925067c in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #15: _PyEval_EvalFrameDefault + 0x2fa (0x2ad659272cba in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #16:  + 0x197a94 (0x2ad659249a94 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #17:  + 0x198941 (0x2ad65924a941 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #18:  + 0x19e755 (0x2ad659250755 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #19: _PyEval_EvalFrameDefault + 0x2fa (0x2ad659272cba in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #20: PyEval_EvalCodeEx + 0x329 (0x2ad65924b459 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #21:  + 0x19a264 (0x2ad65924c264 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #22: PyObject_Call + 0x3e (0x2ad6591c099e in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #23: THPFunction_apply(_object, _object) + 0x6b1 (0x2ad671eb3481 in /truba/home/mkalfaoglu/anaconda3/envs/master/lib/python3.6/site-packages/torch/lib/libtorch_python.so)
+frame #24: _PyCFunction_FastCallDict + 0x91 (0x2ad6591c0ad1 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #25:  + 0x19e67c (0x2ad65925067c in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #26: _PyEval_EvalFrameDefault + 0x2fa (0x2ad659272cba in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #27:  + 0x197dae (0x2ad659249dae in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #28: _PyFunction_FastCallDict + 0x1bb (0x2ad65924ae1b in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #29: _PyObject_FastCallDict + 0x26f (0x2ad6591c0f5f in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #30:  + 0x12a552 (0x2ad6591dc552 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #31: PyIter_Next + 0xe (0x2ad659205c9e in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #32: PySequence_Tuple + 0xf9 (0x2ad65920aad9 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #33: _PyEval_EvalFrameDefault + 0x563a (0x2ad659277ffa in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #34:  + 0x197dae (0x2ad659249dae in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #35:  + 0x198941 (0x2ad65924a941 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #36:  + 0x19e755 (0x2ad659250755 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #37: _PyEval_EvalFrameDefault + 0x2fa (0x2ad659272cba in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #38:  + 0x197dae (0x2ad659249dae in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #39:  + 0x198941 (0x2ad65924a941 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #40:  + 0x19e755 (0x2ad659250755 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #41: _PyEval_EvalFrameDefault + 0x2fa (0x2ad659272cba in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #42:  + 0x197a94 (0x2ad659249a94 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #43:  + 0x198941 (0x2ad65924a941 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #44:  + 0x19e755 (0x2ad659250755 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #45: _PyEval_EvalFrameDefault + 0x10ba (0x2ad659273a7a in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #46:  + 0x19870b (0x2ad65924a70b in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #47:  + 0x19e755 (0x2ad659250755 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #48: _PyEval_EvalFrameDefault + 0x2fa (0x2ad659272cba in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #49:  + 0x197a94 (0x2ad659249a94 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #50: _PyFunction_FastCallDict + 0x3db (0x2ad65924b03b in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #51: _PyObject_FastCallDict + 0x26f (0x2ad6591c0f5f in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #52: _PyObject_Call_Prepend + 0x63 (0x2ad6591c5a03 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #53: PyObject_Call + 0x3e (0x2ad6591c099e in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #54: _PyEval_EvalFrameDefault + 0x1ab0 (0x2ad659274470 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #55:  + 0x197a94 (0x2ad659249a94 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #56: _PyFunction_FastCallDict + 0x1bb (0x2ad65924ae1b in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #57: _PyObject_FastCallDict + 0x26f (0x2ad6591c0f5f in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #58: _PyObject_Call_Prepend + 0x63 (0x2ad6591c5a03 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #59: PyObject_Call + 0x3e (0x2ad6591c099e in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #60:  + 0x16b9b7 (0x2ad65921d9b7 in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #61: _PyObject_FastCallDict + 0x8b (0x2ad6591c0d7b in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #62:  + 0x19e7ce (0x2ad6592507ce in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+frame #63: _PyEval_EvalFrameDefault + 0x2fa (0x2ad659272cba in /truba/home/mkalfaoglu/anaconda3/envs/master/bin/python)
+cc @ngimel
+
+----------------------------------------Comment 6----------------------------------------
+
+🚀 The feature, motivation and pitch
+When we default flatten_sharded_tensors and run the dcp test, we will run into the error below.
+
+The param_groups (last key) is not loaded properly when we default flatten_sharded_tensors to True.
+The problematic one(bytes_io not loading properly):
+
+The correct one when we default flatten_sharded_tensors to False. Check param_groups (the last key).
+
+
+***
+Additional info:
+Full optimizer_state_dict load_sharded_optimizer_state_dict()
+The problematic one:
+
+The correct one:
+
+Error Trace:
+(pytorch) irisz@a100-st-p4d24xlarge-53:~/cluster/work/pytorch$ Fail to import hypothesis in common_utils, tests are not derandomized
+/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_cuda.py:19: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+  CUDA11OrLater = torch.version.cuda and LooseVersion(torch.version.cuda) >= "11.0"
+/fsx/users/irisz/conda/envs/pytorch/lib/python3.9/site-packages/setuptools/_distutils/version.py:351: DeprecationWarning: distutils Version classes are deprecated. Use packaging.version instead.
+  other = LooseVersion(other)
+INFO:torch.testing._internal.common_distributed:Started process 0 with pid 79821
+INFO:torch.testing._internal.common_distributed:Started process 1 with pid 79822
+INFO:torch.testing._internal.common_distributed:Started process 2 with pid 79823
+INFO:torch.testing._internal.common_distributed:Started process 3 with pid 79824
+Fail to import hypothesis in common_utils, tests are not derandomized
+Fail to import hypothesis in common_utils, tests are not derandomized
+Fail to import hypothesis in common_utils, tests are not derandomized
+Fail to import hypothesis in common_utils, tests are not derandomized
+INFO:torch.testing._internal.common_distributed:Starting event listener thread for rank 2
+INFO:torch.distributed.distributed_c10d:Added key: store_based_barrier_key:1 to store for rank: 2
+INFO:torch.testing._internal.common_distributed:Starting event listener thread for rank 0
+INFO:torch.distributed.distributed_c10d:Added key: store_based_barrier_key:1 to store for rank: 0
+INFO:torch.testing._internal.common_distributed:Starting event listener thread for rank 1
+INFO:torch.distributed.distributed_c10d:Added key: store_based_barrier_key:1 to store for rank: 1
+INFO:torch.testing._internal.common_distributed:Starting event listener thread for rank 3
+INFO:torch.distributed.distributed_c10d:Added key: store_based_barrier_key:1 to store for rank: 3
+INFO:torch.distributed.distributed_c10d:Rank 3: Completed store-based barrier for key:store_based_barrier_key:1 with 4 nodes.
+INFO:torch.distributed.distributed_c10d:Rank 0: Completed store-based barrier for key:store_based_barrier_key:1 with 4 nodes.
+INFO:torch.distributed.distributed_c10d:Rank 2: Completed store-based barrier for key:store_based_barrier_key:1 with 4 nodes.
+INFO:torch.distributed.distributed_c10d:Rank 1: Completed store-based barrier for key:store_based_barrier_key:1 with 4 nodes.
+Using temp directory: /tmp/tmpmsq7kqeb
+/fsx/users/irisz/work/pytorch/torch/distributed/checkpoint/filesystem.py:157: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  if tensor.storage().size() != tensor.numel():
+/fsx/users/irisz/work/pytorch/torch/distributed/checkpoint/filesystem.py:157: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  if tensor.storage().size() != tensor.numel():
+/fsx/users/irisz/work/pytorch/torch/distributed/checkpoint/filesystem.py:157: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  if tensor.storage().size() != tensor.numel():
+/fsx/users/irisz/work/pytorch/torch/distributed/checkpoint/filesystem.py:157: UserWarning: TypedStorage is deprecated. It will be removed in the future and UntypedStorage will be the only storage class. This should only matter to you if you are using storages directly.  To access UntypedStorage directly, use tensor.untyped_storage() instead of tensor.storage()
+  if tensor.storage().size() != tensor.numel():
+/fsx/users/irisz/work/pytorch/torch/distributed/distributed_c10d.py:2533: UserWarning: torch.distributed._all_gather_base is a private function and will be deprecated. Please use torch.distributed.all_gather_into_tensor instead.
+  warnings.warn(
+/fsx/users/irisz/work/pytorch/torch/distributed/distributed_c10d.py:2533: UserWarning: torch.distributed._all_gather_base is a private function and will be deprecated. Please use torch.distributed.all_gather_into_tensor instead.
+  warnings.warn(
+/fsx/users/irisz/work/pytorch/torch/distributed/distributed_c10d.py:2533: UserWarning: torch.distributed._all_gather_base is a private function and will be deprecated. Please use torch.distributed.all_gather_into_tensor instead.
+  warnings.warn(
+/fsx/users/irisz/work/pytorch/torch/distributed/distributed_c10d.py:2533: UserWarning: torch.distributed._all_gather_base is a private function and will be deprecated. Please use torch.distributed.all_gather_into_tensor instead.
+  warnings.warn(
+ERROR:torch.testing._internal.common_distributed:Caught exception: 
+Traceback (most recent call last):
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 663, in run_test
+    getattr(self, test_name)()
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 541, in wrapper
+    fn()
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 172, in wrapper
+    func(self)  # type: ignore[misc]
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 172, in wrapper
+    return func(*args, **kwargs)
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/distributed/checkpoint_utils.py", line 34, in wrapper
+    func(self)
+  File "/fsx/users/irisz/work/pytorch/test/distributed/checkpoint/test_fsdp_optim_state.py", line 89, in test_distributed_tensor_planner
+    flattened_osd = FSDP.flatten_sharded_optim_state_dict(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/fully_sharded_data_parallel.py", line 1434, in flatten_sharded_optim_state_dict
+    return FullyShardedDataParallel._optim_state_dict_to_load_impl(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/fully_sharded_data_parallel.py", line 1231, in _optim_state_dict_to_load_impl
+    return _rekey_sharded_optim_state_dict(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/_optim_utils.py", line 972, in _rekey_sharded_optim_state_dict
+    for unflat_param_name in unflat_param_group["params"]
+TypeError: string indices must be integers
+ exiting process 1 with exit code: 10
+ERROR:torch.testing._internal.common_distributed:Caught exception: 
+Traceback (most recent call last):
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 663, in run_test
+    getattr(self, test_name)()
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 541, in wrapper
+    fn()
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 172, in wrapper
+    func(self)  # type: ignore[misc]
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 172, in wrapper
+    return func(*args, **kwargs)
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/distributed/checkpoint_utils.py", line 34, in wrapper
+    func(self)
+  File "/fsx/users/irisz/work/pytorch/test/distributed/checkpoint/test_fsdp_optim_state.py", line 89, in test_distributed_tensor_planner
+    flattened_osd = FSDP.flatten_sharded_optim_state_dict(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/fully_sharded_data_parallel.py", line 1434, in flatten_sharded_optim_state_dict
+    return FullyShardedDataParallel._optim_state_dict_to_load_impl(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/fully_sharded_data_parallel.py", line 1231, in _optim_state_dict_to_load_impl
+    return _rekey_sharded_optim_state_dict(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/_optim_utils.py", line 972, in _rekey_sharded_optim_state_dict
+    for unflat_param_name in unflat_param_group["params"]
+TypeError: string indices must be integers
+ exiting process 0 with exit code: 10
+ERROR:torch.testing._internal.common_distributed:Caught exception: 
+Traceback (most recent call last):
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 663, in run_test
+    getattr(self, test_name)()
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 541, in wrapper
+    fn()
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 172, in wrapper
+    func(self)  # type: ignore[misc]
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 172, in wrapper
+    return func(*args, **kwargs)
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/distributed/checkpoint_utils.py", line 34, in wrapper
+    func(self)
+  File "/fsx/users/irisz/work/pytorch/test/distributed/checkpoint/test_fsdp_optim_state.py", line 89, in test_distributed_tensor_planner
+    flattened_osd = FSDP.flatten_sharded_optim_state_dict(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/fully_sharded_data_parallel.py", line 1434, in flatten_sharded_optim_state_dict
+    return FullyShardedDataParallel._optim_state_dict_to_load_impl(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/fully_sharded_data_parallel.py", line 1231, in _optim_state_dict_to_load_impl
+    return _rekey_sharded_optim_state_dict(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/_optim_utils.py", line 972, in _rekey_sharded_optim_state_dict
+    for unflat_param_name in unflat_param_group["params"]
+TypeError: string indices must be integers
+ exiting process 2 with exit code: 10
+ERROR:torch.testing._internal.common_distributed:Caught exception: 
+Traceback (most recent call last):
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 663, in run_test
+    getattr(self, test_name)()
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 541, in wrapper
+    fn()
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 172, in wrapper
+    func(self)  # type: ignore[misc]
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 172, in wrapper
+    return func(*args, **kwargs)
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/distributed/checkpoint_utils.py", line 34, in wrapper
+    func(self)
+  File "/fsx/users/irisz/work/pytorch/test/distributed/checkpoint/test_fsdp_optim_state.py", line 89, in test_distributed_tensor_planner
+    flattened_osd = FSDP.flatten_sharded_optim_state_dict(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/fully_sharded_data_parallel.py", line 1434, in flatten_sharded_optim_state_dict
+    return FullyShardedDataParallel._optim_state_dict_to_load_impl(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/fully_sharded_data_parallel.py", line 1231, in _optim_state_dict_to_load_impl
+    return _rekey_sharded_optim_state_dict(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/_optim_utils.py", line 972, in _rekey_sharded_optim_state_dict
+    for unflat_param_name in unflat_param_group["params"]
+TypeError: string indices must be integers
+ exiting process 3 with exit code: 10
+Process 3 terminated with exit code 10, terminating remaining processes.
+E
+======================================================================
+ERROR: test_distributed_tensor_planner (__main__.FsdpOptimStateCheckpoint)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 539, in wrapper
+    self._join_processes(fn)
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 765, in _join_processes
+    self._check_return_codes(elapsed_time)
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 810, in _check_return_codes
+    raise RuntimeError(error)
+RuntimeError: Process 3 exited with error code 10 and exception:
+Traceback (most recent call last):
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 663, in run_test
+    getattr(self, test_name)()
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 541, in wrapper
+    fn()
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/distributed/_tensor/common_dtensor.py", line 172, in wrapper
+    func(self)  # type: ignore[misc]
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/common_distributed.py", line 172, in wrapper
+    return func(*args, **kwargs)
+  File "/fsx/users/irisz/work/pytorch/torch/testing/_internal/distributed/checkpoint_utils.py", line 34, in wrapper
+    func(self)
+  File "/fsx/users/irisz/work/pytorch/test/distributed/checkpoint/test_fsdp_optim_state.py", line 89, in test_distributed_tensor_planner
+    flattened_osd = FSDP.flatten_sharded_optim_state_dict(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/fully_sharded_data_parallel.py", line 1434, in flatten_sharded_optim_state_dict
+    return FullyShardedDataParallel._optim_state_dict_to_load_impl(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/fully_sharded_data_parallel.py", line 1231, in _optim_state_dict_to_load_impl
+    return _rekey_sharded_optim_state_dict(
+  File "/fsx/users/irisz/work/pytorch/torch/distributed/fsdp/_optim_utils.py", line 972, in _rekey_sharded_optim_state_dict
+    for unflat_param_name in unflat_param_group["params"]
+TypeError: string indices must be integers
+
+
+
+----------------------------------------------------------------------
+Ran 1 test in 10.869s
+
+FAILED (errors=1)
+
+Alternatives
+No response
+Additional context
+No response
+cc. @kumpera
+cc @mrshenli @pritamdamania87 @zhaojuanmao @satgera @rohan-varma @gqchen @aazzolini @osalpekar @jiayisuse @H-Huang @kwen2501 @awgu
+
+----------------------------------------Comment 7----------------------------------------
 
 🐛 Bug
-I want a deepcopy of a quantized model. However, when I am applying copy.deepcopy() to a quantized model, it returns to me "copy from torch.QInt8Storage to torch.QInt8Storage isn't implemented". What should I do?
-To Reproduce
-Steps to reproduce the behavior:
-
-Quantize a model follow the quantization tutorial. (model fuse + prepare + calibrate + convert)
-apply copy.deepcopy() function to the quantized model
-
-##Error message
+python == '3.6.2'
+torch == 1.6.0
+torchvision == 0.7.0
+note: torch 1.2.0 and torchvision 0.4.0 also occur this problem
+tensorflow == 1.15.0
+when run:
+from torchvision import models
+model = models.resnet50(pretrained=True)
+it occurs the following error:
+Traceback
 Traceback (most recent call last):
-File "cm_and_ip_matrix.py", line 208, in plot_impact_matrix
-params_with_fault = copy.deepcopy(benign_params)
-File "/user/local/anaconda3/lib/python3.6/copy.py", line 180, in deepcopy
-y = _reconstruct(x, memo, *rv)
-File "/user/local/anaconda3/lib/python3.6/copy.py", line 306, in reconstruct
-value = deepcopy(value, memo)
-File "/user/local/anaconda3/lib/python3.6/copy.py", line 161, in deepcopy
-y = copier(memo)
-File "/user/local/anaconda3/lib/python3.6/site-packages/torch/tensor.py", line 33, in deepcopy
-new_storage = self.storage().deepcopy(memo)
-File "/user/local/anaconda3/lib/python3.6/site-packages/torch/storage.py", line 28, in deepcopy
-new_storage = self.clone()
-File "/user/local/anaconda3/lib/python3.6/site-packages/torch/storage.py", line 44, in clone
-return type(self)(self.size()).copy(self)
-RuntimeError: copy from torch.QInt8Storage to torch.QInt8Storage isn't implemented
-Expected behavior
-Return a completely new model.
-Environment
-PyTorch version: 1.3.0
-Is debug build: No
-CUDA used to build PyTorch: None
-OS: Ubuntu 14.04.6 LTS
-GCC version: (Ubuntu 4.8.4-2ubuntu1~14.04.4) 4.8.4
-CMake version: version 3.3.2
-Python version: 3.6
-Is CUDA available: No
-CUDA runtime version: No CUDA
-GPU models and configuration: No CUDA
-Nvidia driver version: No CUDA
-cuDNN version: No CUDA
-Versions of relevant libraries:
-[pip3] numpy==1.16.3
-[pip3] numpydoc==0.8.0
-[pip3] torch==1.3.0
-[pip3] torchfile==0.1.0
-[pip3] torchnet==0.0.4
-[pip3] torchvision==0.4.1a0+d94043a
-[conda] _tflow_select             2.3.0                       mkl    anaconda
-[conda] blas                      1.0                         mkl
-[conda] cpuonly                   1.0                           0    pytorch
-[conda] mkl                       2019.3                      199    anaconda
-[conda] mkl-service               1.1.2            py36h17a0993_4
-[conda] mkl_fft                   1.0.12           py36ha843d7b_0    anaconda
-[conda] mkl_random                1.0.2            py36hd81dba3_0    anaconda
-[conda] pytorch                   1.3.0               py3.6_cpu_0  [cpuonly]  pytorch
-[conda] torchfile                 0.1.0                    pypi_0    pypi
-[conda] torchnet                  0.0.4                    pypi_0    pypi
-[conda] torchvision               0.4.1                  py36_cpu  [cpuonly]  pytorch
-Additional context
-cc @ezyang @gchanan @zou3519 @jerryzh168 @jianyuh @dzhulgakov @raghuramank100
+File "main.py", line 26, in 
+model = models.resnet50(pretrained=True)
+File "/usr/local/lib64/python3.6/site-packages/torchvision/models/resnet.py", line 265, in resnet50
+**kwargs)
+File "/usr/local/lib64/python3.6/site-packages/torchvision/models/resnet.py", line 227, in _resnet
+progress=progress)
+File "/usr/local/lib64/python3.6/site-packages/torch/hub.py", line 495, in load_state_dict_from_url
+return torch.load(cached_file, map_location=map_location)
+File "/usr/local/lib64/python3.6/site-packages/torch/serialization.py", line 604, in load
+return _legacy_load(opened_file, map_location, pickle_module, **pickle_load_args)
+File "/usr/local/lib64/python3.6/site-packages/torch/serialization.py", line 777, in _legacy_load
+magic_number = pickle_module.load(f, **pickle_load_args)
+_pickle.UnpicklingError: unpickling stack underflow
+torch.load
+the modify code of torch.load interface is:
+with _open_file_like(f, 'rb') as opened_file -> with tf.io.gfile.GFile(f, 'rb') as opened_file
+I ensure that the downloaded file is complete.
+cc @fmassa @vfdev-5
 
-----------------------------------------Comment 1----------------------------------------
-
-Hey guys! When I'm running a pytorch code:
-`class BatchRNN(nn.Module):
-def init(self, input_size, hidden_size, rnn_type=nn.LSTM,
-bidirectional=False, batch_norm=True, dropout = 0.1):
-super(BatchRNN, self).init()
-self.input_size = input_size
-self.hidden_size = hidden_size
-self.bidirectional = bidirectional
-self.batch_norm = SequenceWise(nn.BatchNorm1d(input_size)).cuda() if batch_norm else None
-self.rnn = rnn_type(input_size=input_size, hidden_size=hidden_size,
-bidirectional=bidirectional, dropout = dropout, bias=False,batch_first=True).cuda()
-def forward(self, x):
-if self.batch_norm is not None:
-x = self.batch_norm(x).cuda()
-x, _ = self.rnn(x)
-self.rnn.cuda().flatten_parameters()
-return x
-class CTC_RNN(nn.Module):
-def init(self, rnn_input_size, rnn_hidden_size, rnn_layers=1,
-rnn_type=nn.LSTM, bidirectional=True,
-batch_norm=True, num_class=1232, drop_out = 0.1):
-super(CTC_RNN, self).init()
-self.rnn_input_size = rnn_input_size
-self.rnn_hidden_size = rnn_hidden_size
-self.rnn_layers = rnn_layers
-self.rnn_type = rnn_type
-self.num_class = num_class
-self.num_directions = 2 if bidirectional else 1
-#cnn
-self.conv1_cnn=nn.Conv2d(1,256,(2,rnn_input_size)).cuda()
-self.conv2_cnn=nn.Conv2d(1,256,(2,256)).cuda()
-self.fc_cnn=nn.Linear(256,rnn_hidden_size).cuda()
-self.softmax_cnn=torch.nn.Softmax().cuda()
-rnns = []
-rnn = BatchRNN(input_size=rnn_input_size, hidden_size=rnn_hidden_size,
-rnn_type=rnn_type, bidirectional=bidirectional,
-batch_norm=False).cuda()
-rnns.append(('0', rnn))
-for i in range(rnn_layers-1):
-rnn = BatchRNN(input_size=self.num_directions*rnn_hidden_size,
-hidden_size=rnn_hidden_size, rnn_type=rnn_type,
-bidirectional=bidirectional, dropout = drop_out, batch_norm = batch_norm).cuda()
-rnns.append(('%d' % (i+1), rnn))
-
-def forward(self, x,y):  #x: packed padded sequence [x.data: the origin data] [x.batch_sizes: the batch_size of each frames] [x_len: type:list not torch.IntTensor]
-#ipdb.set_trace()
-x = self.rnns(x)
-x = self.fc(x)
-x = self.inference_log_softmax(x)#(max_step,batch_size,dim)
-x=x.transpose(0,1)
-#x = self.inference_softmax(x)
-y=self.conv1_cnn(y)
-#banben 2_relu
-y=F.relu(y)
-y=self.conv2_cnn(torch.transpose(y,1,3))
-y=F.relu(y)
-y=self.fc_cnn(torch.transpose(y,1,3))#(batch_size,1,max_step,dim)
-#y=torch.transpose(y,1,3)
-y=y.view(100,-1,self.rnn_hidden_size)
-y=torch.transpose(y,0,1)
-
-I got an error shows like:
-Traceback (most recent call last): File "/home/xinhaoran/PycharmProjects/TDDF/PH_ctc_cnn_tddf.py", line 358, in <module> main() File "/home/xinhaoran/PycharmProjects/TDDF/PH_ctc_cnn_tddf.py", line 353, in main train() File "/home/xinhaoran/PycharmProjects/TDDF/PH_ctc_cnn_tddf.py", line 256, in train probs = model(feats,feats_cnn).cuda(async=True) File "/home/xinhaoran/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 357, in __call__ result = self.forward(*input, **kwargs) File "/home/xinhaoran/PycharmProjects/TDDF/model_tddf.py", line 167, in forward x = self.rnns(x) File "/home/xinhaoran/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 357, in __call__ result = self.forward(*input, **kwargs) File "/home/xinhaoran/anaconda3/lib/python3.6/site-packages/torch/nn/modules/container.py", line 67, in forward input = module(input) File "/home/xinhaoran/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 357, in __call__ result = self.forward(*input, **kwargs) File "/home/xinhaoran/PycharmProjects/TDDF/model_tddf.py", line 115, in forward x, _ = self.rnn(x).cuda() File "/home/xinhaoran/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 357, in __call__ result = self.forward(*input, **kwargs) File "/home/xinhaoran/anaconda3/lib/python3.6/site-packages/torch/nn/modules/rnn.py", line 204, in forward output, hidden = func(input, self.all_weights, hx) File "/home/xinhaoran/anaconda3/lib/python3.6/site-packages/torch/nn/_functions/rnn.py", line 385, in forward return func(input, *fargs, **fkwargs) File "/home/xinhaoran/anaconda3/lib/python3.6/site-packages/torch/nn/_functions/rnn.py", line 245, in forward nexth, output = func(input, hidden, weight) File "/home/xinhaoran/anaconda3/lib/python3.6/site-packages/torch/nn/_functions/rnn.py", line 85, in forward hy, output = inner(input, hidden[l], weight[l]) File "/home/xinhaoran/anaconda3/lib/python3.6/site-packages/torch/nn/_functions/rnn.py", line 158, in forward hidden = inner(step_input, hidden, *weight) File "/home/xinhaoran/anaconda3/lib/python3.6/site-packages/torch/nn/_functions/rnn.py", line 32, in LSTMCell gates = F.linear(input, w_ih, b_ih) + F.linear(hx, w_hh, b_hh) File "/home/xinhaoran/anaconda3/lib/python3.6/site-packages/torch/nn/functional.py", line 837, in linear output = input.matmul(weight.t()) File "/home/xinhaoran/anaconda3/lib/python3.6/site-packages/torch/autograd/variable.py", line 386, in matmul return torch.matmul(self, other) File "/home/xinhaoran/anaconda3/lib/python3.6/site-packages/torch/functional.py", line 174, in matmul return torch.mm(tensor1, tensor2) RuntimeError: Expected object of type Variable[torch.FloatTensor] but found type Variable[torch.cuda.FloatTensor] for argument #1 'mat2'
-I'd appreciate it if someone could help me out!!!~~ For the record, this seems to work on pytorch0.2.0(I'm using 0.3.0 now)
-
-----------------------------------------Comment 1----------------------------------------
-
-Hi,
-We are trying to convert a pytorch model to a onnx format binary file.
-We are are facing the following error:
-Attempted to trace FusedLayerNormAffineFunction, but tracing of legacy
-here is the error stack:
-Traceback (most recent call last):
-File "convert.py", line 85, in 
-cli_main()
-File "convert.py", line 81, in cli_main
-main(args)
-File "convert.py", line 76, in main
-torch.onnx.export(model, dummy_input, "onnx_model_name.onnx", verbose=True)
-File "/home/tangyue/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/onnx/init.py", line 27, in export
-return utils.export(*args, **kwargs)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/onnx/utils.py", line 104, in export
-operator_export_type=operator_export_type)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/onnx/utils.py", line 281, in _export
-example_outputs, propagate)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/onnx/utils.py", line 224, in _model_to_graph
-graph, torch_out = _trace_and_get_graph_from_model(model, args, training)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/onnx/utils.py", line 192, in _trace_and_get_graph_from_model
-trace, torch_out = torch.jit.get_trace_graph(model, args, _force_outplace=True)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/jit/init.py", line 196, in get_trace_graph
-return LegacyTracedModule(f, _force_outplace)(*args, **kwargs)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/nn/modules/module.py", line 489, in call
-result = self.forward(*input, **kwargs)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/jit/init.py", line 251, in forward
-out = self.inner(*trace_inputs)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/nn/modules/module.py", line 487, in call
-result = self._slow_forward(*input, **kwargs)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/nn/modules/module.py", line 477, in _slow_forward
-result = self.forward(*input, **kwargs)
-File "/home/fairseq/fairseq/models/fairseq_model.py", line 247, in forward
-encoder_out = self.encoder(src_tokens, src_lengths=src_lengths, **kwargs)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/nn/modules/module.py", line 487, in call
-result = self._slow_forward(*input, **kwargs)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/nn/modules/module.py", line 477, in _slow_forward
-result = self.forward(*input, **kwargs)
-File "/home/fairseq/fairseq/models/transformer.py", line 247, in forward
-x = layer(x, encoder_padding_mask)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/nn/modules/module.py", line 487, in call
-result = self._slow_forward(*input, **kwargs)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/nn/modules/module.py", line 477, in _slow_forward
-result = self.forward(*input, **kwargs)
-File "/home/fairseq/fairseq/models/transformer.py", line 573, in forward
-x = self.maybe_layer_norm(self.self_attn_layer_norm, x, after=True)
-File "/home/fairseq/fairseq/models/transformer.py", line 588, in maybe_layer_norm
-return layer_norm(x)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/nn/modules/module.py", line 487, in call
-result = self._slow_forward(*input, **kwargs)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/torch/nn/modules/module.py", line 477, in _slow_forward
-result = self.forward(*input, **kwargs)
-File "/home/.pyenv/versions/torch_3.6.8/lib/python3.6/site-packages/apex/normalization/fused_layer_norm.py", line 153, in forward
-input, self.weight, self.bias)
-RuntimeError: Attempted to trace FusedLayerNormAffineFunction, but tracing of legacy functions is not supported
-Could you please provide any clue, any help would be greatly appreciated.
-
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 8----------------------------------------
 
 🐛 Describe the bug
-If we initialize the multiple output as torch.empty(0) for freexp op and compile even with "eager" backened it fails. While same works fine.
-Please use below code to reproduce the issue.
-
+Dynamo already support patching nn.Module attribute outside of forward call (e.g. during model initialization): #91018 . But some use cases (e.g. detectrons's RCNN model) need patch nn.Module attribute in forward method ( fb internal link: https://fburl.com/code/vvekrxl6 ). Dynamo does not support this right now.
 Error logs
 Traceback (most recent call last):
-File "frexp_repro.py", line 20, in 
-res = model(params)
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+File "", line 1, in 
+File "/home/shunting/cpython/build/install/lib/python3.9/importlib/init.py", line 169, in reload
+_bootstrap._exec(spec, module)
+File "", line 613, in _exec
+File "", line 790, in exec_module
+File "", line 228, in _call_with_frames_removed
+File "/home/shunting/learn/misc.py", line 20, in 
+gm, guards = dynamo.export(MyModule(), *inputs, aten_graph=True, tracing_mode="symbolic")
+File "/home/shunting/pytorch/torch/_dynamo/eval_frame.py", line 616, in export
+result_traced = opt_f(*args, **kwargs)
+File "/home/shunting/pytorch/torch/nn/modules/module.py", line 1482, in _call_impl
 return forward_call(*args, **kwargs)
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 82, in forward
+File "/home/shunting/pytorch/torch/_dynamo/eval_frame.py", line 82, in forward
 return self.dynamo_ctx(self._orig_mod.forward)(*args, **kwargs)
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 209, in _fn
+File "/home/shunting/pytorch/torch/_dynamo/eval_frame.py", line 211, in _fn
 return fn(*args, **kwargs)
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 337, in catch_errors
+File "/home/shunting/pytorch/torch/_dynamo/eval_frame.py", line 332, in catch_errors
 return callback(frame, cache_size, hooks)
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 404, in _convert_frame
-result = inner_convert(frame, cache_size, hooks)
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 104, in _fn
+File "/home/shunting/pytorch/torch/_dynamo/convert_frame.py", line 103, in _fn
 return fn(*args, **kwargs)
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 262, in _convert_frame_assert
-return _compile(
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/utils.py", line 163, in time_wrapper
+File "/home/shunting/pytorch/torch/_dynamo/utils.py", line 90, in time_wrapper
 r = func(*args, **kwargs)
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 324, in _compile
+File "/home/shunting/pytorch/torch/_dynamo/convert_frame.py", line 339, in _convert_frame_assert
+return _compile(
+File "/home/shunting/pytorch/torch/_dynamo/convert_frame.py", line 398, in _compile
 out_code = transform_code_object(code, transform)
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/bytecode_transformation.py", line 445, in transform_code_object
+File "/home/shunting/pytorch/torch/_dynamo/bytecode_transformation.py", line 341, in transform_code_object
 transformations(instructions, code_options)
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 311, in transform
+File "/home/shunting/pytorch/torch/_dynamo/convert_frame.py", line 385, in transform
 tracer.run()
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 1726, in run
+File "/home/shunting/pytorch/torch/_dynamo/symbolic_convert.py", line 1686, in run
 super().run()
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 576, in run
+File "/home/shunting/pytorch/torch/_dynamo/symbolic_convert.py", line 537, in run
 and self.step()
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 540, in step
+File "/home/shunting/pytorch/torch/_dynamo/symbolic_convert.py", line 500, in step
 getattr(self, inst.opname)(inst)
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 342, in wrapper
-return inner_fn(self, inst)
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 1002, in CALL_FUNCTION_EX
-self.call_function(fn, argsvars.items, kwargsvars.items)
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 474, in call_function
-self.push(fn.call_function(self, args, kwargs))
-File "/home/jthakur/.venv_pt_op_test/lib/python3.8/site-packages/torch/_dynamo/variables/torch.py", line 566, in call_function
-assert isinstance(kwargs["out"], TupleVariable)
-AssertionError:
+File "/home/shunting/pytorch/torch/_dynamo/symbolic_convert.py", line 1048, in STORE_ATTR
+BuiltinVariable(setattr)
+File "/home/shunting/pytorch/torch/_dynamo/variables/builtin.py", line 375, in call_function
+return super().call_function(tx, args, kwargs)
+File "/home/shunting/pytorch/torch/_dynamo/variables/base.py", line 230, in call_function
+unimplemented(f"call_function {self} {args} {kwargs}")
+File "/home/shunting/pytorch/torch/_dynamo/exc.py", line 67, in unimplemented
+raise Unsupported(msg)
+torch._dynamo.exc.Unsupported: call_function BuiltinVariable(setattr) [UserDefinedClassVariable(), ConstantVariable(str), GetAttrVariable(UserDefinedClassVariable(), run_cos)] {}
 from user code:
-File "frexp_repro.py", line 8, in forward
-z = torch.frexp(**param)
+File "/home/shunting/learn/misc.py", line 10, in forward
+MyModule.run = MyModule.run_cos
 Set torch._dynamo.config.verbose=True for more information
 You can suppress this exception and fall back to eager by setting:
 torch._dynamo.config.suppress_errors = True
 Minified repro
-No response
-Versions
-torch==2.0.0
-cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh @anijain2305 @voznesenskym @penguinwu @EikanWang @jgong5 @Guobing-Chen @XiaobingSuper @zhuhaozhe @blzheng @Xia-Weiwen @wenzhe-nrv @jiayisunx @desertfire
 
-----------------------------------------Comment 1----------------------------------------
+cc @ezyang @soumith @msaroufim @wconstab @ngimel @bdhirsh
 
-🐛 Describe the bug
-In eager scalar is passed to or operation then works fine, even documentation says that is supports scalar value.
+----------------------------------------Comment 9----------------------------------------
 
-Ref: https://pytorch.org/docs/stable/jit_builtin_functions.html
-but when it is executed with torch.compile, we get the cast error.
-Please use below code to reproduce the issue:
-
-Error logs
+Issue description
+I want to export my model to onnx. Following is my code:
+torch.onnx._export(
+model,
+dummy_input,
+args.output_name,
+input_names=[args.input],
+output_names=args.output,
+opset_version=args.opset,
+)
+It works well. But I want to export it with dynamic batch size. So I try this:
+torch.onnx._export(
+model,
+dummy_input,
+args.output_name,
+input_names=[args.input],
+output_names=args.output,
+opset_version=args.opset,
+dynamic_axes={'input_tensor' : {0 : 'batch_size'},
+'classes' : {0 : 'batch_size'},
+'boxes' : {0 : 'batch_size'},
+'scores' : {0 : 'batch_size'},}
+)
+It crashed with following message:
+``2022-03-25 13:38:11.201 | ERROR | main::114 - An error has been caught in function '', process 'MainProcess' (1376540), thread 'MainThread' (139864366814016):
 Traceback (most recent call last):
-File "bitwise_or.py", line 10, in 
-res = coml_fn(x)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 328, in _fn
-return fn(*args, **kwargs)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/eval_frame.py", line 490, in catch_errors
-return callback(frame, cache_entry, hooks, frame_state)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 641, in _convert_frame
-result = inner_convert(frame, cache_size, hooks, frame_state)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 133, in _fn
-return fn(*args, **kwargs)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 389, in _convert_frame_assert
-return _compile(
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 569, in _compile
-guarded_code = compile_inner(code, one_graph, hooks, transform)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/utils.py", line 189, in time_wrapper
-r = func(*args, **kwargs)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 491, in compile_inner
-out_code = transform_code_object(code, transform)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/bytecode_transformation.py", line 1028, in transform_code_object
-transformations(instructions, code_options)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/convert_frame.py", line 458, in transform
-tracer.run()
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 2074, in run
-super().run()
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 724, in run
-and self.step()
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 688, in step
-getattr(self, inst.opname)(inst)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 392, in wrapper
-return inner_fn(self, inst)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 1167, in CALL_FUNCTION_KW
-self.call_function(fn, args, kwargs)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/symbolic_convert.py", line 562, in call_function
-self.push(fn.call_function(self, args, kwargs))
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/variables/misc.py", line 594, in call_function
-return self.obj.call_method(tx, self.name, args, kwargs).add_options(self)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/variables/tensor.py", line 655, in call_method
-return wrap_fx_proxy(
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/variables/builder.py", line 1187, in wrap_fx_proxy
-return wrap_fx_proxy_cls(
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/variables/builder.py", line 1274, in wrap_fx_proxy_cls
-example_value = get_fake_value(proxy.node, tx)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/utils.py", line 1376, in get_fake_value
-raise TorchRuntimeError(str(e)).with_traceback(e.traceback) from None
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/utils.py", line 1337, in get_fake_value
-return wrap_fake_exception(
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/utils.py", line 916, in wrap_fake_exception
-return fn()
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/utils.py", line 1338, in 
-lambda: run_node(tx.output, node, args, kwargs, nnmodule)
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/utils.py", line 1410, in run_node
-raise RuntimeError(fn_str + str(e)).with_traceback(e.traceback) from e
-File "/tmp//lib/python3.8/site-packages/torch/_dynamo/utils.py", line 1399, in run_node
-return getattr(args[0], node.target)(*args[1:], **kwargs)
-File "/tmp//lib/python3.8/site-packages/torch/utils/_stats.py", line 20, in wrapper
-return fn(*args, **kwargs)
-File "/tmp//lib/python3.8/site-packages/torch/_subclasses/fake_tensor.py", line 1250, in torch_dispatch
-return self.dispatch(func, types, args, kwargs)
-File "/tmp//lib/python3.8/site-packages/torch/_subclasses/fake_tensor.py", line 1541, in dispatch
-r = func(*args, **kwargs)
-File "/tmp//lib/python3.8/site-packages/torch/_ops.py", line 448, in call
-return self._op(args, **kwargs or {})
-torch._dynamo.exc.TorchRuntimeError: Failed running call_method or((FakeTensor(..., size=(10,), dtype=torch.uint8),), **{'other': 78}):
-aten::bitwise_or() Expected a value of type 'Tensor' for argument 'other' but instead found type 'int'.
-Position: 1
-Value: 78
-Declaration: aten::bitwise_or.Tensor(Tensor self, Tensor other) -> Tensor
-Cast error details: Unable to cast 78 to Tensor
-from user code:
-File "bitwise_or.py", line 4, in impl_or
-res = getattr(ifm, 'or')(other=78)
-Set TORCH_LOGS="+dynamo" and TORCHDYNAMO_VERBOSE=1 for more information
-You can suppress this exception and fall back to eager by setting:
-import torch._dynamo
-torch._dynamo.config.suppress_errors = True
-Minified repro
-No response
-Versions
-Versions
-Versions of relevant libraries:
-[pip3] numpy==1.24.4
-[pip3] torch==2.1.0a0
-[pip3] torchaudio==2.0.1
-[pip3] torchdata==0.6.1
-[pip3] torchmetrics==1.2.0
-[pip3] torchtext==0.15.2a0
-[pip3] torchvision==0.15.1a0
-cc @ezyang @msaroufim @albanD @wconstab @bdhirsh @anijain2305
-
-----------------------------------------Comment 1----------------------------------------
-
-i'm trying to run python prepro_feats.py from this repo [https://github.com/xiadingZ/video-caption.pytorch]
-The error I'm getting:
-/home/k/anaconda3/lib/python3.6/site-packages/torchvision/transforms/transforms.py:156: UserWarning: The use of the transforms.Scale transform is deprecated, please use transforms.Resize instead.
-"please use transforms.Resize instead.")
-Traceback (most recent call last):
-File "prepro_feats.py", line 126, in
-model = model.cuda()
-File "/home/k/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 216, in cuda
-return self._apply(lambda t: t.cuda(device))
-File "/home/k/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 146, in _apply
-module._apply(fn)
-File "/home/k/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 146, in _apply
-module._apply(fn)
-File "/home/k/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 146, in _apply
-module._apply(fn)
-File "/home/k/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 152, in _apply
-param.data = fn(param.data)
-File "/home/k/anaconda3/lib/python3.6/site-packages/torch/nn/modules/module.py", line 216, in
-return self._apply(lambda t: t.cuda(device))
-File "/home/k/anaconda3/lib/python3.6/site-packages/torch/_utils.py", line 69, in cuda
-return new_type(self.size()).copy(self, async)
-File "/home/k/anaconda3/lib/python3.6/site-packages/torch/cuda/init.py", line 453, in _lazy_new
-_lazy_init()
-File "/home/k/anaconda3/lib/python3.6/site-packages/torch/cuda/init.py", line 152, in _lazy_init
-_check_driver()
-File "/home/k/anaconda3/lib/python3.6/site-packages/torch/cuda/init.py", line 74, in _check_driver
-raise AssertionError("Torch not compiled with CUDA enabled")
-AssertionError: Torch not compiled with CUDA enabled
-How do I compile Torch with CUDA? I've followed the following steps to install PyTorch
-$ git clone https://github.com/pytorch/pytorch
-$ export CMAKE_PREFIX_PATH=/home/alexis/anaconda2
-$ conda install numpy mkl setuptools cmake gcc cffi
-$ conda install -c soumith magma-cuda80
-$ pip install -r requirements.txt
-$ python setup.py install
-Unable to figure this out. Kindly help. Thanks!
-
-----------------------------------------Comment 1----------------------------------------
-
-My env is :
-Collecting environment information...
-PyTorch version: 0.4.1
-Is debug build: No
-CUDA used to build PyTorch: 9.0.176
-OS: Ubuntu 16.04.5 LTS
-GCC version: (Ubuntu 5.4.0-6ubuntu1~16.04.11) 5.4.0 20160609
-CMake version: version 3.14.0
-Python version: 3.5
-Is CUDA available: Yes
-CUDA runtime version: 10.0.130
-GPU models and configuration: GPU 0: GeForce RTX 2080
-Nvidia driver version: 410.48
-cuDNN version: /usr/lib/x86_64-linux-gnu/libcudnn.so.7.5.0
-Versions of relevant libraries:
-[pip3] numpy==1.16.4
-[pip3] torch==0.4.1
-[pip3] torch-sparse==0.4.0
-[pip3] torchvision==0.2.1
-[conda] blas                      1.0                         mkl
-[conda] cuda100                   1.0                           0    pytorch
-[conda] cuda90                    1.0                  h6433d27_0    pytorch
-[conda] mkl                       2018.0.3                      1
-[conda] mkl-service               1.1.2            py36h90e4bf4_5
-[conda] mkl_fft                   1.0.6            py36h7dd41cf_0
-[conda] mkl_random                1.0.1            py36h4414c95_1
-[conda] pytorch                   1.1.0           py3.6_cuda10.0.130_cudnn7.5.1_0    pytorch
-[conda] torch                     1.2.0a0+1252899          pypi_0    pypi
-[conda] torchvision               0.3.0           py36_cu10.0.130_1    pytorch
-My error is:
-/home/lab/.local/lib/python3.5/site-packages/torch/nn/functional.py:52: UserWarning: size_average and reduce args will be deprecated, please use reduction='none' instead.
-warnings.warn(warning.format(ret))
-THCudaCheck FAIL file=/pytorch/aten/src/THC/THCGeneral.cpp line=663 error=11 : invalid argument
-/home/lab/.local/lib/python3.5/site-packages/torch/nn/modules/upsampling.py:225: UserWarning: nn.UpsamplingBilinear2d is deprecated. Use nn.functional.interpolate instead.
-warnings.warn("nn.UpsamplingBilinear2d is deprecated. Use nn.functional.interpolate instead.")
-/home/lab/.local/lib/python3.5/site-packages/torch/nn/modules/upsampling.py:122: UserWarning: nn.Upsampling is deprecated. Use nn.functional.interpolate instead.
-warnings.warn("nn.Upsampling is deprecated. Use nn.functional.interpolate instead.")
-Traceback (most recent call last):
-File "tools/demo.py", line 189, in 
-demo()
-File "tools/demo.py", line 175, in demo
-corner_pred = eval_net(seg_pred, vertex_pred).cpu().detach().numpy()[0]
-File "/home/lab606/.local/lib/python3.5/site-packages/torch/nn/modules/module.py", line 477, in call
-result = self.forward(*input, **kwargs)
-File "/home/lab/.local/lib/python3.5/site-packages/torch/nn/parallel/data_parallel.py", line 121, in forward
-return self.module(*inputs[0], **kwargs[0])
-File "/home/lab/.local/lib/python3.5/site-packages/torch/nn/modules/module.py", line 477, in call
-result = self.forward(*input, **kwargs)
-File "tools/demo.py", line 55, in forward
-return ransac_voting_layer_v3(mask, vertex_pred, 512, inlier_thresh=0.99)
-File "/home/lab/pvnet/lib/ransac_voting_gpu_layer/ransac_voting_gpu.py", line 592, in ransac_voting_layer_v3
-ATA=torch.matmul(normal.permute(0,2,1),normal)              # [vn,2,2]
-RuntimeError: cublas runtime error : the GPU program failed to execute at /pytorch/aten/src/THC/THCBlas.cu:411
-
-----------------------------------------Comment 1----------------------------------------
-
-🐛 Describe the bug
-Some weights of the model checkpoint at /home/sunpeng/AXJ/MRC/bert/bert-base-uncased were not used when initializing BertQueryNER: ['cls.predictions.transform.dense.bias', 'cls.predictions.transform.LayerNorm.bias', 'cls.predictions.bias', 'cls.seq_relationship.bias', 'cls.predictions.transform.LayerNorm.weight', 'cls.predictions.transform.dense.weight', 'cls.predictions.decoder.weight', 'cls.seq_relationship.weight']
-
-This IS expected if you are initializing BertQueryNER from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
-This IS NOT expected if you are initializing BertQueryNER from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
-Some weights of BertQueryNER were not initialized from the model checkpoint at /home/sunpeng/AXJ/MRC/bert/bert-base-uncased and are newly initialized: ['span_embedding.classifier1.weight', 'span_embedding.classifier2.bias', 'end_outputs.weight', 'start_outputs.bias', 'end_outputs.bias', 'span_embedding.classifier1.bias', 'start_outputs.weight', 'span_embedding.classifier2.weight']
-You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
-/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/pytorch_lightning/utilities/distributed.py:37: UserWarning: Checkpoint directory /home/sunpeng/AXJ/MRC/outputs/ace2005/warmup0lr2e-5_drop0.3_norm1.0_weight0.1_warmup0_maxlen128 exists and is not empty with save_top_k != 0.All files in this directory will be deleted when a checkpoint is saved!
-warnings.warn(*args, **kwargs)
-GPU available: True, used: True
-TPU available: False, using: 0 TPU cores
-CUDA_VISIBLE_DEVICES: [0]
-Using native 16bit precision.
-/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/pytorch_lightning/utilities/distributed.py:37: UserWarning: WORLD_SIZE environment variable (2) is not equal to the computed world size (1). Ignored.
-warnings.warn(*args, **kwargs)
-initializing ddp: GLOBAL_RANK: 0, MEMBER: 1/1
-
-
-distributed_backend=ddp
-All DDP processes registered. Starting ddp with 1 processes
-/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/torch/cuda/init.py:104: UserWarning:
-GeForce RTX 3060 Ti with CUDA capability sm_86 is not compatible with the current PyTorch installation.
-The current PyTorch install supports CUDA capabilities sm_37 sm_50 sm_60 sm_61 sm_70 sm_75 compute_37.
-If you want to use the GeForce RTX 3060 Ti GPU with PyTorch, please check the instructions at https://pytorch.org/get-started/locally/
-warnings.warn(incompatible_device_warn.format(device_name, capability, " ".join(arch_list), device_name))
-/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/pytorch_lightning/utilities/distributed.py:37: UserWarning: Could not log computational graph since the model.example_input_array attribute is not set or input_array was not given
-warnings.warn(*args, **kwargs)
-| Name     | Type              | Params
-0 | model    | BertQueryNER      | 112 M
-1 | bce_loss | BCEWithLogitsLoss | 0
-2 | span_f1  | QuerySpanF1       | 0
-/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/pytorch_lightning/utilities/distributed.py:37: UserWarning: The dataloader, val dataloader 0, does not have many workers which may be a bottleneck. Consider increasing the value of the num_workers argument(try 32 which is the number of cpus on this machine) in theDataLoader` init to improve performance.
-warnings.warn(*args, **kwargs)
-Validation sanity check: 0it [00:00, ?it/s]Traceback (most recent call last):
-File "/home/sunpeng/AXJ/MRC/train/mrc_ner_trainer.py", line 429, in 
+File "tools/export_onnx.py", line 114, in
 main()
-File "/home/sunpeng/AXJ/MRC/train/mrc_ner_trainer.py", line 416, in main
-trainer.fit(model)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/pytorch_lightning/trainer/states.py", line 48, in wrapped_fn
-result = fn(self, *args, **kwargs)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 1058, in fit
-results = self.accelerator_backend.spawn_ddp_children(model)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/pytorch_lightning/accelerators/ddp_backend.py", line 123, in spawn_ddp_children
-results = self.ddp_train(local_rank, mp_queue=None, model=model, is_master=True)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/pytorch_lightning/accelerators/ddp_backend.py", line 224, in ddp_train
-results = self.trainer.run_pretrain_routine(model)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 1224, in run_pretrain_routine
-self._run_sanity_check(ref_model, model)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 1257, in _run_sanity_check
-eval_results = self._evaluate(model, self.val_dataloaders, max_batches, False)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/pytorch_lightning/trainer/evaluation_loop.py", line 331, in _evaluate
-output = self.evaluation_forward(model, batch, batch_idx, dataloader_idx, test_mode)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/pytorch_lightning/trainer/evaluation_loop.py", line 661, in evaluation_forward
-output = model(*args)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
-result = self.forward(*input, **kwargs)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/pytorch_lightning/overrides/data_parallel.py", line 174, in forward
-output = self.module.validation_step(*inputs[0], **kwargs[0])
-File "/home/sunpeng/AXJ/MRC/train/mrc_ner_trainer.py", line 245, in validation_step
-start_logits, end_logits, span_logits = self(tokens, attention_mask, token_type_ids)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
-result = self.forward(*input, **kwargs)
-File "/home/sunpeng/AXJ/MRC/train/mrc_ner_trainer.py", line 153, in forward
-return self.model(input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
-result = self.forward(*input, **kwargs)
-File "/home/sunpeng/AXJ/MRC/models/bert_query_ner.py", line 39, in forward
-bert_outputs = self.bert(input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
-result = self.forward(*input, **kwargs)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/transformers/models/bert/modeling_bert.py", line 1006, in forward
-return_dict=return_dict,
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
-result = self.forward(*input, **kwargs)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/transformers/models/bert/modeling_bert.py", line 592, in forward
-output_attentions,
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
-result = self.forward(*input, **kwargs)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/transformers/models/bert/modeling_bert.py", line 477, in forward
-past_key_value=self_attn_past_key_value,
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
-result = self.forward(*input, **kwargs)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/transformers/models/bert/modeling_bert.py", line 409, in forward
-output_attentions,
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/torch/nn/modules/module.py", line 727, in _call_impl
-result = self.forward(*input, **kwargs)
-File "/home/sunpeng/.conda/envs/pytorch_gpu/lib/python3.7/site-packages/transformers/models/bert/modeling_bert.py", line 306, in forward
-attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
-RuntimeError: cublas runtime error : unknown error at /opt/conda/conda-bld/pytorch_1607370128159/work/aten/src/THC/THCBlas.cu:225
+└ <function main at 0x7f3434447f70>
+File "tools/export_onnx.py", line 107, in main
+model_simp, check = simplify(onnx_model)
+│ └ ir_version: 7
+│ producer_name: "pytorch"
+│ producer_version: "1.10"
+│ graph {
+│ node {
+│ output: "607"
+│ name: "Constant_0"
+│ ...
+└ <function simplify at 0x7f3417604dc0>
+File "/home/xyz/anaconda3/envs/yolox/lib/python3.8/site-packages/onnxsim/onnx_simplifier.py", line 483, in simplify
+model = fixed_point(model, infer_shapes_and_optimize, constant_folding)
+│ │ │ └ <function simplify..constant_folding at 0x7f34175d5f70>
+│ │ └ <function simplify..infer_shapes_and_optimize at 0x7f342715c160>
+│ └ ir_version: 7
+│ producer_name: "pytorch"
+│ producer_version: "1.10"
+│ graph {
+│ node {
+│ output: "607"
+│ name: "Constant_0"
+│ ...
+└ <function fixed_point at 0x7f3417604d30>
+File "/home/xyz/anaconda3/envs/yolox/lib/python3.8/site-packages/onnxsim/onnx_simplifier.py", line 384, in fixed_point
+x = func_b(x)
+│ └ ir_version: 7
+│ producer_name: "pytorch"
+│ producer_version: "1.10"
+│ graph {
+│ node {
+│ input: "input_tensor"
+│ input: "608"
+│ ...
+└ <function simplify..constant_folding at 0x7f34175d5f70>
+File "/home/xyz/anaconda3/envs/yolox/lib/python3.8/site-packages/onnxsim/onnx_simplifier.py", line 473, in constant_folding
+res = forward_for_node_outputs(model,
+│ └ ir_version: 7
+│ producer_name: "pytorch"
+│ producer_version: "1.10"
+│ graph {
+│ node {
+│ input: "input_tensor"
+│ input: "608"
+│ ...
+└ <function forward_for_node_outputs at 0x7f34176048b0>
+File "/home/xyz/anaconda3/envs/yolox/lib/python3.8/site-packages/onnxsim/onnx_simplifier.py", line 229, in forward_for_node_outputs
+res = forward(model,
+│ └ ir_version: 7
+│ producer_name: "pytorch"
+│ producer_version: "1.10"
+│ graph {
+│ node {
+│ input: "input_tensor"
+│ input: "608"
+│ ...
+└ <function forward at 0x7f3417604820>
+File "/home/xyz/anaconda3/envs/yolox/lib/python3.8/site-packages/onnxsim/onnx_simplifier.py", line 210, in forward
+inputs.update(generate_specific_rand_input(model, {name: shape}))
+│ │ │ │ │ └ [0, 3, 640, 640]
+│ │ │ │ └ 'input_tensor'
+│ │ │ └ ir_version: 7
+│ │ │ producer_name: "pytorch"
+│ │ │ producer_version: "1.10"
+│ │ │ graph {
+│ │ │ node {
+│ │ │ input: "input_tensor"
+│ │ │ input: "608"
+│ │ │ ...
+│ │ └ <function generate_specific_rand_input at 0x7f3417604550>
+│ └ <method 'update' of 'dict' objects>
+└ {}
+File "/home/xyz/anaconda3/envs/yolox/lib/python3.8/site-packages/onnxsim/onnx_simplifier.py", line 98, in generate_specific_rand_input
+raise RuntimeError(
+RuntimeError: The shape of input "input_tensor" has dynamic size "[0, 3, 640, 640]", please determine the input size manually by "--dynamic-input-shape --input-shape xxx" or "--input-shape xxx". Run "python3 -m onnxsim -h" for details
+``
+My environments:
+`pip list
+Package                   Version               Editable project location
+
+absl-py                   1.0.0
+albumentations            1.1.0
+anykeystore               0.2
+apex                      0.1
+appdirs                   1.4.4
+cachetools                4.2.4
+certifi                   2021.10.8
+charset-normalizer        2.0.9
+cryptacular               1.6.2
+cycler                    0.11.0
+Cython                    0.29.25
+defusedxml                0.7.1
+flatbuffers               2.0
+fonttools                 4.28.3
+google-auth               2.3.3
+google-auth-oauthlib      0.4.6
+greenlet                  1.1.2
+grpcio                    1.42.0
+hupper                    1.10.3
+idna                      3.3
+imageio                   2.13.3
+imgaug                    0.4.0
+importlib-metadata        4.8.2
+joblib                    1.1.0
+kiwisolver                1.3.2
+loguru                    0.5.3
+Mako                      1.1.6
+Markdown                  3.3.6
+MarkupSafe                2.0.1
+matplotlib                3.5.1
+networkx                  2.6.3
+ninja                     1.10.2.3
+numpy                     1.21.4
+nvidia-cublas-cu11        2021.12.3
+nvidia-cublas-cu116       11.8.1.74
+nvidia-cuda-runtime-cu11  2021.12.20
+nvidia-cuda-runtime-cu116 11.6.55
+nvidia-cudnn-cu11         2022.1.13
+nvidia-cudnn-cu115        8.3.2.44
+nvidia-tensorrt           8.4.0.6
+oauthlib                  3.1.1
+onnx                      1.8.1
+onnx-simplifier           0.3.5
+onnxoptimizer             0.2.6
+onnxruntime               1.8.0
+opencv-python             4.5.4.60
+opencv-python-headless    4.5.5.62
+packaging                 21.3
+PasteDeploy               2.1.1
+pbkdf2                    1.3
+Pillow                    8.4.0
+pip                       21.3.1
+plaster                   1.0
+plaster-pastedeploy       0.7
+platformdirs              2.5.1
+protobuf                  3.19.1
+pyasn1                    0.4.8
+pyasn1-modules            0.2.8
+pycocotools               2.0
+pycuda                    2021.1
+pyparsing                 3.0.6
+pyramid                   2.0
+pyramid-mailer            0.15.1
+python-dateutil           2.8.2
+python3-openid            3.2.0
+pytools                   2022.1.1
+PyWavelets                1.2.0
+PyYAML                    6.0
+qudida                    0.0.4
+repoze.sendmail           4.4.1
+requests                  2.26.0
+requests-oauthlib         1.3.0
+rsa                       4.8
+scikit-image              0.19.0
+scikit-learn              1.0.2
+scipy                     1.7.3
+setuptools                58.0.4
+Shapely                   1.8.1.post1
+six                       1.16.0
+SQLAlchemy                1.4.28
+tabulate                  0.8.9
+tensorboard               2.7.0
+tensorboard-data-server   0.6.1
+tensorboard-plugin-wit    1.8.0
+tensorrt                  0.0.1
+thop                      0.0.31.post2005241907
+threadpoolctl             3.1.0
+tifffile                  2021.11.2
+torch                     1.10.0
+torch2trt                 0.3.0
+torchvision               0.11.1
+tqdm                      4.62.3
+transaction               3.0.1
+translationstring         1.4
+typing_extensions         4.0.1
+urllib3                   1.26.7
+velruse                   1.1.1
+venusian                  3.0.0
+WebOb                     1.8.7
+Werkzeug                  2.0.2
+wheel                     0.37.0
+WTForms                   3.0.0
+wtforms-recaptcha         0.3.2
+yolox                     0.1.0
+zipp                      3.6.0
+zope.deprecation          4.4.0
+zope.interface            5.4.0
+zope.sqlalchemy           1.6
+`
+
+----------------------------------------Comment 10----------------------------------------
+
+🐛 Describe the bug
+Hi! Here I got some bugs about Pytorch and cuda.
+I was training my models fine with 2 NVIDIA GeForce RTX 3090 cards on a machine, with a python virtual environment created by conda. To introduce an extra model using cuda extension into my project, I compiled and built the extension running ''' python setup.py install ''' with python interpreter of virtual environment (Here is the compile files I used: https://github.com/MultiPath/DepthwiseConv2d). My machine uses CUDA10,2 as default, but I switched to CUDA11.0 to compile file using ''' export CUDA_HOME=/usr/local/cuda-11.0 ''' in SSH.
+Just after I compiled this extension into my virtual environment, something went wrong. When traning models, I am no longer able to use single card numbered 0 by setting ''' os.environ["CUDA_VISIBLE_DEVICES"] = '0' ''' in the beginning of script file on PyCharm, it will always run the single card numbered 1, the same thing happened while setting the value to '1'. If I want to train the model using Distributed Data Parallel (DDP) strategy with 2 cards jointly, it will report this:
+'''
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Initializing distributed: GLOBAL_RANK: 0, MEMBER: 1/2
+Initializing distributed: GLOBAL_RANK: 1, MEMBER: 2/2
+distributed_backend=nccl
+All distributed processes registered. Starting with 2 processes
+xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/strategies/ddp.py:437: UserWarning: Error handling mechanism for deadlock detection is uninitialized. Skipping check.
+rank_zero_warn("Error handling mechanism for deadlock detection is uninitialized. Skipping check.")
+Traceback (most recent call last):
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 242, in _lazy_init
+queued_call()
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 125, in _check_capability
+capability = get_device_capability(d)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 357, in get_device_capability
+prop = get_device_properties(device)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 375, in get_device_properties
+return _get_device_properties(device)  # type: ignore[name-defined]
+RuntimeError: device >= 0 && device < num_gpus INTERNAL ASSERT FAILED at "../aten/src/ATen/cuda/CUDAContext.cpp":50, please report a bug to PyTorch.
+The above exception was the direct cause of the following exception:
+Traceback (most recent call last):
+File "xxx/xxx/myProjects/asteroid/egs/librimix/TDANetPlus2/train-birdclefmix.py", line 148, in 
+main(arg_dic)
+File "xxx/xxx/myProjects/asteroid/egs/librimix/TDANetPlus2/train-birdclefmix.py", line 113, in main
+ckpt_path=None
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 609, in fit
+self, self._fit_impl, model, train_dataloaders, val_dataloaders, datamodule, ckpt_path
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/trainer/call.py", line 36, in _call_and_handle_interrupt
+return trainer.strategy.launcher.launch(trainer_fn, *args, trainer=trainer, **kwargs)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/strategies/launchers/subprocess_script.py", line 88, in launch
+return function(*args, **kwargs)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 650, in _fit_impl
+self._run(model, ckpt_path=self.ckpt_path)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 1048, in _run
+self.strategy.setup_environment()
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/strategies/ddp.py", line 153, in setup_environment
+super().setup_environment()
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/strategies/strategy.py", line 131, in setup_environment
+self.accelerator.setup_device(self.root_device)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/accelerators/cuda.py", line 43, in setup_device
+_check_cuda_matmul_precision(device)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/lightning_fabric/accelerators/cuda.py", line 345, in _check_cuda_matmul_precision
+major, _ = torch.cuda.get_device_capability(device)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 357, in get_device_capability
+prop = get_device_properties(device)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 371, in get_device_properties
+_lazy_init()  # will define _get_device_properties
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 246, in _lazy_init
+raise DeferredCudaCallError(msg) from e
+torch.cuda.DeferredCudaCallError: CUDA call failed lazily at initialization with error: device >= 0 && device < num_gpus INTERNAL ASSERT FAILED at "../aten/src/ATen/cuda/CUDAContext.cpp":50, please report a bug to PyTorch.
+CUDA call was originally invoked at:
+['  File "xxx/xxx/myProjects/asteroid/egs/librimix/TDANetPlus2/train-birdclefmix.py", line 5, in \n    import torch\n', '  File "", line 983, in _find_and_load\n', '  File "", line 967, in _find_and_load_unlocked\n', '  File "", line 677, in _load_unlocked\n', '  File "", line 728, in exec_module\n', '  File "", line 219, in _call_with_frames_removed\n', '  File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/init.py", line 798, in \n    _C._initExtension(manager_path())\n', '  File "", line 983, in _find_and_load\n', '  File "", line 967, in _find_and_load_unlocked\n', '  File "", line 677, in _load_unlocked\n', '  File "", line 728, in exec_module\n', '  File "", line 219, in _call_with_frames_removed\n', '  File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 179, in \n    _lazy_call(_check_capability)\n', '  File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 177, in _lazy_call\n    _queued_calls.append((callable, traceback.format_stack()))\n']
+Traceback (most recent call last):
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 242, in _lazy_init
+queued_call()
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 125, in _check_capability
+capability = get_device_capability(d)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 357, in get_device_capability
+prop = get_device_properties(device)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 375, in get_device_properties
+return _get_device_properties(device)  # type: ignore[name-defined]
+RuntimeError: device >= 0 && device < num_gpus INTERNAL ASSERT FAILED at "../aten/src/ATen/cuda/CUDAContext.cpp":50, please report a bug to PyTorch.
+The above exception was the direct cause of the following exception:
+Traceback (most recent call last):
+File "xxx/xxx/myProjects/asteroid/egs/librimix/TDANetPlus2/train-birdclefmix.py", line 148, in 
+main(arg_dic)
+File "xxx/xxx/myProjects/asteroid/egs/librimix/TDANetPlus2/train-birdclefmix.py", line 113, in main
+ckpt_path=None
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 609, in fit
+self, self._fit_impl, model, train_dataloaders, val_dataloaders, datamodule, ckpt_path
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/trainer/call.py", line 38, in _call_and_handle_interrupt
+return trainer_fn(*args, **kwargs)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 650, in _fit_impl
+self._run(model, ckpt_path=self.ckpt_path)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/trainer/trainer.py", line 1048, in _run
+self.strategy.setup_environment()
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/strategies/ddp.py", line 153, in setup_environment
+super().setup_environment()
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/strategies/strategy.py", line 131, in setup_environment
+self.accelerator.setup_device(self.root_device)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/pytorch_lightning/accelerators/cuda.py", line 43, in setup_device
+_check_cuda_matmul_precision(device)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/lightning_fabric/accelerators/cuda.py", line 345, in _check_cuda_matmul_precision
+major, _ = torch.cuda.get_device_capability(device)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 357, in get_device_capability
+prop = get_device_properties(device)
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 371, in get_device_properties
+_lazy_init()  # will define _get_device_properties
+File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 246, in _lazy_init
+raise DeferredCudaCallError(msg) from e
+torch.cuda.DeferredCudaCallError: CUDA call failed lazily at initialization with error: device >= 0 && device < num_gpus INTERNAL ASSERT FAILED at "../aten/src/ATen/cuda/CUDAContext.cpp":50, please report a bug to PyTorch.
+CUDA call was originally invoked at:
+['  File "xxx/xxx/xxx/train.py", line 5, in \n    import torch\n', '  File "", line 983, in _find_and_load\n', '  File "", line 967, in _find_and_load_unlocked\n', '  File "", line 677, in _load_unlocked\n', '  File "", line 728, in exec_module\n', '  File "", line 219, in _call_with_frames_removed\n', '  File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/init.py", line 798, in \n    _C._initExtension(manager_path())\n', '  File "", line 983, in _find_and_load\n', '  File "", line 967, in _find_and_load_unlocked\n', '  File "", line 677, in _load_unlocked\n', '  File "", line 728, in exec_module\n', '  File "", line 219, in _call_with_frames_removed\n', '  File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 179, in \n    _lazy_call(_check_capability)\n', '  File "xxx/xxx/envs/AST2/lib/python3.7/site-packages/torch/cuda/init.py", line 177, in _lazy_call\n    _queued_calls.append((callable, traceback.format_stack()))\n']
+Process finished with exit code 1
+'''
+I tried to recreate another new virtual environment and python interpreter to avoid this bug but failed after several times. The same error still exist after I reboot my machine few times, by setting ''' export CUDA_HOME=/usr/local/cuda-x.x ''' from 10.2 to 11.0 or ''' export CUDA_VISIBLE_DEVICES=0,1 ''' in ~/.bashrc file.
+I also tried to remove the cuda extension by using ''' rm -r build ''' in the directory I compiled before, but it doesn't work even though the extention gone.
+Mention that by upgrading pytorch-lightning to 2.0.0 and torch to 2.x, I can use the card number 0  or 1 again, but I still can not use DDP to train and this solution doesn't work properly in my project for package compatibility.
+Do you have any idea to fix this problem? Hope for reply and bug fixing, thanks!
 Versions
 Collecting environment information...
-PyTorch version: 1.7.1
+PyTorch version: 1.13.1+cu117
 Is debug build: False
-CUDA used to build PyTorch: 10.2
+CUDA used to build PyTorch: 11.7
 ROCM used to build PyTorch: N/A
-OS: Ubuntu 16.04.7 LTS (x86_64)
-GCC version: (Ubuntu 5.4.0-6ubuntu1~16.04.12) 5.4.0 20160609
+OS: Ubuntu 20.04.1 LTS (x86_64)
+GCC version: (Ubuntu 5.5.0-12ubuntu1) 5.5.0 20171010
 Clang version: Could not collect
 CMake version: Could not collect
-Libc version: glibc-2.10
-Python version: 3.7.12 | packaged by conda-forge | (default, Oct 26 2021, 06:08:21)  [GCC 9.4.0] (64-bit runtime)
-Python platform: Linux-4.15.0-142-generic-x86_64-with-debian-stretch-sid
+Libc version: glibc-2.17
+Python version: 3.7.16 (default, Jan 17 2023, 22:20:44)  [GCC 11.2.0] (64-bit runtime)
+Python platform: Linux-5.4.0-56-generic-x86_64-with-debian-bullseye-sid
 Is CUDA available: True
-CUDA runtime version: Could not collect
+CUDA runtime version: 10.2.89
+CUDA_MODULE_LOADING set to: LAZY
 GPU models and configuration:
-GPU 0: GeForce RTX 3060 Ti
-GPU 1: GeForce RTX 3060 Ti
-Nvidia driver version: 460.73.01
+GPU 0: NVIDIA GeForce RTX 3090
+GPU 1: NVIDIA GeForce RTX 3090
+Nvidia driver version: 525.105.17
 cuDNN version: Probably one of the following:
-/usr/lib/x86_64-linux-gnu/libcudnn.so.8.0.5
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.0.5
-/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.0.5
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.0.5
-/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.0.5
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.0.5
-/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.0.5
-/usr/local/cuda-10.1/targets/x86_64-linux/lib/libcudnn.so.7
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn.so.7
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn.so.8
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_adv_train.so.8
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8
-/usr/local/cuda-11.1/targets/x86_64-linux/lib/libcudnn_ops_train.so.8
+/usr/lib/x86_64-linux-gnu/libcudnn.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_infer.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_adv_train.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_infer.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_cnn_train.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_infer.so.8.2.1
+/usr/lib/x86_64-linux-gnu/libcudnn_ops_train.so.8.2.1
+/usr/local/cuda-10.2/targets/x86_64-linux/lib/libcudnn.so.8
+/usr/local/cuda-10.2/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8
+/usr/local/cuda-10.2/targets/x86_64-linux/lib/libcudnn_adv_train.so.8
+/usr/local/cuda-10.2/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8
+/usr/local/cuda-10.2/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8
+/usr/local/cuda-10.2/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8
+/usr/local/cuda-10.2/targets/x86_64-linux/lib/libcudnn_ops_train.so.8
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn.so.8
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_train.so.8
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8
+/usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_train.so.8
 HIP runtime version: N/A
 MIOpen runtime version: N/A
+Is XNNPACK available: True
 Versions of relevant libraries:
-[pip3] numpy==1.21.4
-[pip3] pytorch-lightning==0.9.0
-[pip3] pytorch-pretrained-bert==0.6.2
-[pip3] torch==1.7.1
-[pip3] torchaudio==0.7.2
-[pip3] torchvision==0.8.2
-[conda] Could not collect
-cc @csarofeen @ptrblck @xwang233
+[pip3] numpy==1.21.6
+[pip3] numpydoc==1.5.0
+[pip3] pytorch-ignite==0.3.0
+[pip3] pytorch-lightning==1.9.5
+[pip3] pytorch-ranger==0.1.1
+[pip3] pytorch-transformers==1.2.0
+[pip3] torch==1.13.1
+[pip3] torch-optimizer==0.3.0
+[pip3] torch-stoi==0.1.2
+[pip3] torchaudio==0.13.1
+[pip3] torchfile==0.1.0
+[pip3] torchmetrics==0.11.4
+[conda] numpy                     1.21.6                   pypi_0    pypi
+[conda] numpydoc                  1.5.0                    pypi_0    pypi
+[conda] pytorch-lightning         1.9.5                    pypi_0    pypi
+[conda] pytorch-ranger            0.1.1                    pypi_0    pypi
+[conda] torch                     1.13.1                   pypi_0    pypi
+[conda] torch-optimizer           0.3.0                    pypi_0    pypi
+[conda] torch-stoi                0.1.2                    pypi_0    pypi
+[conda] torchaudio                0.13.1                   pypi_0    pypi
+[conda] torchmetrics              0.11.4                   pypi_0    pypi
 

@@ -1,204 +1,299 @@
 ----------------------------------------Comment 1----------------------------------------
 
-📚 The doc issue
-https://pytorch.org/docs/stable/generated/torch.Tensor.register_hook.html
-Clicking the "source" link redirects to https://pytorch.org/docs/stable/_modules/torch/_tensor.html#Tensor.register_hook, which does not exist.
-This is true in the master docs as well: https://pytorch.org/docs/master/generated/torch.Tensor.register_hook.html
-Suggest a potential alternative/fix
-Fix the link.
-cc @brianjo @mruberry
+The following functions and classes are not documented correctly: they are part of the public API but do not show up on the docs website
+This means that we want to do either:
 
-----------------------------------------Comment 1----------------------------------------
+Add a docstring and make sure it is properly added to a .rst file so that it appears on the docs website
+Make it private by prepending a _ to the function name
+Remove it from the public API by deleting it from your __init__.py file (like here
 
-📚 Documentation
-after #50998 I couldn't checkout any commit that still uses github.com/seemethere/pybind11.git because the actual third_party commit lives on @seemethere 's personal fork.
-the instruction on CONTRIBUTING.md to clean the repo doesn't work for this scenario when .gitmodules file was changed with a different repository.
-cc @jlin27 @mruberry
+torch.hub
+Functions:
 
-----------------------------------------Comment 1----------------------------------------
+import_module
 
-📚 Documentation
-https://pytorch.org/docs/stable/generated/torch.nn.KLDivLoss.html#torch.nn.KLDivLoss
-l_n should be y_n * (log(y_n) - log(x_n)) instead of y_n * (log(y_n) - x_n)
-cc @brianjo @mruberry @albanD @jbschlosser @walterddr @kshitij12345
+cc @brianjo @mruberry @nairbv @NicolasHug
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 2----------------------------------------
 
-Apply the following patch (with pip install psutil) to get resident memory information:
+Overview
+Implementing a correct meta device initialization is challenging with either leaking FSDP into the nn.Module definition or leaking FSDP's private functions/attributes (_is_fsdp_flattened()). See this issue for the full context.
+One "supported" method for meta device initialization is to have the model's modules implement reset_parameters() or for the user to pass in a param_init_fn: Callable[[nn.Module], None]. However, the current implementation is problematic for two reasons:
 
-Then run the test:
+nn.Module.to_empty() is recursive. It will reset already-initialized parameters in the case of nested FSDP wrapping.
+Only calling reset_parameters() with the FSDP-wrapped module (and not submodules) means that FSDP expects reset_parameters() to reset submodules' parameters, which violates the method's expected contract and requires unnecessary code duplication (to recurse into submodules) in possibly every reset_parameters() implementation.
 
-That's 10G!!! This is on an eight GPU box. This number is on a DEBUG build. Commit b181b59
-CC @apaszke
-cc @mruberry @VitalyFedyunin
 
-----------------------------------------Comment 1----------------------------------------
 
-🚀 Feature
-torch.bincount along specified dimension(s).
-cc @mruberry @rgommers @heitorschueroff
+pytorch/torch/distributed/fsdp/_init_utils.py
 
-----------------------------------------Comment 1----------------------------------------
+
+        Lines 815 to 826
+      in
+      b227707
+
+
+
+
+
+
+ def _materialize_meta_module( 
+
+
+
+ module: nn.Module, 
+
+
+
+ device_from_device_id: Optional[torch.device], 
+
+
+
+ ): 
+
+
+
+ # Run default meta device initialization 
+
+
+
+ materialization_device = device_from_device_id or torch.device( 
+
+
+
+ torch.cuda.current_device() 
+
+
+
+     ) 
+
+
+
+ module.to_empty(device=materialization_device) 
+
+
+
+ try: 
+
+
+
+ with torch.no_grad(): 
+
+
+
+ module.reset_parameters()  # type: ignore[operator] 
+
+
+
+
+
+
+Proposed Solution
+The proposed solution is to change FSDP's contract: nn.Module.reset_parameters() or the user's custom param_init_fn: Callable[[nn.Module], None] should only initialize the given module's parameters and not those of its submodules. This means that for the param_init_fn, I likely expect it to condition on the nn.Module type.
+FSDP will make sure to only call reset_parameters() or the custom param_init_fn once per module throughout construction time and only on modules with parameters (i.e. len(list(module.parameters(recurse=False))) > 0).
+In the short term, we can emulate an nn.Module.to_empty(recurse=False) with something like the following to unblock reset_parameters():
+
+However, this does not resolve the issue for a custom param_init_fn since, to my understanding, to_empty() is the only public way to materialize a meta-device module. Without to_empty(recurse=False), we would expect the user to do something similar to the code snippet above in the param_init_fn implementation. This gives some additional urgency to supporting to_empty(recurse=False). For a custom param_init_fn, I am thinking of something like:
+
+The motivation for using a param_init_fn like this is if the FSDP user does not own the model code and cannot add a reset_parameters() method.
+
+cc: @albanD @mikaylagawarecki on to_empty(recurse=False) (which mainly just needs to make the recursion to begin _apply optional)
+
+
+
+pytorch/torch/nn/modules/module.py
+
+
+        Lines 799 to 801
+      in
+      b227707
+
+
+
+
+
+
+ def _apply(self, fn): 
+
+
+
+ for module in self.children(): 
+
+
+
+ module._apply(fn) 
+
+
+
+
+
+cc: @lessw2020 @HamidShojanazeri @abhi-mosaic @speediedan @conceptofmind @supriyogit @eric-mitchell on if this breaks any existing materialization code (feel free to tag whomever to which this may be relevant)
+cc @albanD @mruberry @jbschlosser @walterddr @mikaylagawarecki @zhaojuanmao @mrshenli @rohan-varma
+
+----------------------------------------Comment 3----------------------------------------
 
 🐛 Bug
-According to https://pytorch.org/docs/stable/generated/torch.nn.Conv3d.html, padding_mode has 4 choices including  'zeros', 'reflect', 'replicate' or 'circular'. However, currently reflect mode is not supported.
-To Reproduce
 
-It throws the following exception:
-
-Expected behavior
-It would be better if the reflect mode for padding can be supported.
-Otherwise, this mode should be eliminated from the documentation.
+The above returns an image full of 1's. However, some would expect it to return an image full of zeros -- each grid coordinate is (-5, -5), which is definitely beyond the [-1, 1] boundaries for the image, so the value should be the padding value.
+I'm not completely convinced that this is a bug. When align_corners=True and the image only has a single pixel, each of the corners (-1, -1), (1, -1), (-1, 1), (1, 1) are mapped to the center of the pixel. Since they're all the same location, the geometry becomes weird -- if the distance between (-1, -1) and (1, 1) is 0, then what's the distance between (-5, -5) and (-1, -1)?
+Perhaps the way to resolve this is to add a warning in the documentation and/or add a warning to the code if any inputs have height or width 1.
 Environment
-PyTorch Version (e.g., 1.0): Nightly build
-OS (e.g., Linux): Linux
-How you installed PyTorch (conda, pip, source): pip
-Python version: 3.6.6
-CUDA/cuDNN version: cuDNN 11.1
-GPU models and configuration: A100
-Additional context
-cc @brianjo @mruberry
+PyTorch master
+cc @albanD @mruberry
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 4----------------------------------------
+
+Remove the skip here 
+
+
+pytorch/torch/testing/_internal/common_methods_invocations.py
+
+
+         Line 4301
+      in
+      9119522
+
+
+
+
+
+
+ skips=(SkipInfo('TestCommon', 'test_variant_consistency_jit'),)), 
+
+
+
+
+ to trigger the error below.
+
+cc @mruberry @VitalyFedyunin @walterddr @gmagogsfm
+
+----------------------------------------Comment 5----------------------------------------
+
+In PyTorch usecases we almost always work with batches of matrices, and the convenience method t() breaks because it wants <= 2 dimensions. Since this is so common, I propose to relax constraints of t() and make it equivalent to transpose(-1, -2) for all input shapes.
+This could have been discussed and decided before, but I could not find the issue...
+
+cc @mruberry @rgommers @heitorschueroff
+
+----------------------------------------Comment 6----------------------------------------
+
+The example output in
+
+
+
+pytorch/torch/_torch_docs.py
+
+
+        Lines 7916 to 7925
+      in
+      81b5921
+
+
+
+
+
+
+     >>> crow_indices = [0, 2, 4] 
+
+
+
+     >>> col_indices = [0, 1, 0, 1] 
+
+
+
+     >>> values = [1, 2, 3, 4] 
+
+
+
+     >>> torch.sparse_csr_tensor(torch.tensor(crow_indices, dtype=torch.int64), 
+
+
+
+     ...                         torch.tensor(col_indices, dtype=torch.int64), 
+
+
+
+     ...                         torch.tensor(values), dtype=torch.double) 
+
+
+
+     tensor(crow_indices=tensor([0, 2, 4]), 
+
+
+
+            col_indices=tensor([0, 1, 0, 1]), 
+
+
+
+            values=tensor([1., 2., 3., 4.]), size=(2, 2), nnz=4, 
+
+
+
+            dtype=torch.float64, layout=torch.sparse_csr) 
+
+
+
+
+
+is different from the actual output (using current pytorch master):
+
+Notice the lack of layout parameter in csr tensor repr result.
+cc @brianjo @mruberry @aocsa @nikitaved @pearu
+
+----------------------------------------Comment 7----------------------------------------
 
 📚 Documentation
-The module form of nn.GLU is missing from the torch.nn docs (the functional form is in the docs).
-cc @brianjo @mruberry @albanD @jbschlosser
+Currently the documentation of torch.tensordot is quite comprehensible.
+However, I came across several instances recently (e.g., a, b, c) where users tried to "push" tensordot beyond its capabilities while being completely unaware of the functionality provided by torch.einsum.
+Is it possible to add "see also" part at the bottom of tensordot documentation linking to einsum?
+For example, in numpy.tensordot documentation there is a "see also" part that links to einsum:
 
-----------------------------------------Comment 1----------------------------------------
-
-Keyword arguments should be put into a separate section Keyword Arguments instead of inside Parameters, just like:
-
-instead of
-
-I have three PRs fixing this issue: #43583 #43586 #43589
-But some of them can not be fixed due to #43669: List of ops remaining to be fixed:
-
-torch.eye
-torch.bmm
-torch.gather
-torch.linspace
-torch.logspace
-torch.ones
-torch.ones_like
-The entire Fix docs for kwargs, q-z #43589
-
+Can we have similar section in pytorch as well, please?
 cc @jlin27 @mruberry
 
-----------------------------------------Comment 1----------------------------------------
+----------------------------------------Comment 8----------------------------------------
 
-📚 Documentation
-Hi,I think the docstring of class Flatten is a little confusing.
+🚀 Feature
+I would be very helpful if we had an implementation of the HFFTN like we have for the RFFTN
+Motivation
+Currently, the HFFT only supports a single dimension.
+Pitch
+Just like the torch.fft.rfft, It is desirable to have the following
 
+ torch.fft.hfft Already present
+ torch.fft.ihfft Already present
+ torch.fft.hfft2
+ torch.fft.ihfft2
+ torch.fft.hfftn
+ torch.fft.ihfftn
 
+Alternatives
+I am currently checking Aten/native so see if it is possible to have a custom C++ extension for it. But a nice python wrapper as for the torch.fft.rfft would be very very helpful.
+cc @mruberry @peterbell10 @walterddr
 
-pytorch/torch/nn/modules/flatten.py
+----------------------------------------Comment 9----------------------------------------
 
+🐛 Describe the bug
 
-        Lines 10 to 30
-      in
-      fae1c0a
+Output
 
+List of Dropout Modules:
 
+ Dropout
+ Dropout2d
+ Dropout3d
+ AlphaDropout
+ FeatureAlphaDropout
 
+Versions
+master
+cc @albanD @mruberry @jbschlosser @walterddr @kshitij12345 @saketh-are @ezyang @anjali411 @dylanbespalko @lezcano @nikitaved
 
+----------------------------------------Comment 10----------------------------------------
 
+The array API specification stipulates that the
 
-     Flattens a contiguous range of dims into a tensor. For use with :class:`~nn.Sequential`. 
+smallest positive floating-point number with full precision
 
-
-
-  
-
-
-
-     Shape: 
-
-
-
-         - Input: :math:`(*, S_{\text{start}},..., S_{i}, ..., S_{\text{end}}, *)`,' 
-
-
-
-           where :math:`S_{i}` is the size at dimension :math:`i` and :math:`*` means any 
-
-
-
-           number of dimensions including none. 
-
-
-
-         - Output: :math:`(*, \prod_{i=\text{start}}^{\text{end}} S_{i}, *)`. 
-
-
-
-  
-
-
-
-     Args: 
-
-
-
-         start_dim: first dim to flatten (default = 1). 
-
-
-
-         end_dim: last dim to flatten (default = -1). 
-
-
-
-  
-
-
-
-     Examples:: 
-
-
-
-         >>> input = torch.randn(32, 1, 5, 5) 
-
-
-
-         >>> m = nn.Sequential( 
-
-
-
-         >>>     nn.Conv2d(1, 32, 5, 1, 1), 
-
-
-
-         >>>     nn.Flatten() 
-
-
-
-         >>> ) 
-
-
-
-         >>> output = m(input) 
-
-
-
-         >>> output.size() 
-
-
-
-         torch.Size([32, 288]) 
-
-
-
-
-
-As a beginner, it's not that clear how [32, 288] is calculated according to the output shape mentioned above.
-Maybe a simpler example would be better.
-cc @brianjo @mruberry @albanD @jbschlosser @walterddr
-
-----------------------------------------Comment 1----------------------------------------
-
-📚 Documentation
-Docs of torch.Tensor.permute refer to docs of torch.permute for which do not exist
-Functional implementation is present though.
-https://pytorch.org/docs/stable/generated/torch.Tensor.permute.html?highlight=torch%20permute#torch.Tensor.permute
-cc @brianjo @mruberry
+should be called smallest_normal. We are currently calling it tiny. See this discussion for the motivation behind this.
+cc @mruberry @rgommers @pmeier @asmeurer @leofang @AnirudhDagar @asi1024 @emcastillo @kmaehashi
 
