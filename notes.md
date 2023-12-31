@@ -122,7 +122,22 @@ word: vulnerability
  we didn't put time constrain on the issues, therefore we are able to retrieve issues from the beginning of pytorch project went open source. This measure could help us identify the most consistent factor within the issues posts through out the lifecycle of pytorch. also, increase the size of our corpus could potentially increase the usefullness of the results obtained from co-occurrence network, as it reveals the topic significancy based on the number of times word pairs occure in different comments.
  the drawback would be that we are not able to reflect the gradule change of pytorch in our results. However this problem could be resolved by recover the architecture of pytorch in different period, which this work would provide direction to. 
 
-after this we already can start looking at the samples, as a representative sample is within the acceptable size (60-70 comments) and some insights are already revealed: 1. people don't know how the error are produced, might be helpful to provide the context of the error production and the meaning of different errors in different code context.
+after this we already can start looking at the samples, as a representative sample is within the acceptable size (60-70 comments) and some insights are already revealed: 
+
+1. people don't know how the error are produced, it  might be helpful to provide the context of the error production and the meaning of different errors in different code context. [(error, code), ]
+
+
+
+pairs and statistics:
+    1. (error, code): 61 bug report for requesting fix. 4 asking how to solve error. 1 requesting feature.
+    2. (error, following): 3 asking how to install; 9 asking how to solve error (1 TypeError, 2 AttributeError); 53 bug reports for requesting fix 
+    3. (error, get): 1 asking how to install; 14 asking how to solve error (2 TypeError, 5 AttributeError); 49 bug reports
+    4. (error, message): 3 asking how to install; 10 asking how to solve error; 53 bug reports
+    5. (error, reference): 1 asking how to install; 63 asking how to solve error; 2 bug reports
 
 one formate pair was removed: (error, code) ** not implemented due to uncertainty of effectiveness, need to be further confirmed and thought about **
 
+
+
+## limitation:
+the comments comtain a lot of bug discriptions, which are a little bit less useful for us. However, it's also not make sense for us to delete all comments contain bug discription because this is a big part of the issues' functionalities.
