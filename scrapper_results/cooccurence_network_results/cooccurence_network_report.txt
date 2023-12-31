@@ -3,12 +3,12 @@
 ------------------------getting cooccurence pairs-------------------------
 
 the most occured word pair is: 
-frozenset({'description', 'line'}), occured 11240 times
+frozenset({'line', 'description'}), occured 11240 times
 
-the word has the most total occurence is: line, occured 86371 times in 10997 pairs
-the word occured in the most pairs is: line, occured 86371 times in 10997 pairs
-the average number of pairs each word has is: 24.13
-the average number of occurence each word has is: 67.184
+the word has the most total occurence is: line, occured 86404 times in 11028 pairs
+the word occured in the most pairs is: line, occured 86404 times in 11028 pairs
+the average number of pairs each word has is: 23.878
+the average number of occurence each word has is: 66.474
 the average number of occurence each pair has is: 2.784
 
 

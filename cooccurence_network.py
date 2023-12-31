@@ -182,7 +182,8 @@ def get_first_comments_as_list_of_words(issues_contents: [SingleIssueContent],
                                         skip_stop_words: bool = True, 
                                         stop_words: set = set(stopwords.words('english')), 
                                         stem: bool = False, 
-                                        lemmatize: bool = True) -> [[str]]:
+                                        lemmatize: bool = True,
+                                        ignore_list_of_sections: bool = True) -> [[str]]:
     
     list_of_words = []
     lemmatizer = nltk.stem.WordNetLemmatizer()
@@ -194,15 +195,16 @@ def get_first_comments_as_list_of_words(issues_contents: [SingleIssueContent],
 
         # delete the fout sections: "versions", "error logs", "code example", "system info"
         # use regular expression, ignore all texts after the section title, till the end of comment
-        section_titles = ["versions", 
-                          "error logs", 
-                          "code example", 
-                          "system info", 
-                          "system information", 
-                          "system info", 
-                          "environment"]
-        for section_title in section_titles:
-            text_comment = re.sub(section_title + ".*", "", text_comment, flags=re.DOTALL)
+        if ignore_list_of_sections:
+            section_titles = ["versions", 
+                            "error logs", 
+                            "code example", 
+                            "system info", 
+                            "system information", 
+                            "system info", 
+                            "environment"]
+            for section_title in section_titles:
+                text_comment = re.sub(section_title + ".*", "", text_comment, flags=re.DOTALL)
 
         # also, delete several format string of issues, but keep the content after them
         format_string = ["🐛 Describe the bug", 
@@ -211,8 +213,8 @@ def get_first_comments_as_list_of_words(issues_contents: [SingleIssueContent],
         for string in format_string:
             text_comment = re.sub(string, "", text_comment)
             
-        # delete urls
-        text_comment = re.sub(r"http\S+", "", text_comment)
+        # # delete urls
+        # text_comment = re.sub(r"http\S+", "", text_comment)
 
         # data pre-processing and cleaning
         tokenized_comment = nltk.word_tokenize(text_comment)
