@@ -430,7 +430,7 @@ def get_comment_sample_for_pair(pair_list: list,
     sample_size = min(sample_size, len(comments))
     sample = random.sample(comments, sample_size)
     if dir_path:
-        with open(dir_path + f"/sample_of_({pair_list[0]},{pair_list[1]})_size_{sample_size}_popu_{len(comments)}.txt", "w" ,encoding="utf-8") as f:
+        with open(dir_path + f"/sample_of_({pair_list[0]},{sample_size},{pair_list[1]})_size_{sample_size}_popu_{len(comments)}.txt", "w" ,encoding="utf-8") as f:
             i = 0
             for comment in sample:
                f.write(f"----------------------------------------Comment {str(i+1)}----------------------------------------\n" + comment + "\n")
