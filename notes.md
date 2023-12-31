@@ -124,4 +124,5 @@ word: vulnerability
 
 after this we already can start looking at the samples, as a representative sample is within the acceptable size (60-70 comments) and some insights are already revealed: 1. people don't know how the error are produced, might be helpful to provide the context of the error production and the meaning of different errors in different code context.
 
-one formative pair was removed: (error, code) ** not implemented due to uncertainty of effectiveness, need to be further confirmed and thought about **
+one formate pair was removed: (error, code) ** not implemented due to uncertainty of effectiveness, need to be further confirmed and thought about **
+
