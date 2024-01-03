@@ -124,7 +124,10 @@ word: vulnerability
 
 after this we already can start looking at the samples, as a representative sample is within the acceptable size (60-70 comments) and some insights are already revealed: 
 
-1. people don't know how the error are produced, it  might be helpful to provide the context of the error production and the meaning of different errors in different code context. [(error, code), ]
+1. people don't know how the error are produced, it  might be helpful to provide the context of the error production and the meaning of different errors in different code context. and among the different errors, the TypeError is one of the most asked about one. We all have encountered senarios in which the error stack refers deeply inside the library/pakcage. we want to provide a view for dataflow and data manipulation. meaning how the data is passed and tranformed within the process. By this we are able to findout the exact point of problem occurrence. 
+
+possible criteria: recovery data dependecies, and control sequences
+possible technique: 1. ART
 
 
 
