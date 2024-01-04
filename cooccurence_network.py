@@ -310,7 +310,8 @@ def get_cooccurence_pairs(corpus: [[str]], maximum_word_distance: int = 2):
                 
                 # add the words pair to the cooccurence_pairs_origin_issues dictionary
                 if words_pair in cooccurence_pairs_origin_issues:
-                    cooccurence_pairs_origin_issues[words_pair].append(issue_num)
+                    if issue_num not in cooccurence_pairs_origin_issues[words_pair]:
+                        cooccurence_pairs_origin_issues[words_pair].append(issue_num)
                 else:
                     cooccurence_pairs_origin_issues[words_pair] = [issue_num]
 
