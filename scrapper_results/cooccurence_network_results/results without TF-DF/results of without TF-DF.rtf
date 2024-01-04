@@ -1,0 +1,191 @@
+{\rtf1\ansi\ansicpg936\cocoartf2759
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww17340\viewh19180\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 (Scrapper) (base) zhangmengqi@arm64-apple-darwin20 Python code for scrapping github issues % /Users/zhangmengq\
+i/opt/anaconda3/envs/Scrapper/bin/python "/Users/zhangm\
+engqi/Documents/PhD/Working Documents/Deliverable 2/Pyt\
+hon code for scrapping github issues/cooccurence_networ\
+k.py"\
+[nltk_data] Downloading package punkt to\
+[nltk_data]     /Users/zhangmengqi/nltk_data...\
+[nltk_data]   Package punkt is already up-to-date!\
+[nltk_data] Downloading package stopwords to\
+[nltk_data]     /Users/zhangmengqi/nltk_data...\
+[nltk_data]   Package stopwords is already up-to-date!\
+[nltk_data] Downloading package wordnet to\
+[nltk_data]     /Users/zhangmengqi/nltk_data...\
+[nltk_data]   Package wordnet is already up-to-date!\
+\
+\
+------------------------getting cooccurence pairs-------------------------\
+\
+\
+extracting first comments...\
+100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 38019/38019 [00:20<00:00, 1861.05it/s]\
+\
+extracting cooccurence pairs...\
+100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 38019/38019 [00:09<00:00, 4183.25it/s]\
+\
+calculating pair counts of each word...\
+100%|\uc0\u9608 \u9608 \u9608 | 1384069/1384069 [00:00<00:00, 3125141.26it/s]\
+\
+\
+----------------------------finished---------------------------------\
+\
+\
+\
+------------------------getting cooccurence pairs-------------------------\
+\
+the most occured word pair is: \
+frozenset(\{'line', 'description'\}), occured 11240 times\
+\
+the word has the most total occurence is: line, occured 86404 times in 11028 pairs\
+the word occured in the most pairs is: line, occured 86404 times in 11028 pairs\
+the average number of pairs each word has is: 23.878\
+the average number of occurence each word has is: 66.474\
+the average number of occurence each pair has is: 2.784\
+\
+\
+----------------------------finished---------------------------------\
+\
+\
+saving variables to ./scrapper_results/cooccurence_network_results...\
+saved\
+\
+saving report to file...\
+saved\
+\
+loading variables from ./scrapper_results/cooccurence_network_results...\
+loaded\
+\
+getting origin issues of each pair...\
+100%|\uc0\u9608 \u9608 \u9608 \u9608 | 1384069/1384069 [00:02<00:00, 521850.90it/s]\
+\
+\
+---------------plotting interactive cooccurence network--------------\
+\
+generating html file...\
+100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 2000/2000 [00:00<00:00, 11185.17it/s]\
+number of nodes: 743 \
+number of edges: 2000\
+\
+------------------------------finished------------------------------\
+\
+\
+\
+---------------getting clusters from cooccurence network--------------\
+100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 2000/2000 [00:00<00:00, 105999.75it/s]\
+\
+\
+---------------important cluster cores in the network--------------\
+          count\
+error       106\
+tensor       84\
+pytorch      76\
+cc           63\
+model        56\
+code         54\
+test         54\
+bug          49\
+line         45\
+file         45\
+issue        40\
+function     37\
+\
+\
+---------------important surronding pairs around the clusters--------------\
+\
+\
+pair, count of total occurrence, count of occured issues\
+\
+word: error\
+(('error', 'code'), 2536) 665\
+(('error', 'reference'), 2073) 34\
+(('error', 'message'), 1896) 1328\
+(('error', 'following'), 1487) 1381\
+(('error', 'get'), 1157) 1031\
+\
+word: tensor\
+(('tensor', 'input'), 1148) 657\
+(('tensor', 'value'), 1000) 296\
+(('tensor', 'scalar'), 882) 136\
+(('tensor', 'shape'), 673) 259\
+(('tensor', 'output'), 508) 369\
+\
+word: pytorch\
+(('pytorch', 'version'), 1302) 1067\
+(('pytorch', 'using'), 789) 711\
+(('pytorch', 'bug'), 782) 750\
+(('pytorch', 'install'), 776) 565\
+(('pytorch', 'installed'), 773) 633\
+\
+word: cc\
+(('cc', 'ezyang'), 3184) 3152\
+(('cc', 'mruberry'), 1554) 1517\
+(('cc', 'mrshenli'), 1315) 1311\
+(('cc', 'gchanan'), 1201) 1192\
+(('cc', 'context'), 1013) 1013\
+\
+word: model\
+(('model', 'onnx'), 797) 527\
+(('model', 'pytorch'), 753) 599\
+(('model', 'gpu'), 559) 480\
+(('model', 'using'), 533) 460\
+(('model', 'load'), 475) 353\
+\
+word: code\
+(('code', 'error'), 2536) 665\
+(('code', 'file'), 1912) 129\
+(('code', 'following'), 1195) 1086\
+(('code', 'run'), 1065) 932\
+(('code', 'found'), 969) 121\
+\
+word: test\
+(('test', 'ci'), 2951) 1533\
+(('test', 'flaky'), 2938) 1501\
+(('test', 'failing'), 2276) 2224\
+(('test', 'disabled'), 2155) 2137\
+(('test', 'run'), 1979) 1857\
+\
+word: bug\
+(('bug', 'describe'), 7760) 7663\
+(('bug', 'reproduce'), 998) 976\
+(('bug', 'pytorch'), 782) 750\
+(('bug', 'using'), 620) 616\
+(('bug', 'trying'), 589) 589\
+\
+word: line\
+(('line', 'description'), 11240) 53\
+(('line', 'file'), 6804) 1036\
+(('line', 'first'), 5698) 107\
+(('line', 'entity'), 5004) 50\
+(('line', 'blank'), 3775) 50\
+\
+word: file\
+(('file', 'line'), 6804) 1036\
+(('file', 'entity'), 5001) 48\
+(('file', 'code'), 1912) 129\
+(('file', 'found'), 1625) 95\
+(('file', 'test'), 1302) 1267\
+\
+word: issue\
+(('issue', 'description'), 990) 970\
+(('issue', 'help'), 742) 421\
+(('issue', 'doc'), 469) 436\
+(('issue', 'please'), 403) 396\
+(('issue', 'note'), 372) 371\
+\
+word: function\
+(('function', 'call'), 397) 304\
+(('function', 'error'), 272) 178\
+(('function', 'tensor'), 267) 220\
+(('function', 'use'), 257) 238\
+(('function', 'line'), 251) 88\
+\
+\
+output sample origin issues of each pair in txt files...\
+done}

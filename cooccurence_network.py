@@ -542,4 +542,4 @@ if __name__ == "__main__":
             samples_of_issues_contain_pairs[word].append(sample)
     print("done")
 
-    print(cooccurence_pairs_origin_issue_index[frozenset(("error", "reference"))])
+    # print(cooccurence_pairs_origin_issue_index[frozenset(("error", "reference"))])
