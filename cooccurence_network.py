@@ -404,8 +404,8 @@ def get_cooccurence_pairs_origin_issues(cooccurence_pairs_origin_issue_index: di
     print("\ngetting origin issues of each pair...")
     for pair in tqdm(cooccurence_pairs_origin_issue_index):
         issue_nums = cooccurence_pairs_origin_issue_index[pair]
-        issue_contents = [issues_contents[i].comments[0].text_content for i in issue_nums]
-        cooccurence_pairs_origin_issues_issue_contents[pair] = issue_contents
+        issue_url_contents = [(issues_contents[i].url, issues_contents[i].comments[0].text_content) for i in issue_nums]
+        cooccurence_pairs_origin_issues_issue_contents[pair] = issue_url_contents
     return cooccurence_pairs_origin_issues_issue_contents
 
 def get_comment_sample_for_pair(pair_list: list, 
@@ -424,16 +424,16 @@ def get_comment_sample_for_pair(pair_list: list,
     if len(pair_list) != 2:
         raise Exception("pair must be a list of two words")
     pair_set = frozenset(pair_list)
-    comments = cooccurence_pairs_origin_issues_issue_contents[pair_set]
+    comments_url_content = cooccurence_pairs_origin_issues_issue_contents[pair_set]
     if sample_size is None:
-        sample_size = calculate_sample_size(len(comments), confidence_level, margin_of_error)
-    sample_size = min(sample_size, len(comments))
-    sample = random.sample(comments, sample_size)
+        sample_size = calculate_sample_size(len(comments_url_content), confidence_level, margin_of_error)
+    sample_size = min(sample_size, len(comments_url_content))
+    sample = random.sample(comments_url_content, sample_size)
     if dir_path:
-        with open(dir_path + f"/sample_of_({pair_list[0]},{pair_list[1]})_size_{sample_size}_popu_{len(comments)}.txt", "w" ,encoding="utf-8") as f:
+        with open(dir_path + f"/sample_of_({pair_list[0]},{pair_list[1]})_size_{sample_size}_popu_{len(comments_url_content)}.txt", "w" ,encoding="utf-8") as f:
             i = 0
             for comment in sample:
-               f.write(f"----------------------------------------Comment {str(i+1)}----------------------------------------\n" + comment + "\n")
+               f.write(f"----------------------------------------Comment {str(i+1)}----------------------------------------\nurl: " + comment[0] + "\n" + comment[1] + "\n")
                i += 1
     if log:
         print("finished")
@@ -536,3 +536,5 @@ if __name__ == "__main__":
                                                  margin_of_error=0.1)
             samples_of_issues_contain_pairs[word].append(sample)
     print("done")
+
+    print(cooccurence_pairs_origin_issue_index[frozenset(("error", "reference"))])

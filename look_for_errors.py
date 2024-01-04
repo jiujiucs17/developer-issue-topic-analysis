@@ -35,6 +35,8 @@ if __name__ == '__main__':
 
     # sort the errors by their appearence count
     sorted_errors = sorted(error_appearence_count.items(), key=lambda x: x[1], reverse=True)
+    # transofrm sorted errors into pd.dataframe
+    
     print(sorted_errors)
 
     # generate a histogram for the sorted errors
