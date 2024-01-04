@@ -21,11 +21,13 @@ class plots:
     unique_words_pair_count: pd.DataFrame
     showed_pairs: pd.DataFrame
     showed_pairs_dict: dict
+    word_pair_original_issues: dict
 
-    def __init__(self, cooccurence_pairs: dict, unique_words_significance: dict, unique_words_pair_count: dict):
+    def __init__(self, cooccurence_pairs: dict, unique_words_significance: dict, unique_words_pair_count: dict, cooccurence_pairs_origin_issue_index: dict):
         self.cooccurence_pairs = pd.DataFrame.from_dict(cooccurence_pairs, orient='index', columns=['count']).sort_values(by=['count'], ascending=False)
         self.unique_words_total_count = pd.DataFrame.from_dict(unique_words_significance, orient='index', columns=['count']).sort_values(by=['count'], ascending=False)
         self.unique_words_pair_count = pd.DataFrame.from_dict(unique_words_pair_count, orient='index', columns=['count']).sort_values(by=['count'], ascending=False)
+        self.cooccurence_pairs_origin_issue_index = cooccurence_pairs_origin_issue_index
 
     def plot_distribution_of_pairs(self, bins: int = 100):
         self.cooccurence_pairs.plot.hist(bins=bins, logy=True, title="Distribution of Pairs")
@@ -149,11 +151,13 @@ class plots:
             word_pairs = get_pairs_contain_word(self.showed_pairs_dict, word, sort=True)
             important_pairs[word] = list(word_pairs.items())[:5]
         print("\n\n---------------important surronding pairs around the clusters--------------")
+        print("\n\npair, count of total occurrence, count of occured issues")
         for word in important_pairs:
             print(f"\nword: {word}")
             for pair in important_pairs[word]:
                 # print the pair and its value
-                print(pair)
+                num_appeared_issues = len(self.cooccurence_pairs_origin_issue_index[frozenset(pair[0])])
+                print(pair, num_appeared_issues)
         return important_pairs
 
 def calculate_sample_size(population_size, confidence_level, margin_of_error):
@@ -487,7 +491,7 @@ if __name__ == "__main__":
     cooccurence_pairs_origin_issues_issue_contents = get_cooccurence_pairs_origin_issues(cooccurence_pairs_origin_issue_index, issue_contents)
 
     # generate interactive cooccurence network
-    plots_storage = plots(cooccurence_pairs, unique_words_total_occurence, unique_words_pair_count)
+    plots_storage = plots(cooccurence_pairs, unique_words_total_occurence, unique_words_pair_count, cooccurence_pairs_origin_issue_index)
     plots_storage.plot_interactive_cooccurence_network(dir_path=output_path, 
                                                        number_of_pairs=number_of_pairs, 
                                                        height="1250px", 
