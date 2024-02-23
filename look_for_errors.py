@@ -19,7 +19,7 @@ if __name__ == '__main__':
     list_of_errors = [item for item in dir(builtins) if item.endswith("Error") or item.endswith("Exception")]
 
     # Get a list of all exceptions in torch
-    list_of_errors  += [item for item in dir(torch) if item.endswith("Error") or item.endswith("Exception")]
+    list_of_errors += [item for item in dir(torch) if item.endswith("Error") or item.endswith("Exception")]
 
     # look for errors in issues
     print("looking for errors in issues...")

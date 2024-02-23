@@ -543,3 +543,11 @@ if __name__ == "__main__":
     print("done")
 
     # print(cooccurence_pairs_origin_issue_index[frozenset(("error", "reference"))])
+
+    # print the average occurrrence of each pair in the network
+    print("\n\n---------------average/median occurrrence of each pair in the network--------------")
+    print(sum(coocurence_pairs.values()) / len(coocurence_pairs))
+    print(pd.DataFrame.from_dict(coocurence_pairs, orient='index', columns=['count']).sort_values(by=['count'], ascending=False).median())
+    # print the average occurrence of pairs contain "error" in the network
+    print("\n\n---------------average occurrence of pairs contain \"error\" in the network--------------")
+    print(sum(get_pairs_contain_word(coocurence_pairs, "error").values()) / len(get_pairs_contain_word(coocurence_pairs, "error")))

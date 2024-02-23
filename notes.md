@@ -144,3 +144,70 @@ one formate pair was removed: (error, code) ** not implemented due to uncertaint
 
 ## limitation:
 the comments comtain a lot of bug discriptions, which are a little bit less useful for us. However, it's also not make sense for us to delete all comments contain bug discription because this is a big part of the issues' functionalities.
+
+
+## the selection of tools:
+
+by performing the snowballing of two literatures, going through all papers that are citing them in the hope of finding a newer technique that is closer related to our research question (dataflow architecture recovery)
+
+several freqently encountered topics:
+- reflection modeling: 1. need to see what is the specific technique used in recovering the implemented technique; 2. need to see what do the connectors in the models contain, do they contain information related to dataflow?
+
+detecting abstract datatypes and state encapsulation:
+- identify abstract data types (ADT) and abstract state encapsulations (ASE, also called abstract objects) in source code. This approach, named similarity clustering, groups together functions, types, and variables into ADT and ASE candidates according to the proportion of features they share
+- is also a type of clustering technique
+- perhaps would like to select a newest one among the sililar topic papers, and compare with other types of techniques.
+
+
+## big picture of the architecture view:
+
+on the basis of a class/function diagram, in diagram, loops connecing different class/functions would indicate the dataflow, the dataflow loops 
+1. have start-points which are the argument of user called functions 
+2. and end-points which are the returned value of the called functions. in the middle of the loops, 
+3. the dataflow line would show how data is transformed at each node (input and output format, data assertions, ideally with explaination of the format/assertion, and the function)
+4. it also shows the in-memory status of the dataflow (indicating at each stage if new memory is assigned or shallow copying is happening, etc)
+
+remaining questions: 
+    1. the scope of included functions/classes
+        a) torch.nn(20k+ LOC): too complex, maybe too much work for manual recovery
+        b) torch.nn.functional(4624 LOC): there's no classes defined in the file, potentially introduce difficulty for constructing class diagram.
+        c) torch.autograd(7340 LOC): moderate difficulty for manual recovery, the problem is that most classes and functions are not likely to be frequently accessed by end-user programmers, which means that they are likely to be part of the bigger loops. However, this could be defended by 1. loops are always composed by numerous smaller loops. 2. the torch.autograd is the third most mentioned module name. and second mentioned second level module name. some classes/functions are interface between python and C (inherit _C.**)
+
+        the next step would be using the automated tools to fisrt generate class/function diagrams. possible tool: Pyreverse based on Pylint
+    2. how to define the "data" being tracked in the loop, as data would be contantly transformed in the loop. 
+        one possible definition: the variable and the variable (partially) directly generated from it.
+        another definition: the in-memory data object that created (partially) with in-memory data object that's already in the dataflow loop.
+    3. how does memory management work in python:
+        a) count the reference number
+        b) delete unreferenced in-memory data object immediately
+    4. create an indicative diagram 
+
+    5. risk: there are some 
+
+
+** nest network could be the solution for the later automate-creation of a network.
+
+
+investigation and trials/errors shows that exsiting tools (pyan3, pycallgraph, cprofil+gprof2dot, pycallgraph2) don't fit the purpose of creating a static callgraph that shows all calling/datapassing relationships within the package.
+
+experiences:
+pyan3: unmaintained with bugs, after fixing the most obvious bug, it's still not compatible with torch. potentially because it's outdated and not support some newer python features the torch used.
+
+pycallgraph: no longer maintained and with it's error that stops itself from being installed in an newer python env (3.9+), tried both pip and conda, getting the same result
+
+cprofile+gprof2dot: only generate the actual run code, not able to provide all relationships within the package. However, this could be useful in the development of automated dataflow error exposure tool.
+
+pycallgraph2: similarly, not able to create a static callgraph that shows all the relationships, it can only provide the runned functions and monitors it's process.
+
+
+today we realized the difference between "module" and "(sub)package". modules would be .py files, while (sub)packages have to be folders that contain a __init__.py even though this file could be empty after certain version of python.
+
+we have created a file structure network, next step would be adding edges representing importing as a approximate of the call graph. currently we loaded the importing sentences for all modules into an excel file with the help of package: "ast" and "pkgutil". The problem is that the information provided by these two packages are not sufficient enough to identify the modules of some imported functions and classes, the next step would be manually check those information and adding edges to the network, forming some loops
+
+
+
+
+
+# the creation of a prototype architecture representation of PyTorch
+
+## clustering of the network (call graph)
