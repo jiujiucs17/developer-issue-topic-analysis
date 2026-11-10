@@ -37,7 +37,13 @@ if __name__ == '__main__':
     sorted_errors = sorted(error_appearence_count.items(), key=lambda x: x[1], reverse=True)
     # transofrm sorted errors into pd.dataframe
     
-    print(sorted_errors)
+    # print(sorted_errors)
+    sum = 0
+    for error in sorted_errors:
+        print(error)
+        sum += error[1]
+
+    print("Total number of errors: ", sum)
 
     # generate a histogram for the sorted errors
     sorted_errors_names = [item[0] for item in sorted_errors]

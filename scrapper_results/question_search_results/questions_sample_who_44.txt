@@ -1,56 +1,34 @@
 
- --------- @mrshenli do you have an idea of who should take a look at this issue?
+ --------- who are we?
+
+ --------- any of the great people who made those changes can help?
+
+ --------- backward function, i received an error message:
+
+but, when added the parameter,  my training process has met a trouble that, the time consumed each iteration endlessly increasing!  the snapshot is like below:
+
+so, why did this happen?   anyone who also ever met this could give me a hand?
+
+ --------- who can provide some examples of this?
+
+ --------- who can give me some guidance?
+
+ --------- py_location/dist/lib'
+could anyone who meet it and deal with it?
 
  --------- however, an error occurs when i tried to run this quantized model:
 
 
 is there anyone who may help me?
 
- --------- is there anybody who experiences memory leak like above??
-
- --------- who has any solutions, or has anyone written a layer to convert group deconvolution?
+ --------- this is a massive waste if you just want to work on python code, since you aren't going to need to rebuild anything in this case, why do you have to wait hours just to get started on your patch?
+can we provide precompiled binaries for pytorch developers who do not need to rebuild c++?
 
  --------- is there anyone who can tell me about what i'm missing?
 
- --------- who can explain it ?
-
- --------- who fan btw?
-
- --------- py_location/dist/lib'
-could anyone who meet it and deal with it?
-
- --------- any of the great people who made those changes can help?
-
  --------- @vitaly-fedyunin, @ejguan: as module owners, who is the right poc to do this stuff?
 
- --------- who can provide some examples of this?
-
- --------- who can give me some guidance?
-
- --------- to("cuda:0),
-but in fact the model  run in cuda:0 and cuda:1 simultaneously,
-i can not understand why?
-or my code is error?
-who can tell me some information about solve it?
-
- --------- who can explain it?
-
- --------- format(pids_str)) from e
-runtimeerror: dataloader worker (pid(s) 8052) exited unexpectedly
-everytime i try to run this code i gets the same error even tough the guy who taught me this code in his pc he is not getting any error can anyone please help me?
-
- --------- we also need each project that receives coupon codes and/or validation codes
-to tell us these numbers (preferably within 30 days of getting the codes):
-
-how many tokens did you distribute from just google? from just github?
-how many people received tokens from just google? from just github?  from both?
-how many people didn’t have hardware tokens they used for oss who received tokens from just google? from just github? from both?
-
- --------- is there anyone who have searched about it or known something else?
-
- --------- i am helpless now, who has good advice?
-
- --------- who konws how to solve the problem?
+ --------- so, i don't know where's wrong? who can tell me why this happened? and any suggestions?
 
  --------- com/pytorch/pytorch/blob/d16c2c36ad0a78419db9b95622bf62274aa692f9/workspace), causing the shas to change
 mitigation
@@ -59,7 +37,105 @@ moved jobs to unstable, contacted github who rolled back the change
 prevention/followups
 how do we prevent issues like this in the future?
 
+ --------- who konws how to solve the problem?
+
+ --------- com/pytorch/pytorch#from-source
+to also include 'update' from source instructions for those who already have the source checked out and built it?
+
+ --------- memory used monitor:
+
+node shm used monitor, the pod's shm is set by node host's total shared memory by mount the /dev/shm:
+
+this worker failed and i didn't found out of shm or memory, i do not known what's the problem, who can help me?
+
+ --------- is there anybody who succeed in converting caffe2 model to caffe?
+
+ --------- format(pids_str)) from e
+runtimeerror: dataloader worker (pid(s) 8052) exited unexpectedly
+everytime i try to run this code i gets the same error even tough the guy who taught me this code in his pc he is not getting any error can anyone please help me?
+
+ --------- com/gh/pytorch/pytorch/3507660?utm_campaign=vcs-integration-link&utm_medium=referral&utm_source=github-build-link/console
+
+@suo do you know who should take a look?
+
+ --------- is there anyone who knows how to solve this problem? or how to make a pytorch-onnx-caffe2 model
+run on gpu?
+
+ --------- who can tell me which reason causes this error?
+
+ --------- is there someone who ever encounterd this problem?
+
+ --------- py", line 297, in forward
+out_vars, _ = _flatten(out)
+runtimeerror: only tuples, lists and variables supported as jit inputs, but got int
+terminated
+who ever encountered this problem?
+
+ --------- )
+after solution is found, document this, present this to the team and lead discussion on feedback collection to find out:
+
+when we start collecting feedback?
+how often do we want feedback?
+how we will process it?
+who/what will send it?
+
+ --------- is there anyone else on the quantization team who can help?
+
+ --------- dir/all] error 2
+make: *** [all] error 2
+who can help me ?
+
+ --------- is there anyone who can help me figure this out?
+
+ --------- anybody who can help me and solve this problem?
+
+ --------- to("cuda:0),
+but in fact the model  run in cuda:0 and cuda:1 simultaneously,
+i can not understand why?
+or my code is error?
+who can tell me some information about solve it?
+
+ --------- i am trying to install pytroch from source code and i met an error while compiling:
+
+here are the commands i ran:
+
+is there anyone who know how to fix this error?
+
+ --------- 🐛 describe the bug
+
+@cpuhrsch do you know who the right person for this is?
+
+ --------- @mrshenli do you have an idea of who should take a look at this issue?
+
+ --------- is there anybody who experiences memory leak like above??
+
+ --------- open questions
+
+investigate impact of missing nccl support (who needs it? is it important for windows to support it?)
+if nccl support is important for windows, are there any blockers? what needs to be done to support it?
+
+ --------- perhaps @kimishpatel has some suggestions or thoughts on what to look at (as user who made the aforementioned commit)?
+
+ --------- i am helpless now, who has good advice?
+
+ --------- a segfault (who knows??
+
+ --------- who has any solutions, or has anyone written a layer to convert group deconvolution?
+
+ --------- who fan btw?
+
+ --------- who can explain it?
+
+ --------- is there anyone who have searched about it or known something else?
+
  --------- i meet a error ,who know how to deal with it  ?
+
+ --------- we also need each project that receives coupon codes and/or validation codes
+to tell us these numbers (preferably within 30 days of getting the codes):
+
+how many tokens did you distribute from just google? from just github?
+how many people received tokens from just google? from just github?  from both?
+how many people didn’t have hardware tokens they used for oss who received tokens from just google? from just github? from both?
 
  --------- so
 clang: error: linker command failed with exit code 1 (use -v to see invocation)
@@ -71,80 +147,4 @@ make: *** [cmtc_6e6f4/fast] error 2
 what should be the approach in debugging the problem here?
 anyone who has faced similar issues?
 
- --------- is there someone who ever encounterd this problem?
-
- --------- )
-after solution is found, document this, present this to the team and lead discussion on feedback collection to find out:
-
-when we start collecting feedback?
-how often do we want feedback?
-how we will process it?
-who/what will send it?
-
- --------- who can tell me which reason causes this error?
-
- --------- com/gh/pytorch/pytorch/3507660?utm_campaign=vcs-integration-link&utm_medium=referral&utm_source=github-build-link/console
-
-@suo do you know who should take a look?
-
- --------- perhaps @kimishpatel has some suggestions or thoughts on what to look at (as user who made the aforementioned commit)?
-
- --------- this is a massive waste if you just want to work on python code, since you aren't going to need to rebuild anything in this case, why do you have to wait hours just to get started on your patch?
-can we provide precompiled binaries for pytorch developers who do not need to rebuild c++?
-
- --------- open questions
-
-investigate impact of missing nccl support (who needs it? is it important for windows to support it?)
-if nccl support is important for windows, are there any blockers? what needs to be done to support it?
-
- --------- is there anybody who succeed in converting caffe2 model to caffe?
-
- --------- so, i don't know where's wrong? who can tell me why this happened? and any suggestions?
-
- --------- i am trying to install pytroch from source code and i met an error while compiling:
-
-here are the commands i ran:
-
-is there anyone who know how to fix this error?
-
- --------- py", line 297, in forward
-out_vars, _ = _flatten(out)
-runtimeerror: only tuples, lists and variables supported as jit inputs, but got int
-terminated
-who ever encountered this problem?
-
- --------- is there anyone else on the quantization team who can help?
-
- --------- a segfault (who knows??
-
- --------- backward function, i received an error message:
-
-but, when added the parameter,  my training process has met a trouble that, the time consumed each iteration endlessly increasing!  the snapshot is like below:
-
-so, why did this happen?   anyone who also ever met this could give me a hand?
-
- --------- anybody who can help me and solve this problem?
-
- --------- memory used monitor:
-
-node shm used monitor, the pod's shm is set by node host's total shared memory by mount the /dev/shm:
-
-this worker failed and i didn't found out of shm or memory, i do not known what's the problem, who can help me?
-
- --------- is there anyone who can help me figure this out?
-
- --------- 🐛 describe the bug
-
-@cpuhrsch do you know who the right person for this is?
-
- --------- who are we?
-
- --------- com/pytorch/pytorch#from-source
-to also include 'update' from source instructions for those who already have the source checked out and built it?
-
- --------- is there anyone who knows how to solve this problem? or how to make a pytorch-onnx-caffe2 model
-run on gpu?
-
- --------- dir/all] error 2
-make: *** [all] error 2
-who can help me ?
+ --------- who can explain it ?

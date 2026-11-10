@@ -1,287 +1,277 @@
 
- --------- _jit_pass_custom_pattern_based_rewrite_graph
-?
+ --------- is there a solution for that?
 
- --------- com/groups/329222650990087/permalink/715063122406036/?
+ --------- we are looking for feedback on
 
- --------- to reproduce
-if the data class is inherited from namedtuple, fx-tracing works:
+is this workflow suitable for your needs?
+is this sufficient for creating sparse and quantized models?
+are the operators that we plan to support a good match for what you need?
 
-however, if the data class is inherited from object, fx-tracing doesn't work:
+ --------- and why would tensor c (also empty) be coalesced and return a correct indices() (even though coalesce on a regular empty tensor also throws)?
 
-expected behavior
-should both cases work the same with fx, or is the 2nd case explicitly not supported?
-
- --------- so we should probably look inside tuples as well?
-
- --------- log
-
-am i missing something ?
-
- --------- 0?
-
- --------- any other fast method ? how to get cudatensor data fastly?
-
- --------- train()?
-
- --------- what is the reason?
-
- --------- which loop?
-
- --------- could you please help me ?
-
- --------- so is it possible to apply the same mechanism on slicing?
-
- --------- how to solve the problem?
-
- --------- i got this error when trying to build pytorch from master
-
-since for some time building pytorch also means to build   caffe2 is there any easy way to control where the the caffe2 installation look for libraries?
-
- --------- celery )?
-
- --------- list need to be on the same line as the variable declaration?
-
- --------- is it true that clipping gradients is right now not supported with the cpp api?
-
- --------- html?
-
- --------- gather(output_tensors, input_tensors, opts) 
-
-
-
-
-
-as mentioned before, in sub_pg, there is no notation about world rank, but here pass the world rank instead of local one, why?
-
- --------- why is this?
-
- --------- py
-or is there a more pytorch-esque way to accomplish gradient reversal?
-open to a pr?
-
- --------- if the worker can continue to run even though it dose not receive the gradients from all other workers, how to guarantee the parameters of all workers are same?
-
- --------- is there an option/flag to disable this selection during the make process?
-
- --------- how can i add symbolic and where i can do it?
-
- --------- cuda() behind the loop, everything will run fine like
-
-does anyone have a solution for that problem?
+ --------- is there any solution for this?
 
  --------- 🐛 describe the bug
 can this cudadevicesynchronize call be removed?
 
- --------- com/pytorch/pytorch/runs/5796183331?
+ --------- )
+can we / should we check parameters inside sdpa and use proper sdpa formal parameter names?
 
- --------- sept 6 - 9:27pm began
-sept 7 - 5:30am detected
-sept 7 - 8:00am root caused, sev created
-sept 7 - 9:30am mitigated by sourceforge
+ --------- can someone tell me how to solve this?
+
+ --------- 1 or there is a pre-built package somewhere?
+
+ --------- any thoughts?
+
+ --------- will someone share this example?
+
+ --------- 🐛 describe the bug
+why swa_utils implement swa different from the original paper?
+
+ --------- com/gh/pytorch/pytorch/3404073?
+
+ --------- but how can i operate on conv kernels ops in pytorch ?
+
+ --------- pt file and i need to load another one into the same model,
+should i operate the model release process to avoid memory leak?
+
+ --------- html works, so i am guessing that the certificate expired again for latter url?
+
+ --------- py?
+
+ --------- any thoughts @ezyang, @ngimel, @jansel, @chillee?
+
+ --------- does anyone have softmax3d layer?
+
+ --------- 0?
+
+ --------- 10/30 7:27a incident began
+10/30 8:30a detected by 
+10/30 9:00 pm root caused as…
+10/30 9:10 pm mitigated by…
+10/31 10: am closed by…
+
+
 user impact
-multiple jobs failing with error above
+how does this affect users of pytorch ci?
 root cause
-sourceforge outage
+what was the root cause of this issue?
 mitigation
 how did we mitigate the issue?
 prevention/followups
 how do we prevent issues like this in the future?
 
- --------- compile(model,backend="onnxrt_cpu",mode="max-autotune")
-here an export for onnx?
+ --------- html?
 
- --------- 13 :
+ --------- 0 build wasn't getting updated anymore just to discover that
 
-is there any fix plan soon to put back the support of avgpool2d onnx  operator when ceil_mode=true ?
+what can be done to restore the support for sm_61 in nightly?
 
- --------- so why does this problem occur? and how to fix it correctly?
+ --------- i want to know what causes it?
 
- --------- here, what's the priority inner of [0] or [1] or [2]?
+ --------- and there have been further feature requests for more reduction options such as
 
- --------- com/suchith0312/pytorch-dataloader-testing?
+logsumexp
+indices for max and min
 
- --------- please comment on this rfc:
+could we deprecate the "reduce" flag of scatter and redirect to scatter_reduce instead?
 
-how should we establish explicit test ownership?
+ --------- so, i am wondering, maybe there are some possibilities to implement some sort of hook synchronization mechanism across distributed model replicas?
 
- --------- i wonder how these two types of convolutions work differently? or what should i refer to?
+ --------- ❓ questions and help
+is there any way to restrict the cpu usage?
 
- --------- something like
+ --------- so is this behavior expected or it's actually a bug?
 
-(maybe it should be more than this?
+ --------- can you tell me the reason of situation?
 
- --------- cc @ezyang @gchanan @zou3519 @jerryzh168 @ssnl @alband @gqchen @vitalyfedyunin @ngimel @mruberry @ifedan @ilia-cher
-what do you think is the way forward for this? does any of you have some bandwidth to look into these and fix them?
+ --------- can u give more suggestions?
 
- --------- and it probably tries to do an equal split?
+ --------- @voznesenskym you had an idea how to address that?
 
- --------- what is the point of prefetch_factor?
+ --------- is this still correct?
 
- --------- ai say that 'caffe2 apis are being deprecated', is this mean caffe2 is abandoned or other mean?
+ --------- then loading the dll with loadlibrarya prompted the following error:
+unable to locate program input point
+?dispatchkeysettodispatchkey_@dispatchkeyextractor@c10@aeba?
 
- --------- cpp for avx2
+ --------- two questions:
 
+can they be move to the same resources?
 
-how could i test my implementation? there is remap function in opencv to test the forward correctness, but how about the backward?
+ --------- how could this be?
 
- --------- 🚀 feature
-can these private push_back functions be made public?
+ --------- com/file/d/1l8pvfz6zeexvtg5aztppbo_st7opnqzt/view?
 
- --------- why? how did it happen?
+ --------- i suspect something is up with #42136 (@seemethere, do you know how to check if the jobs that pr introduced are running?
 
- --------- how to prevent shared libraries from allocating memory in gpu?
+ --------- is this behavior intentional?
 
- --------- step() to be a no-op
+ --------- ❓ questions and help
+i updated my pytorch by
 
+but i got the next error message,
 
+where is the zero_gradients method ?
 
-the user can specify only a subset of parameters into optimizer, or have multiple optimizers optimizing a possibly overlapping subset of model parameters, how will this be supported?
+ --------- 2) supported for building from source?
 
- --------- why is this issue not in transformers repo?
+ --------- com/pytorch/pytorch/runs/4999049430?
 
- --------- __doc__ should be none as well?
+ --------- 9999998807907104f ?
 
- --------- anybody help me?
+ --------- com/pytorch/pytorch/runs/3930703784?
 
- --------- i only installed caffe2 because i wanted to use detectron, can i use it with pytorch without the need of caffe2?
+ --------- how?
 
- --------- com/pipelines/github/pytorch/pytorch/432203/workflows/df2e1415-4576-4551-a5a5-de4898c7b907/jobs/16907391?
+ --------- is there a way to create eye matrix that can be converted to onnx?
 
- --------- so,please tell me how can i fix this?
+ --------- com/wwdc23/10050?
 
- --------- compile first and then wrap the calls with autocast / no_grad?
+ --------- after compiling pytorch on tx2 and run the model, i meet the following error:
 
- --------- do you have plan to add it or want others to add it?
+the model is running on cpu only
+what is the problem?
 
- --------- 1]:3210: connection refused
-aborted (core dumped)
-is anyone know what is going on? and how to fix it?
+ --------- disable for now to reduce s2n ratio in ci?
+
+ --------- com/pytorch/pytorch/runs/5877098426?
+
+ --------- will the next version of libtorch provide modules instead of header files in the c++20 standard?
+
+ --------- html?
+
+ --------- com/pytorch/pytorch/runs/4773322940?
+
+ --------- 2xlarge) workflow, which is currently on the unstable workflow (moved in #95002 due to some other test causing seg faults?
+
+ --------- how can i solve it?
+
+ --------- lstm() ?
+
+ --------- mitigation
+how did we mitigate the issue?
+prevention/followups
+how do we prevent issues like this in the future?
+
+maybe the fix is to flip switch and go back to circle
+go to gh and ask for capacity
+figure out why we were hitting capacity anyway: why did we run into a capacity problem in the first case? did gh never give us the runners?
+
+ --------- should c /= c[:,-1:] be reliable?  if not, would it be reasonable to warn on such operations?
+
+ --------- for the record: commit 4bed1c4d7, master is on commit f7b12a9
+config part of build log:
+
+expected behavior
+a successful build?
+
+ --------- is it expected behavior?
+
+ --------- how can i generate more info?
+
+ --------- is this return in line with expectations?
+
+ --------- generator(int n, *, generator? generator, scalartype? dtype=none, layout? layout=none, device? device=none, bool?
+
+ --------- would it be of interest if i created a pr to add this functionality?
+
+ --------- is there a need for a global sync after the local comm init completed?
+
+ --------- do you have any suggestions?
+
+ --------- could autograd use this formalism, either explicitly or implicitly, to ensure its correctness on operations with sparse tensors?
+
+ --------- could you give me some advices?
+
+ --------- i am getting this error
+runtimeerror: $ torch: invalid memory size -- maybe an overflow?
+
+ --------- i want to know, is this behavior allowed and normal?
+
+ --------- did you forget to add @script or @script_method annotation?
+
+ --------- html
+do you have any suggestions of how to solve my issue?
+
+ --------- 0 was added in conda couple days ago?
 
  --------- py?
 
- --------- is this intentional? is the decorator just not supported by multi gpu training?
+ --------- can be mitigated by detaching the tensor before interacting with it:
 
- --------- isinstance instead of python's isinstance?
+is it related at all to this "fails first time, works second time" bug?
 
- --------- what do you think?
+ --------- com/gh/pytorch/pytorch/13179?
 
- --------- sh :
+ --------- is this by design as pickler only works for statically allocated strings? or is there a way to correctly add dynamically allocated strings? (and all other types listed here)?
 
-error when compiling (i assume because cuda also included dynamic libs):
+ --------- should pytorch not handle the choice ( serialized conv, or fft conv) internally?  or should this issue be a torchaudio issue?
 
-am i supposed to pass nvcc build options too?
+ --------- how can i use the "clamp“ correctly?
 
- --------- aspx?
+ --------- user impact
+how does this affect users of pytorch ci?
 
- --------- i was wondering what the reason was behind removing boolean support?
+ --------- am i missing something? why do i see an increase in the rtt?
 
- --------- if i copy-paste implementation of  pytorch/aten/src/aten/quantized/ and make it work with custom fp4 type that should work for end-to-end training, right?
+ --------- com/pytorch/pytorch/runs/6512197886?
 
- --------- 🐛 bug
-i try to convert a simple gru module to torch script, but it gives the following error, for both tracing and scripting:
+ --------- i have tried to set the batch size to 1 and num_workers to 0 but i get the following error when i do:
 
-am i missing something completely obvious?
+any idea how to fix this?
 
- --------- 1
-dataloader with num_workers=8
-any suggestions?
+ --------- can we introduce some type alias int_or_inttuple or something in this spirit?
 
- --------- c:18
-it mean the memory is not enough?
+ --------- i'm just worrying, why does it behave in such way?
 
- --------- html?
+ --------- if this definition is a must, what documentation can i refer to get it passed correctly?
 
- --------- like seriously, what is all this?
+ --------- did you run some cuda functions before calling numcudadevices() that might have already set an error?
 
- --------- _jit_pass_peephole
-?
+ --------- during training my training and validation set accuracies are fairly high in the regions of 99% for both sets, however when i attempt to test my model on a number of unseen test images, i always get the same label? would you know what the reason for this is?is this a bug?
 
- --------- so if there is no way to export any pytorch gradient calculations, is this planned for the feature?
+ --------- so finally i have some questions:
 
- --------- conj()
-so it seems that 0 is not handled for the derivative??
+was the caffe2 installation successful?
 
- --------- cc @ezyang @gchanan @zou3519 @alband @mruberry @jbschlosser @walterddr @kshitij12345 @saketh-are would you be the right owner? is this nn related?
+ --------- is it possible to convert a halftensor to/from a numpy array like you can with floattensor?
 
- --------- hi, could pytorch construct a network that is all artificial?
+ --------- anyone know how the nightly version of libtorch is built and what are the flags used to build?
 
- --------- so why does this problem happen? does this mean one cannot use two consecutive in-place operators with caffe2? if so, why? if not, what operators are allowed to use in such cases?
+ --------- 2404, device=‘cuda:0’)
+why would the unused parameters affect the outcome of the forward pass?
 
- --------- open questions
-does this need to live in core or should we have a side repo for it?
-do we want to support view/inplace in the first version?
-do we want to simplify "saving for backward" by just cloning in the first version?
+ --------- c:510: error:14077410:ssl routines:ssl23_get_server_hello:sslv3 alert handshake failure>
 
- --------- native declaration:
-- func: zeros(int[] size, *, scalartype? dtype=none, layout? layout=none, device? device=none, bool?
+any idea what the problem is?
 
- --------- currently:
+ --------- com/pytorch/pytorch/runs/6380089574?
 
-question pops up: is it int64? or is it somehow float, but exactly representing an integer?
+ --------- why do we see this poor performance in gemms, and how can we avoid this poor performance?
 
- --------- is it b(atch)t(ime)c(hannels)?
+ --------- com/drive/170chg9bbvoc9wihxmhuhz3ezjpnfpehv?
 
- --------- yaml to take tensor(a!)?
+ --------- the fact that the backward function is an error is not enough as other ops following the faulty one are going to happily generate non-floating point tensors that require gradients:
 
- --------- my gpu is 1060 with 6g memory ,how did that come?
+faulty ops:
 
- --------- ?
+argmax
+argmin ?
 
- --------- 4
-cmake version:
-build command you used (if compiling from source):
-versions of any other relevant libraries:
-how could i use caffe2 in pytorch ,what's the api to use caffe2???
+ --------- how is this done?
 
- --------- can anyone help?
+ --------- how to perform quantization of a model in pytorch?
 
- --------- if my claim is true, maybe we could update the reference (i'm not sure what that would be) or include the above version in the sgd code (i can take this up if necessary)?
+ --------- should operatorname really be a pair of std::string? what about a schema string?
+after variabletensorid was added, we can get rid of unboxedautogradkernels_ and friends, right?
+why are there multiple mutexes in operatorentry?
 
- --------- when i start the compilation, it abruptly stops here:
+ --------- logical layouts in other contexts
 
-how can i fix this?
 
- --------- html?
+could it include a visual explanation of what dimensions are aggregated over?
 
- --------- com/gh/pytorch/pytorch/4856228?
+ --------- 1, i get the following error:
 
- --------- did i focus on the wrong c file or should i do other things to print things out?
-
- --------- why a normal distribution  return a  probability > 1 sometimes ?
-
- --------- trace(model, example_kwarg_inputs=input_dict, strict=false)
-i got this error:
-
-the error is occurred on mod(**input)
-could you please help me check this error?
-
- --------- what caused this?
-
- --------- org/build2/pytorch-nightly?
-
- --------- h"`
-anyone may help me with it?
-
- --------- what is the cause of this please ?
-
- --------- i install running these commands:
-
-things look fine as it installs but then i run into the following errors, ending in the process terminating with error relating to gcc?
-
- --------- start()
-does anyone have an idea of what is happening and how to fix it?
-
- --------- 🐛 describe the bug
-
-produces
-
-it looks like the bias isn't getting sharded or something?
-
- --------- is it possible to update the default value from '9' to '13' for this parameter?
-
- --------- "detached"?
-
- --------- is there someone who ever encounterd this problem?
-
- --------- 1?
+how can i fix that?

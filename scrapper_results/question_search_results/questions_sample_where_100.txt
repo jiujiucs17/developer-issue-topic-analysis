@@ -1,97 +1,191 @@
 
- --------- the torch_library macro is defined as following:
-#define torch_library(ns, m) \   static void torch_library_init_ ## ns (torch::library&); \   static torch::detail::torchlibraryinit torch_library_static_init_ ## ns ( \ torch::library::def, \ &torch_library_init_ ## ns, \ #ns, c10::nullopt, __file__, __line__ \   ); \   void torch_library_init_ ## ns (torch::library& m)
+ --------- onnx format
+but when i run  my inference session in onnxruntime using the command :
 
 
-the questions are as following, could anyone give some answer ?
-q1: where is the implementation of torch_library_static_init_xxx static function ?
 
- --------- this is not inline with the api definition where dtype is specified as an optional arg
-- func: empty_quantized(int[] size, tensor qtensor, *, scalartype? dtype=none, layout? layout=none, device? device=none, bool? pin_memory=none, memoryformat?
+iam getting the following error :
 
- --------- relu(input)
-"cuda error: no kernel image is available for execution on the device"
-what is kernel image ? where can i recreate that?
+can anyone please tell me where iam going wrong?
 
- --------- here's a toy example:
+ --------- (see this discussion where @ptrblck appears to confirm this)
+am i correct in saying that this documentation is incorrect or am i misunderstanding it?
 
-and the output is
+ --------- com/jerryzh168/pytorch/tree/fb09fd4ab4ba618db148f9dfc035be589efb9355/torch/fx/experimental/fx2trt
+which persist of fx2trt tool, where does it goes in main stream pytorch code?
 
-however, if i pull the inner backward call out, then (obviously) the backward goes through without a problem:
+ --------- additional context
+this seems to be a gap in ddp where it doesn’t support running backward twice?
 
-are we allowed to call backward of another function inside a backward? where is the error coming from?
+ --------- where are they coming from?
+
+ --------- is there any easy way on finding out where the c++ implementations are ?
+
+ --------- py", line 78, in get_grid
+raise runtimeerror("where are you running this?
+
+ --------- cc @ezyang @gchanan @zou3519 @yf225  that last modified this test, any idea where this could be coming from?
+
+ --------- flip works differently on "cpu" and "mps" devices:
+flip by first dimension  on cpu
+
+returns expected result:
+
+flip on mps
+
+returns different result:
+
+where internal element's content is reverted
+is this expected?
+
+ --------- 1
+i want to save torchscipt model:
+
+the same as the tutorials,but has the error:
+
+where am i wrong??
+
+ --------- do you have any insights about where it goes wrong?
+
+ --------- 1-cudnn8-rutime  cant read gpu ,why? where i can see the docker file?
+
+ --------- where can i found the content or what should this line correct to?
+
+ --------- could i get some guidance on where to look for such functions or how i could mitigate this error?
+
+ --------- (some definition);
+tensor var3;
+i want var3 to be the concatenation tensor of var1 and var2
+what is the command for that and where can i find a list of possible commands?
+
+ --------- run?
+if i try to switch from launch to run a very basic program fails, as it no longer sets --local_rank like it did with launch, where is the updated code on how one needs to write their dist programs?
+
+ --------- for example, here is a recent backtrace i got from a test:
+
+do you know where the data for this tests lives?
+
+ --------- should this default be revisited and the cases where nans in testing results expected/tolerated explicitly marked?
+
+ --------- yet, i can't find the transformers in nn module, where are they?
+
+ --------- so where can i get the api description of caffe2 op?
+
+ --------- currently, if a function has one overload where an argument type is dimname[1], and another overload where that argument is int[1]?
+
+ --------- i want to know how ops are registered to atendispatch's op_tables_;
+i see atendispatch has registerop/registervariableop interface, but not found code that these interfaces are called to register ops;
+is atendispatch use the global static varable to trigger the registration like c10_declare_registry  mechanism？
+i see the code below, but cannot find where "aten::linear(tensor input, tensor weight, tensor?
+
+ --------- com/mfatthieubizien/97b86866e1dfb40872306c58544366e4/revisions
+additional questions
+
+is there a workaround?
+what performance impact can i expect?
+if i want to patch that, where should i look?
+
+ --------- is there something wrong with the specific usage of where?
+
+ --------- where?
+
+ --------- where is the the  caffe2 folder(within pytorch ) right now?
+
+ --------- some part of the system obey our old convention, where we use tensor to represent both tensor and tensor?
+
+ --------- it would be very useful to have high level autograd functions such as:
+
+jacobian
+hessian
+jvp
+vjp
+
+the questions are:
+
+where should they go?
+
+ --------- i am not able to understand different terms used while raising issues(even the good first issues)
+, but i seriously want to contribute to this repo, can you tell me where to start??
+
+ --------- ❓ questions and help
+i updated my pytorch by
+
+but i got the next error message,
+
+where is the zero_gradients method ?
+
+ --------- where should i clone from, and is there plans to set up a seperate, stand-alone torch library for the code in lib/?
+
+ --------- since the merged future type will be used by several different components, the question is where it should live?
 
  --------- i was running some pytorch code and i got a lot of supremely unhelpful deprecation warnings that look like this:
 
 where the heck do i fix my code?
 
+ --------- py build
+to build pytorch, but where to specify cmake_install_prefix ?
+
+ --------- (kaolin)@blackhole:$
+but after running an application: i get the following message:
+
+runtimeerror: cuda error: no kernel image is available for execution on the device
+where should i looking for a solution?
+
+ --------- is there any case where a user passes checkpoint_wrapper_fn that is not checkpoint_wrapper?
+
+ --------- i suppose this is where the "hardcoding" of the flag might be happening?
+
+ --------- if this proposal is met favourably, the actual implementation would need to answer the following issues:
+
+where should it be implemented? would it be in c/c++ code or in python code?
+
+ --------- are there any legitimate cases where we do want this to happen?
+
+ --------- i got this error when trying to build pytorch from master
+
+since for some time building pytorch also means to build   caffe2 is there any easy way to control where the the caffe2 installation look for libraries?
+
  --------- so where gets wrong?
 
- --------- com/onnx/tutorials
-it seems not told how to change a dynamic pytorch model to onnx， where is the example of change dynamic model to onnx?
+ --------- should we remove aten::_s_where in favor of aten::where as our more primitive operator?
+i'm not super certain about this, but we should probably figure out some desiderata for our "primitive" operator set (should it be a subset of our "public" operators?
 
- --------- run?
-if i try to switch from launch to run a very basic program fails, as it no longer sets --local_rank like it did with launch, where is the updated code on how one needs to write their dist programs?
+ --------- 19101501-msvc_2
+nvidia geforce gtx 1060 6gb
 
- --------- is there any easy way on finding out where the c++ implementations are ?
 
- --------- some possible solutions are:
+offtop question 3: is there some links where i can find info about reduce size of output files?
 
-document the issue and require users work around it (where would we document this?
+ --------- 5
+how to use torch::where?
 
- --------- the complete formula for "kaiming_uniform_" should be
-
-\text{bound} = \text{gain} * \sqrt{\frac{3}{\text{fan}}}
-where gain is gottn from "calculate_gain"
-
-am i right?
-
- --------- in particular if i use a vgg-19 model with every conv layer frozen, where should i see the difference in gpu consumption? in forward or in backward?
-
- --------- com/jerryzh168/pytorch/tree/fb09fd4ab4ba618db148f9dfc035be589efb9355/torch/fx/experimental/fx2trt
-which persist of fx2trt tool, where does it goes in main stream pytorch code?
+ --------- could you help me find out where the problem is?
 
  --------- is the suggestion in the error message out of date?
 where can we find the current selection of logging options and how to enable them?
 
- --------- i am not able to understand different terms used while raising issues(even the good first issues)
-, but i seriously want to contribute to this repo, can you tell me where to start??
+ --------- cpp
+where are derivative patterns added?
 
- --------- it seems that tensorpiperpcbackendoptions's device_maps is a dictionary where the keys are worker names, but i'm not exactly sure what the structure of the dictionary's values should be like?
+ --------- where did it diverge?
 
- --------- would it be possible to add numpy arrays as well, especially in the case where they contain only one element?
+ --------- so, i don't know where's wrong? who can tell me why this happened? and any suggestions?
 
- --------- since the merged future type will be used by several different components, the question is where it should live?
+ --------- question 2: where is the problem in syntax of this property?
 
- --------- so where can i get the api description of caffe2 op?
+ --------- are there any plans to make a numpytorch, where the api matches numpy's as closely as possible?
 
- --------- how come?
-where can i find the build configuration from the ci build?
+ --------- but, where do i provide it?
 
- --------- 1
-(gdb) where
-#0  0x00007fffe958f5ca in ??
+ --------- size(), 1);
+where
+std::vector<tiny_dnn::vec_t> minibatch;
+std::vector<tiny_dnn::label_t> labels;
 
- --------- could you help me find out where the problem is?
 
- --------- init where applicable):
+i tried to switch engine to nnpack - does it work(implement) only on arm or at intel process as well(i avoiding mkl), i get some warning that some operators are not supported - what is the fallback can i defined it?
 
-linear: ? weight, zero bias
-bilinear: ? weight, zero bias
-embedding: ? weight
-embeddingbag: ? weight
-conv{transpose}{1,2,3}d: ? weight, zero bias
-rnn{cell}: ? weight_ih, ? weight_hh, zero bias_ih, zero bias_hh
-lstm{cell}: ? weight_ih, ? weight_hh, zero bias_ih, zero bias_hh (though perhaps +1 forget gate bias)
-gru{cell}: ? weight_ih, ? weight_hh, zero bias_ih, zero bias_hh
-batchnorm{1,2,3}d: ones weight, zero bias
-groupnorm: ones weight, zero bias
-instancenorm{1,2,3}d: ones weight, zero bias
-layernorm: ones weight, zero bias
-
-the current proposal is to have new weight initialisations as default, acknowledge that this is a breaking change, but have a (global?
-
- --------- 0 cuda computing capability where to set it - in what file or maybe in environment variable?
+ --------- filestore, have you considered something like folderstore, which would be like filestore, but where each key-value pair is stored in a separate file?
 
  --------- cpp
 
@@ -116,190 +210,105 @@ question:
 
 if there is 1 alias, which then increases to 2, will it still trigger recompile?
 
- --------- any idea where does the difference come from?
-
- --------- does anyone have any idea on where i could start?
+ --------- would it be possible to add numpy arrays as well, especially in the case where they contain only one element?
 
  --------- but where did that guard come from?
 
- --------- 1
-(gdb) where
-#0  0x00007fffc36857d8 in ??
+ --------- e
 
- --------- where is it expected to be?
+where the docs writes
 
- --------- 🐛 describe the bug
-where is the source?
+in the  linearlr the learning-rate examples
 
- --------- it would be very useful to have high level autograd functions such as:
+increases after epoch 0 until epoch 4 where it drops again (why?
 
-jacobian
-hessian
-jvp
-vjp
+ --------- this happens often in shared environments where multiple users share a cpu and each gets assigned a different core(s)
+what i don't get: why does this test modify a global property at all?
 
-the questions are:
+ --------- can we build cpp extension from inside a docker, where i have installed cuda, but of course no runtime?
 
-where should they go?
+ --------- however, i cannot find the thfloattensor_mode(values_, indices_, self_, dim, keepdim), where is it?
 
- --------- where did it diverge?
+ --------- cpp:733
+i somewhat understand where this might come from, but i expected when the underlying arrays and tensors are the same dimensions, that broadcasting behavior would be the same? can someone help me understand what's going on here?
+
+ --------- where is libtorch archive???
+
+ --------- can someone tell me where i am going wrong?
+
+ --------- if this doesn't belong here, i'd appreciate a hint where to take this (conda? tensorflow?
 
  --------- this only happens for an r2d2-like rl sequence lstm model (where you sample sequences and a  stale initial hidden state from replay and then burn-in the model with no-grad on the start of the sequence to get a better hidden state that you then use to run the gradients for the later steps in the sequence from the updated hidden state)
 looks like a bug to me ?
 
- --------- can i somehow use gdb to peek into aten to figure out where exactly this error is coming from?
+ --------- i want find a version that works with c++11, where should i start?
 
- --------- thanks!
-i find these questions useful when writing use cases:
+ --------- where is the implementation of ctc_decoder_with_kenlm in pytorch? i have found some 3rd party implementation but they are no longer supported by pytorch now?
 
-where do i need sparse tensor? during training deep learning model?
-do i need autograd support for the sparse ops?
+ --------- here's a toy example:
 
- --------- is there any case where a user passes checkpoint_wrapper_fn that is not checkpoint_wrapper?
+and the output is
 
- --------- com/mfatthieubizien/97b86866e1dfb40872306c58544366e4/revisions
-additional questions
+however, if i pull the inner backward call out, then (obviously) the backward goes through without a problem:
 
-is there a workaround?
-what performance impact can i expect?
-if i want to patch that, where should i look?
+are we allowed to call backward of another function inside a backward? where is the error coming from?
 
- --------- any ideas on where to look?
+ --------- 📚 documentation
+torch::cat is missing documentation? following this link, where i searched for the documentation only returned other functions where torch::cat are begin used in the body?
 
- --------- could someone please tell me where should i start or suggest other resources for my request?
-
- --------- should this default be revisited and the cases where nans in testing results expected/tolerated explicitly marked?
-
- --------- is there a place where we can find test coverage information without having to run any code locally?
-
- --------- 5
-how to use torch::where?
-
- --------- this is an issue for the onnx export of repeat_interleave on cuda device where one the indexes of the repeats is dynamic (for example here) cc @justinchuby
-i wonder if the issue comes from the dispatch being on repeat_interleave_cuda (instead of ), in turn calling compute_cuda_kernel that assumes that the repeat_ptr points to data on the device?
+ --------- where did the value 26 come from and why, and what does it have to do with 10 iterations?
 
  --------- @pytorch/pytorch-dev-infra is there a near future where multigpu can run on trunk instead of periodic?
 
- --------- ")
-runtimeerror: where are you running this?
+ --------- run - now it gives me a future warning:
 
- --------- could you please kindly point me to where the actual implementation locates in the repo?
+the past is gone and future isn't quite there yet, where is the present version?
 
- --------- question 2: where is the problem in syntax of this property?
+ --------- specifically it would be great to have:
 
- --------- are there any legitimate cases where we do want this to happen?
+a mode where we always error on fallback (maybe some ops only have fallback?
 
- --------- (kaolin)@blackhole:$
-but after running an application: i get the following message:
+ --------- can anyone tell that where is the default include and lib path for caffe2?
 
-runtimeerror: cuda error: no kernel image is available for execution on the device
-where should i looking for a solution?
+ --------- init where applicable):
 
- --------- where did it go?
+linear: ? weight, zero bias
+bilinear: ? weight, zero bias
+embedding: ? weight
+embeddingbag: ? weight
+conv{transpose}{1,2,3}d: ? weight, zero bias
+rnn{cell}: ? weight_ih, ? weight_hh, zero bias_ih, zero bias_hh
+lstm{cell}: ? weight_ih, ? weight_hh, zero bias_ih, zero bias_hh (though perhaps +1 forget gate bias)
+gru{cell}: ? weight_ih, ? weight_hh, zero bias_ih, zero bias_hh
+batchnorm{1,2,3}d: ones weight, zero bias
+groupnorm: ones weight, zero bias
+instancenorm{1,2,3}d: ones weight, zero bias
+layernorm: ones weight, zero bias
 
- --------- why didn't we go with the design where all workers work on one batch at a time?
-
- --------- the tensor of x: [t]  where t is dynamic
-the export failed because dynamic t?
-if this problem can not be solved now, how can i relize this op in order to export to format of onnx?
-
- --------- yet, i can't find the transformers in nn module, where are they?
-
- --------- where?
+the current proposal is to have new weight initialisations as default, acknowledge that this is a breaking change, but have a (global?
 
  --------- ❓ how and where  pytorch source calculates the size of memory? does it allocates whole memory of the graph at a time or is it layer wise ?
-
- --------- should the subtopic pages have a right-navbar to indicate where they fall inside the topic pages?
-
- --------- i want find a version that works with c++11, where should i start?
-
- --------- do you have any insights about where it goes wrong?
-
- --------- where should i clone from, and is there plans to set up a seperate, stand-alone torch library for the code in lib/?
-
- --------- additional context
-this seems to be a gap in ddp where it doesn’t support running backward twice?
-
- --------- where can i find the method of calling bert from torch's  c++ api ?
-
- --------- size(), 1);
-where
-std::vector<tiny_dnn::vec_t> minibatch;
-std::vector<tiny_dnn::label_t> labels;
-
-
-i tried to switch engine to nnpack - does it work(implement) only on arm or at intel process as well(i avoiding mkl), i get some warning that some operators are not supported - what is the fallback can i defined it?
-
- --------- could i get some guidance on where to look for such functions or how i could mitigate this error?
-
- --------- 16xlarge
-
-in the logs i found this:
-
-how do i figure out where this is coming from?  is this something my code should account for or is it a bug in ddp or apex?
-
- --------- where is the the  caffe2 folder(within pytorch ) right now?
 
  --------- cc @mcarilli @ptrblck @leslie-fang-intel @jgong5 @ngimel @crcrpar @stas00 @alband
 alternatives
 do nothing, let users deal with nans from the perspective of bc + that there might be currently unimagined worlds where users want to handle nans themselves (?
 
- --------- if this proposal is met favourably, the actual implementation would need to answer the following issues:
+ --------- from libtorch-nightly begain,  i can not do this anymore, the lib generates always link to my another folder where it builds:
 
-where should it be implemented? would it be in c/c++ code or in python code?
+and when i build libtorch program, it just can not found related functions:
 
- --------- i suppose this is where the "hardcoding" of the flag might be happening?
+what should i do???
 
- --------- where can i find it?
+ --------- 1
+(gdb) where
+#0  0x00007fffc36857d8 in ??
 
- --------- org/t/torch-compile-interaction-with-autocast-and-no-grad/178648/2?u=vadimkantorov
-where should i put no_grad and autocast contexts?
+ --------- how can i add symbolic and where i can do it?
 
- --------- where can i found the content or what should this line correct to?
+ --------- 0 (and the nightly build),
+we are seeing an error from the gcc build (clang is fine)
 
- --------- i used to have this directories telling compiler where to look for headers:
-
-that was enough to find these files:
-
-now i need to specify these:
-
-is it supposed to be like this? or i doing something wrong?
-
- --------- where should the implementation go?
-
- --------- ❓ questions and help
-i updated my pytorch by
-
-but i got the next error message,
-
-where is the zero_gradients method ?
-
- --------- can someone tell me where i am going wrong?
-
- --------- where can i download/install nvtx?
-
- --------- some open issues from my side:
-
-
-can i stream images and labels and change the input at runtime?(do back-propagation on the mini-batch)
-
-
-why i need to use db input and why it's need to duplicated the data? can i avoid it?
-
-
-how the back-propagation work? where the forward/backward implementation? when the gradients are summit?
-
- --------- py --install to construct the directory where pytorch will be installed?
-
- --------- should we remove aten::_s_where in favor of aten::where as our more primitive operator?
-i'm not super certain about this, but we should probably figure out some desiderata for our "primitive" operator set (should it be a subset of our "public" operators?
-
- --------- proposed solution:
-would it help to have mps's kernel for sum call squeeze when the size of the sum'd dimension is already 1 (for the case where dimensions should not be kept)?
-
- --------- how and where change parameters of third-party cmake?
-
- --------- some part of the system obey our old convention, where we use tensor to represent both tensor and tensor?
+in gcc, the first non-inline virtual method is used to determine the the translation unit where the vtable and typeinfo objects are created -- was there some change to nn::module's virtual functions that might cause this(?
 
  --------- loads(), it shows the error shown below:
 
@@ -312,53 +321,55 @@ same error message as you can see below by running the reproduce coding shown ab
 
 if it's possible, could anyone help me with this issue?
 
- --------- )
-where does this ioctl come from?
-
- --------- is there something wrong with the specific usage of where?
-
- --------- can amyone tell what's error? and where i am going wrong?
-
- --------- run - now it gives me a future warning:
-
-the past is gone and future isn't quite there yet, where is the present version?
-
- --------- e
-
-where the docs writes
-
-in the  linearlr the learning-rate examples
-
-increases after epoch 0 until epoch 4 where it drops again (why?
-
- --------- for example, here is a recent backtrace i got from a test:
-
-do you know where the data for this tests lives?
-
- --------- where does that inaccuracy comes from?
+ --------- 0 qat design, where do we plan to do the conv bn fusion into a single conv node?
 
  --------- if setting pad to be an eight-element list is actually valid, why does the torchvision library cannot support this functionality and where can i find the related documentation?
 
- --------- this happens often in shared environments where multiple users share a cpu and each gets assigned a different core(s)
-what i don't get: why does this test modify a global property at all?
+ --------- could someone please tell me where should i start or suggest other resources for my request?
+
+ --------- related to #93658 i tried to make a simpler repro where i remove the pytorch lightning dependency and then optimize with inductor but this is a different error
+repro
+
+logs
+i get a c++ compile error and when i try to run inductor conda runs?
 
  --------- not sure what to do about this, but perhaps putting some message in the job log step saying where to look?
 
- --------- i want to know how ops are registered to atendispatch's op_tables_;
-i see atendispatch has registerop/registervariableop interface, but not found code that these interfaces are called to register ops;
-is atendispatch use the global static varable to trigger the registration like c10_declare_registry  mechanism？
-i see the code below, but cannot find where "aten::linear(tensor input, tensor weight, tensor?
+ --------- where goes wrong? is this a bug about pytorch version?
 
- --------- where is the implementation of ctc_decoder_with_kenlm in pytorch? i have found some 3rd party implementation but they are no longer supported by pytorch now?
+ --------- i guess this is from previous versions where cuda support was not built-in and this can be removed, correct?
 
- --------- 📚 documentation
-torch::cat is missing documentation? following this link, where i searched for the documentation only returned other functions where torch::cat are begin used in the body?
+ --------- in particular if i use a vgg-19 model with every conv layer frozen, where should i see the difference in gpu consumption? in forward or in backward?
 
- --------- where did the value 26 come from and why, and what does it have to do with 10 iterations?
+ --------- where can i download/install nvtx?
 
- --------- ordered when and where?
+ --------- the torch_library macro is defined as following:
+#define torch_library(ns, m) \   static void torch_library_init_ ## ns (torch::library&); \   static torch::detail::torchlibraryinit torch_library_static_init_ ## ns ( \ torch::library::def, \ &torch_library_init_ ## ns, \ #ns, c10::nullopt, __file__, __line__ \   ); \   void torch_library_init_ ## ns (torch::library& m)
 
- --------- 0 (and the nightly build),
-we are seeing an error from the gcc build (clang is fine)
 
-in gcc, the first non-inline virtual method is used to determine the the translation unit where the vtable and typeinfo objects are created -- was there some change to nn::module's virtual functions that might cause this(?
+the questions are as following, could anyone give some answer ?
+q1: where is the implementation of torch_library_static_init_xxx static function ?
+
+ --------- 16xlarge
+
+in the logs i found this:
+
+how do i figure out where this is coming from?  is this something my code should account for or is it a bug in ddp or apex?
+
+ --------- how and where change parameters of third-party cmake?
+
+ --------- where does that inaccuracy comes from?
+
+ --------- so how would one deal with a tensor where the dim is greater than 2? such as ([16, 6, 28, 28]) where we want to target dim=1?
+
+ --------- this is an issue for the onnx export of repeat_interleave on cuda device where one the indexes of the repeats is dynamic (for example here) cc @justinchuby
+i wonder if the issue comes from the dispatch being on repeat_interleave_cuda (instead of ), in turn calling compute_cuda_kernel that assumes that the repeat_ptr points to data on the device?
+
+ --------- bonus: while at it make the indexerror: index out of range in self on cpu more user friendly to align with other pytorch ops where actual sizes/dimensions are reported as part of the assert message, for example:
+
+
+the actual check can be something as simple as:
+
+i'm not sure if we want to dump all the bad indices, perhaps just the highest one?
+
+ --------- where could i find the pretrained googlenet model by imagenet?

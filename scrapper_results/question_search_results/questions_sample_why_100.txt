@@ -1,339 +1,217 @@
 
- --------- h has the following check:
+ --------- currently parametrizing static or dynamic shapes is unpredictable :( this is not very good :(
+why is #pragma omp simd simdlen(8) used? apparently it's correct, but if it's the register-size-in-float32, i would expect it to be simdlen(16), no?
 
-why is there such condition and is it possible to add support for dilated grouped convolutions?
+ --------- profile:
 
- --------- 2404, device=‘cuda:0’)
-why would the unused parameters affect the outcome of the forward pass?
+what is  profilerstep*'? why does it spend such big time, about 30% e2e?
 
- --------- why is this happening?
+ --------- do you know why this may be the case?
 
- --------- since sequentiallr already guarantee that all schedulers belong to the same optimizer, why not assign it the optimizer attribute?
+ --------- can anyone tell me why?
 
- --------- forwarded from internal post
+ --------- why it isn't the same as the python version api? and how can i do the same thing (set gradients to null value) in c++?
 
-why is returning [1] for list[any] not ok, while returning 1 for any is fine?
+ --------- i do not understand why this is happening?
 
- --------- why cmake report that do not run ?
+ --------- pairwise_distance able to compute the (all-to-all) distance/similarity matrix, besides the (one-to-one) distance/similarity vector:
 
- --------- and even in the transformer model, i don't see a reason why this would be the case?
+why isn't such usage documented?
 
- --------- anyone know why? should it be the case?
-
- --------- what could be going on here? why was that file removed from the conda channel?
-
- --------- could anyone help me with why this keeps running or any good ways to debug the backward() function?
-
- --------- as an aside, is this supposed to be the case that the loops are still explicit in the generated code or could that be the reason why the code (without vectorisation) is two orders of magnitude slower than plain pytorch?
-
- --------- why does it happen?
-
- --------- runtimeerror: expected scalar type byte but found float: why does it complain about scalar type?
-
- --------- 🐛 describe the bug
-why isn't sm_80 support shipped by default?
-
- --------- and get an error:
-
-nvcc fatal   : unknown option 'openmp'
-
-question 1: why -openmp is unknown option for me and is it really need?
+ --------- question is, why would it be trying to register multiple backend fallbacks from the exact same place for the same dispatch key lazy?
 
  --------- py --a resnet50 -j 15 --epochs 1 -b 100 /home/imagenet_2012 --dist-url file:///home/test_share/ --world-size 2
 but it given an error showing below, i assume that it was not able to access the folder but why??
 
- --------- the error:
+ --------- 2348)
+why they are different?
 
-why does the test need to be making network requests?
+ --------- why??
 
- --------- so my question is: why the same logic isn't applied to the cuda-ness of the result, especially considering that the current behavior is getting a runtime error?
+ --------- is there a simple explanation for why this is occurring?
 
- --------- anybody knows why "terminating with uncaught exception of type torch::jit::constant_not_supported_error: unsupported value kind: object" came from??
+ --------- 2 for me, so why am i  get this cuda runtime error????
 
- --------- 1, why?
-
- --------- if the model is intended to be used with dynamic input shapes, please use opset version 11 to export the model
-
-
-using opset_version=11 the model gets exported to:
+ --------- benchmark = true?
 
 
+is there a specific reason why backendcache only caches cnns?
 
-why the squeeze gets expanded to a conditional logic check on the first dimension of the tensor?
+ --------- to("cuda:0),
+but in fact the model  run in cuda:0 and cuda:1 simultaneously,
+i can not understand why?
+or my code is error?
+who can tell me some information about solve it?
 
- --------- here is the nn:
+ --------- and why would tensor c (also empty) be coalesced and return a correct indices() (even though coalesce on a regular empty tensor also throws)?
 
-are there any specific reasons why csr tensors are not supported yet?
+ --------- why?
 
- --------- 1 like the gtx 1080ti are well supported by pytorch? but why my binary only works with sm_86 gpu (i don't have other gpu to do futher test) ?
-so what am i missing here ?
+ --------- why?
+i am surprised that we don't have ut catching this?
 
- --------- my aim is not to compare pytorch wheel to other framework, the point is why the torch wheel is a half of a gigabyte?
+ --------- are there any reasons why you haven't done yet?
 
- --------- 2 open questions:
+ --------- however, i have a question that since i have the sequence to decoder, thus i have the result of decoder, why do i have to use transformer for inferencing?
+for example, i have a seq2seq task that translate "i love you" from english to franch "je t'aime", what is the parameter of "tgt"?
 
-why does the selected backend differ based on the init_process_group backend specification?
+ --------- am i missing something? why do i see an increase in the rtt?
 
- --------- why isn't pytorch using all cores?
-maybe related to #3525 ?
+ --------- but the result is wrong
 
- --------- why is this?
+i want to know why？
+code
 
- --------- why does this zero be generated? how can i fix it?
+what's your environment?
 
- --------- why detach the inputs in the backward before recomputing the forward? would you get something like the gradient of the forward being accumulated twice into the input's gradient? also, does this detaching not duplicate the input resulting in higher than necessary memory cost?
+ --------- q: why not just be using github groups?
 
- --------- datatype onnx val=cudnn_data_half (2) vs pytorch val=cudnn_data_float (0)
-and time to time algo val becomes cudnn_convolution_fwd_algo_implicit_gemm instead of cudnn_convolution_fwd_algo_implicit_precomp_gemm
+ --------- it's a bit annoying, but i created a mini partitioner that partitions the user graph in two, and calls aot autograd on each subgraph (similar to what the ddp optimizer does)
 
-also
-in tracing used different matrix kernels
-pytorch: volta_fp16_s884cudnn_fp16_128x128_ldg8_relu_f2f_exp_large_nhwc2nchw_tn_v1
-onnx: implicit_convolve_hhgemm
-could you please answer what is the cause of the differences?
-why in pytorch version of cudnn example datatype not set to half?
-or what do i wrong in benchmarking or onnx setup?
+running the above gives:
 
- --------- why does the cost of calling policy go up as the number of workers increase?
+why?
 
- --------- 5 release tag:
-
-
-
-on master:
-
-
-
-on master, running on a single file (side note: why didn't those get reported above when running on the whole repo?
-
- --------- 1 on a tesla v100 32gb gpu, any idea about why it happened?
+ --------- since there are so many tests in linux, why don't we add tests for windows?
 
  --------- another question: why doesn't google remove these 404 pages itself? why doesn't it reindex it?
 
- --------- step() call in the documentation
-change the step method name, why not update ?
+ --------- cuda(), i get nothing but:
 
- --------- why is this issue not in transformers repo?
+question
+i wonder why? or any other method i could use to add dropout after each layer of the lstm?
 
- --------- why this order?
+ --------- com/pytorch/pytorch/actions/runs/4601886643/jobs/8130489457
 
- --------- if numpy can do it, why can't pytorch?
+so why today you ask?
 
- --------- if memory is available then why is pytorch not allocating it?
+ --------- developers are responsible for ensuring that both pass
 
- --------- 🐛 describe the bug
-tl;dr
+why did we choose this?
 
-why does mps segfault so much?
+ --------- i don't know why and how to fix it ，is there any suggestion?
 
- --------- why gpu memory consumption increases while training, especially, increases so largely while no cudnn? (in my opinion, gpu memory consumption won't increase while the cnn has been build and starts training)
-does anyone meet the same problem? or could anyone give some help?
+ --------- any ideas why?
+
+ --------- why?
 
  --------- why will the new gradcheck be faster? (and how much faster?
 
+ --------- so it fails with
+
+question: why isn't cuda_libraries used directly here?
+
+ --------- why am i using allow_in_graph? why not do a graph break?
+
+ --------- sequential
+
+raise an error
+
+why this happened?do you have any way to fix this?
+
+ --------- why doesn't reducelronplateau inherit lrscheduler in the first place?
+
+ --------- linear(in_feature, out_feature)
+_initialize_weights()
+intuitively, two methods should have the same effect, however, the result is still different, why?, please give some reasons if possible?
+
+ --------- ❓ questions and help
+why running the same training code on different gpus (v100 vs p100) brings a significiant difference in outputs ($outputs=model(inputs)$) and thus different train loss / model accuracy?
+
+ --------- why does the cost of calling policy go up as the number of workers increase?
+
+ --------- e
+
+where the docs writes
+
+in the  linearlr the learning-rate examples
+
+increases after epoch 0 until epoch 4 where it drops again (why?
+
+ --------- not sure why this happens at the end of my epoch:
+any suggestion? is it a bug?
+
+ --------- is it possible to drop this constraint? if not, why is it important for the dataset to be spread into evenly divisible bins?
+
+ --------- batch_size is 8 and work_number is 2。why this happened ?
+
+ --------- my question is:
+why there are floats in the quantized model?
+why when i try to quantize embeddings manually with quantstub(embedding), it returns exactly the same float embedding?
+
+what should i do to quantize my model?
+
+ --------- i wonder if there's a reason why it's missing?
+
+ --------- html
+
+
+leave a comment highlighting:
+
+
+pros
+cons
+which option do you prefer and why?
+
+ --------- i'm just worrying, why does it behave in such way?
+
+ --------- and the following thing happened
+
+so why these values are not the same?
+is it a bug or something went wrong?
+
+ --------- see the simple example below:
+
+the printed output is:
+
+question: why is that memory equivalent to 2 copies of z is consumed? is there any way that i can free this additional part of the memory?
+
  --------- 🐛 describe the bug
-when convert pytorch lstm to onnx , code as follows:
 
+returns
 
-why input of expand op  is 2 x 0 x4 ,the shape was wrong????
+why is the 4-th print not printing?
 
- --------- module 
+ --------- com/goldsborough/examples/tree/cpp/cpp
+and bug appears when make
+why is this bug(torch::data’ has not been declared) present ?
 
+ --------- so, why pytorch is slower than tensorflow in reading data?
+am i setting it wrong?
 
+ --------- why must it be executed twice to pass??? a bug?
 
- ): 
+ --------- compare this to left-aligned:
 
+if there is a clash between conflicting formatting desires, then perhaps the output format should be configurable?
 
-
- # don't let methodtypes fall through to userdefinedobject, 
-
-
-
- # which doesn't support 'call_function' 
-
-
-
- 
-
-
-
- # todo(whc): why do we limit this to methods on nnmodules?
-
- --------- 1
-any idea why does this problem occur ?
-
- --------- why is cusolver related to this magma queue creation?
-
- --------- why?
-
- --------- i don't know if this is a bug, but why is this happening?
-
- --------- setdefault('nesterov', false) 
-
-
-
- 
-
-
-
-
-
-why dose set the nesterov as false when calling __setstate__?
-
- --------- i am not too sure why and whether this should be expected behavior, for example wouldn't it perhaps be better to also support prefetch_factor values of 0 or 1?
-
- --------- 🚀 the feature, motivation and pitch
-why,dart api needed?
-
- --------- i don't understand why these confused results return?
-
- --------- lppool?
-i find it when writing a neural network for 3d data, don't know why?
-
- --------- why pytorch delete the c_{t-1} in the gates?
-
- --------- why is the deprecated launch utility doc hasn't been updated with what is supposed to be used now? this is the main dist doc - seriously?
+it's very hard to make sense of us mixed with ms in the same column, why not choose a single magnitude and show all numbers in the same magnitude?
 
  --------- tensor([0]) return a copy? why should the first one do a synchronization and the second one doesn't?
 
- --------- so why does this problem occur? and how to fix it correctly?
+ --------- however, when i do the following
 
- --------- is the reason why sccache is getting so many misses on gha because sccache is doing some sort of evaluation on a full path?
+it outputs two integers and the type:
+200
+8
+[cpulongtype{2}]
+why is the type still cpulongtype?
 
- --------- however, as an aside, i am not sure why the boundary condition is only hit sometimes and not always, because the same random numbers are generated always, and division is unstable but it is deterministic (right?
+ --------- why is this?
 
- --------- so i use tensor board to debug what happen, i found train from optimizer shard state dict cause a lot of cuda free as bellow:
+ --------- l1_loss  (improves the opinfo out= tests #75782)
 
+why?
 
-why train from optimizer shard state dict has such problem?
+ --------- why is this and how can we solve it?
 
- --------- why?
-has the latest version of the source code compilation structure changed significantly?
+ --------- or maybe, why didn't composite compliance catch this?
 
- --------- vocab_size, 1))))
-why is that?
+ --------- why??? why not just make them behave the same way??????
 
- --------- why??
+ --------- why is it critical that we always call _free_full_params() in the _post_backward_hook()?
 
- --------- det  ?  why convert the tensor to  numpy, the result is also wrong?
-
- --------- details:
-from source: can run 9 batches, 35 seconds every 20 iterations of training
-from binaries: can run 12 batches, 22 seconds every 20 iterations of training
-why the speed and memory consumption has such a big difference?
-
- --------- float16
-
-the output will be
-
-and this difference can be reduced if i change bias=false
-
-the output is
-
-do you have any suggestions on why this can happen? and what should i do to make it still right in the fp16 situation?
-
- --------- why does it not recognize that it is there? should i rename this folder?
-
- --------- why it is so?
-
- --------- questions:
-
-is my above understanding correct?
-if i understand the code correctly, why the duration of nccl:all_reduce the profiler captured looks incorrect?
-
- --------- is there a reason why this is not the case?
-
- --------- which seemed a bit odd to me as i was hoping to be pointed to pytorch
-is there a specific reason why this is so?
-
- --------- py script  in the pytroch-master  directory, anyone know why?
-
- --------- minimal example:
-
-the full error message:
-
-ugly workaround:
-
-why can't i just use the original script?
-
- --------- float64)], 'target': tensor([4, 1])}
-my doubt:
-why transpose batch while elem is sequence type? how should i deal with list elem type?
-
- --------- load can see the extension doesn't need to be built why emit the irrelevant warning?
-
- --------- show()
-the return image looks strange as if it repeats:
-
-my origin image is supposed to look like:
-
-why does my image load as grayscale transform to 3 channel and looks strange?
-
- --------- any idea why that might be/how to fix it?
-
- --------- why?
-
- --------- 📚 the doc issue
-old params were removed, now how to disable check on onnx when export?
-suggest a potential alternative/fix
-also, why disable this feature?
-
- --------- why would it think that it's uncoalesced?
-
- --------- is it affected by the design principle of a[0] = value? why is it designed like this?
-
- --------- py#l66 which is a good starting point
-additional context
-you might be thinking why merge yet another optimizer?
-
- --------- why is that?
-
- --------- can you please clarify why you need -ipc=host instead of just specifying -shm-size at nvidia-docker run command? purpose of -ipc=host is to place container on host ipc namespace and since all processes are within container namespace, should -shm-size not be enough?
-
- --------- anyone knows why this happen?
-
- --------- i do have to disclose i am using a rank deficient matrix (maybe that's why gels is failing?
-
- --------- why??
-
- --------- is this intended behaviour, and if yes – why is it necessary? is there documentation on this somewhere?
-
- --------- )
-but why finite?
-
- --------- 🐛 describe the bug
-hi!
-i use following cmd to install pytorch
-
-however i got the result:
-
-i wonder why conda install cpu version automatically? how to install gpu version?
-this is my hardware information:
-
-could you please give me some advice?
-
- --------- why do you do this?
-
- --------- is there a reason for such a prefix? why couldn't this prefix be removed?
-
- --------- is there any reason why it is missing?
-
- --------- if the last few dimensions (including spatial/temporal) are aggregated over, why does layernorm need their (potentially dynamic) shape at construction time?
-
-
-is there any layout are assumed for a typical usecase (with fixed number of channels and various time/spatial dimension)? btc? bct?
-
- --------- tensor(3,4)) print(a) 
-the output shows that a is a tensor but not a variable? why??
-
- --------- index_copy_(0, a, -logprob_i)
-print(indices_i == a)
-#[true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true, true,true,true,true,true,true,true,true]
-
-why is this?
-
- --------- 🐛 describe the bug
-why swa_utils implement swa different from the original paper?
+ --------- why would you need to do this?
 
  --------- name)
 ['add', 'class', 'contains', 'delattr', 'dir', 'doc', 'eq', 'format', 'ge', 'getattribute', 'getitem', 'getnewargs', 'gt', 'hash', 'init', 'init_subclass', 'iter', 'le', 'len', 'lt', 'mod', 'mul', 'ne', 'new', 'reduce', 'reduce_ex', 'repr', 'rmod', 'rmul', 'setattr', 'sizeof', 'str', 'subclasshook', 'capitalize', 'casefold', 'center', 'count', 'encode', 'endswith', 'expandtabs', 'find', 'format', 'format_map', 'index', 'isalnum', 'isalpha', 'isascii', 'isdecimal', 'isdigit', 'isidentifier', 'islower', 'isnumeric', 'isprintable', 'isspace', 'istitle', 'isupper', 'join', 'ljust', 'lower', 'lstrip', 'maketrans', 'partition', 'replace', 'rfind', 'rindex', 'rjust', 'rpartition', 'rsplit', 'rstrip', 'split', 'splitlines', 'startswith', 'strip', 'swapcase', 'title', 'translate', 'upper', 'zfill']
@@ -344,6 +222,122 @@ why swa_utils implement swa different from the original paper?
 it seems indeed roi_align_op is not linked in, and _caffe2 doesn't see to have any useful functions!
 but why, and how can we compile the _caffe2 functions into the lib/dll ?
 
- --------- why pytorch only need cudatoolkit?
+ --------- py --batch_size=16 iteration 1 --cpu  --mode alexnet
+i can see 4  core is running, and the result is milliseconds per iter:3835
+but it is openblas work in multi-threads mode
+why caffe2 not work in multi-threads mode?
 
- --------- so, i don't know where's wrong? who can tell me why this happened? and any suggestions?
+ --------- html
+here is the menu i'm talking about:
+
+and here is how it looks before the page is fully loaded:
+
+why is this an issue?
+
+ --------- )
+but why finite?
+
+ --------- when build_test=1, the first error is
+
+when build_test=0, the first error is
+
+i have two additional questions:
+
+why is gtest built when build_test=0?
+
+ --------- also, i did not really understand the point that was made in the previous issue:
+if this is the case, i wonder how easy it would be to have a special case for input not requiring gradient (which is the case i'm interested in)
+why would the input require gradient for this operation ? the operation is not in place so the input is not modified thus its gradient is not needed ?
+
+ --------- gather has such a sparse_grad option at all? why is it not always sparse? why is the default to have it dense? what are the downsides in always enabling this?
+
+ --------- any ideas why?
+
+ --------- can someone tell me why this isn't working?
+
+ --------- why does this work using a numpy array but fails with pytorch array?
+
+ --------- 2920 ?
+if all point values ​​appear only once, cpu and gpu will return the minimum, why partial point value appear twice, cpu still return the minimum, while gpu will not return the minimum?
+i wonder if this phenomenon is reasonable?
+
+ --------- thus, it is ok to split 24 images into each gpu, but it is strange why exists 10 and 11 channels?
+
+ --------- i traced the upsample operator saved by onnx, it has
+
+%160 = constantvalue = <scalar tensor []>
+%161 = shape(%159)
+%162 = gather[axis = 0](%161, %160)
+%163 = constantvalue = <scalar tensor []>
+%164 = mul(%162, %163)
+%165 = floor(%164)
+%166 = constantvalue = <scalar tensor []>
+%167 = shape(%159)
+%168 = gather[axis = 0](%167, %166)
+%169 = constantvalue = <scalar tensor []>
+%170 = mul(%168, %169)
+%171 = floor(%170)
+%172 = unsqueezeaxes = [0]
+%173 = unsqueezeaxes = [0]
+%174 = concat[axis = 0](%172, %173)
+%175 = constantvalue = 
+%176 = castto = 1
+%177 = shape(%159)
+%178 = sliceaxes = [0], ends = [4], starts = [2]
+%179 = castto = 1
+%180 = div(%176, %179)
+%181 = concat[axis = 0](%175, %180)
+%182 = upsample[mode = 'nearest'](%159, %181)
+
+i am not sure why upsample need so many operators?
+
+ --------- why is this true?
+
+ --------- is the reason why sccache is getting so many misses on gha because sccache is doing some sort of evaluation on a full path?
+
+ --------- any idea why the difference in 3d might be occurring?
+
+ --------- so i'm wondering that why it happened and what can i do to fix it?
+
+ --------- for integer dtypes it uses unstabilized computation (why?
+
+ --------- why it is so?
+
+ --------- trunc_normal_() in my code without reporting error,i can not find it's doc to get more information ,why?
+
+ --------- i wonder why this happend?
+
+ --------- does anyone know why?
+
+ --------- why can't reflect work by reflecting the whole input?
+
+ --------- 000396966934204`
+we can find that the time of 'do ten gesv' is about ten times as much as 'do once gesv', however the time of "do once add" and "do ten add" almost the same, why is that?
+
+ --------- why not use z3 directly ?
+
+ --------- also, why do i get this warning 4 times?
+
+ --------- why is it slower? can that speed gap be closed somewhat?
+
+ --------- can you please clarify why you need -ipc=host instead of just specifying -shm-size at nvidia-docker run command? purpose of -ipc=host is to place container on host ipc namespace and since all processes are within container namespace, should -shm-size not be enough?
+
+ --------- however, when i looked at the source code, this kernel simply calls another kernel
+
+so, i wonder why that is shown in the output of profiler? i mean what can be understand from that?
+
+ --------- so why use a comparision here?
+
+ --------- could someone tell me why don't directly push_back to raw_descriptors?
+
+ --------- remotedisconnected: remote end closed connection without response
+why did you have this problem?
+
+ --------- why so many bugs???
+
+ --------- --
+why should i use ddp over dp?
+
+ --------- why cmake report that do not run ?
+
+ --------- why do i expect the behaviour in "expected behaviour"?

@@ -1,69 +1,42 @@
 
- --------- what is the proper way to get the float out of the tensor (and back into main memory)?
+ --------- add section: ci test matrix (generic)
+add section: what ci jobs are run in what time?
 
- --------- hi, when i want to use mutiple gpus to train a model, distributed data parallel tells me that i should set master_addr and master_port, but i don't konw what they are and what value i should set ?
+ --------- txt#l179
+i'd like to know if this option is on, what is in this case enabled?
+i do have a device with nn-api driver - is this help to use this device nn-api backend?
 
- --------- the question is what is mean doing internally, haven't check the code to see how is implemented but my guess is that it first checks the type of tensor x and if not in float or complex reject doing any operation, that's my best guess so far?
+ --------- we are looking for feedback on
 
- --------- 📚 what we can do to substitute the assert no grad function?
+is this workflow suitable for your needs?
+is this sufficient for creating sparse and quantized models?
+are the operators that we plan to support a good match for what you need?
 
- --------- generalizing on above - are you planning to support whole-function graph optimization? ideally, i'd like to see whole function as a single merged graph at some point in the backend to get maximum optimization opportunities (with some exceptions, but this is what partitioners are for, right?
+ --------- com/!
+root cause
+what was the root cause of this issue?
 
- --------- pt format to onnx but after i execute the script the program output bunch of logging stuff like in the pic below and the converted onnx format seems not appear in my local disk i don’t know what i got wrong here?
+ --------- what do you guys think?
 
- --------- py#l193
+ --------- 91 gb free, so what is the problem ???
 
-what is the best way to workaround these?
+ --------- (default: false)
+what if i want to redistribute data from last incomplete batch into other batches, so i don't loose any training (or testing) data?
 
- --------- i'm not sure what's the problem?
+ --------- what are the chances that this fails?
 
- --------- what is likely the cause of this issue? is there any way to fix it?
-
- --------- are any developers familiar with what this indicates?
-
- --------- so, what's the goal here?
-
- --------- what's exactly way to set cmake flags?
-
- --------- so what's the problem? could someone help me?
-is the version of gcc incorrect?
-
- --------- py
-what do you mean by this ?
-
- --------- so what should i do to solve this problem?
-
- --------- what might be the problem with this issue?
-
- --------- pt
-this code is the linux version, what should i do with the windows version?
-
- --------- this setup works fine with cmake, but attempting to port that over to bazel, i think i might be missing some step?
-
-the bazel workspace:
-
-the bazel build file
-
-and the toy example in pybind
-
-built as
-
-what might be the issue here?
-
- --------- - 10/30 7:27a incident began
-- 10/30 8:30a detected by 
-- 10/30 9:00 pm root caused as…
-- 10/30 9:10 pm mitigated by…
-- 10/31 10: am closed by…
+ --------- 01/05 12:12p incident identified / sev filed
 
 
-11/01 09:45a incident identified
-11/01 10:23a seemethere/terraform-aws-github-runner@842aa3b pushed to canary to reduce the amount of ssm calls we need to make
-11/01 10:29a seemethere/terraform-aws-github-runner@842aa3b pushed to prod after verification of fix on canary
+
+01/05 07:00a workflow queuing times growing (observed by @malfet)
+01/05 12:12p incident identified / sev filed
+01/05 12:40p mitigation introduced on github side
+01/05 13:40p queuing time / scheduling time appears to have decreased
 
 user impact
 how does this affect users of pytorch ci?
-all gha workflows will not be run
+workflows are not getting scheduled
 root cause
 what was the root cause of this issue?
 mitigation
@@ -71,31 +44,291 @@ how did we mitigate the issue?
 prevention/followups
 how do we prevent issues like this in the future?
 
- --------- should there be at least an assert in debug builds?
-in context of what thread callbacks should be invoked: one that calls markcompleted() or one that calls wait()?
+ --------- what's the problem? (answer: reference cycles)
+so, this is neat, but what's the issue?
 
- --------- what's going on?
+ --------- what's your thought on this?
 
- --------- what am i doing wrong? did i use a wrong version of magma perhaps? if so, it seems to work in python but not in c++?
+ --------- 9, what adjustments are needed for my exported onnx code?
 
- --------- could someone please point out what should be the c++ equivalent of the above code?
+ --------- anybody knows what could be the reason of that?
 
- --------- the documentation doesn't illustrate this point either way:
+ --------- the only problem is this runtime error:
 
-what was the rationale behind the intended change in behavior, anyway?
+so, what is the type of tensor not supported by gloo?
+
+ --------- the above code throws an exception:
+
+what is the difference between them?
+
+ --------- here are my code snippets:
+
+for the run_worker function:
+
+so what is my code problem?
+
+ --------- question about ncclsend/ncclrecv
+for nccl point-to-point communication, what does gpu blocking mean exactly?
+
+ --------- 10/30 7:27a incident began
+10/30 8:30a detected by 
+10/30 9:00 pm root caused as…
+10/30 9:10 pm mitigated by…
+10/31 10: am closed by…
+
+
+user impact
+how does this affect users of pytorch ci?
+root cause
+what was the root cause of this issue?
+mitigation
+how did we mitigate the issue?
+prevention/followups
+how do we prevent issues like this in the future?
+
+ --------- what is the default device in that example?
+
+ --------- ? do anyone know what's going on?
+
+ --------- but this error hanppend,
+typeerror: '>' not supported between instances of 'list' and 'int'
+what do you think about this?
+
+ --------- 🐛 describe the bug
+the model i want to train is more stably trained with ema, i want to apply the fsdp to the model so as to train with much larger model sizes, with code like the below:
+
+i run into the following problem:
+
+is this expected? what would be the suggested way to implement ema with fsdp model?
+
+ --------- profile:
+
+what is  profilerstep*'? why does it spend such big time, about 30% e2e?
+
+ --------- let me know what details or commands you need me to run?
+
+ --------- to enable multi-gpu, i have something like this:
+
+however, when training i get the following stack trace:
+
+with this additional info dump from nccl:
+
+any ideas on what might be happening?
+
+ --------- what should we do?
+
+ --------- _dist_init_process_group? what really happens in this function?
+
+ --------- so what op would the subclass match on?
+
+ --------- is this something which we plan to support in the future / what would be a good recommendation to customers to refactor this logic to be traceable?
+
+ --------- here is my c++ code and python code, i'm sure that the module and input in c++ and python code is cuda type:
+python :
+
+c++:
+
+so what's the problem?
+
+ --------- typeerror: only integer tensors of a single element can be converted to an index
+
+what index is referred to?
+
+ --------- what do you think about adding it into the nn module?
+
+ --------- iiuc, normally if an onnx file is larger than 2gb (a protobuf limit?), the model will be packaged into a zip file along with the weights as separate files, so maybe that's what is supposed to happen here, except for some reason the zip isn't being created?
+
+ --------- what is the third-party (protobuf, for example) version of this third-party library?
+
+ --------- )
+i wonder if this is normal? and any idea what might have caused this?
+
+ --------- @ngimel @mruberry do you know what could cause this problem? or is there any way to synchronize until the pinned memory is ready?
+
+ --------- 0-1013-aws #17-ubuntu smp fri jun 10 10:43:12 utc 2022 aarch64 aarch64 aarch64 gnu/linux
+what can be the causes of this error?
+
+ --------- 3
+what shoud i do? can anyone help me?
+
+ --------- question:
+@ezyang @colesbury what if the data pointer comes from a caching allocator of a different process? it will pass the cast check, but the caching allocator on this process still cannot find it, right?
+
+ --------- onecyclelr uses the max_lr parameter to pass in the max learning rate for each param group, couldn't these values be inferred from the learning rates of each param group from the optimizer, as it is done with cosineannealinglr? what is the use case for requiring this "redundant" parameter?
 
  --------- what is the specific function of this interface?
 
- --------- what can we do to solve this problem?
+ --------- i was wondering what causes this problem and is there any solution?
 
- --------- what data type is the gradient transfer between the processes when use amp, float32 or float16 or same data type as the parameter tensor?
+ --------- does the architecture or the source code cause this?
+configuration
 
- --------- logical layouts in other contexts
+machine
+
+compile message
+compile message
+compile command
+
+problem
+i run the following benchmark
+
+i get the result
+
+and i found a very low cpu utilization? what is the reason?
+
+ --------- what about raising an exception instead of just aborting ?
+
+ --------- could you tell me what's wrong?
+
+ --------- i'm wondering what the best next steps are? subclass _shardingiterdatapipe?
+
+ --------- what is the status for
+
+torchvision? related prs @fmassa
+torchtext? related prs @zhangguanheng66
+torchaudio?
+
+ --------- # ! = code lines of interest
+question:
+what changes to lstmclassifier do i need to make, in order to have this lstm work bidirectionally?
+
+ --------- but running the following script gives me error:  'dict' object has no attribute 'transpose'
+
+can you please help me to figure out what went wrong?
+
+ --------- can somebody tell what & how to do?
+
+ --------- transforms
+what’s missing ?
+
+ --------- :
+
+what do you expect the example value of y to be?
+
+ --------- we call a node with "impl_graph" set an "aggregate node"
+how do we decide what graph we're tracing into?
+
+ --------- now, my question is: what should the path name be?
+
+ --------- pytorch devs, would you be interested in having this functionality added to the code base?  what constraints would it need to satisfy?
+
+ --------- for each dimension in a shape, these are
+
+is it a width dimension (which will be scaled up or down)?
+what is the "base value" of this dimension?
+
+ --------- 📚 documentation
+
+what arguments does it take?
+
+ --------- is there a way for us to figure out what nans similar to the example below are caused by? is it underflow or overflow or some other useful information?
+
+ --------- o
+does anyone have an idea what could be causing this and what i could do to resolve?
+
+ --------- does anyone know at what stage in the development of this feature?
+
+ --------- any idea what's going on?
+
+ --------- onnx", verbose=true, input_names=input_names,
+output_names=output_names)
+what should i do if my model has multiple inputs and multiple outputs? how can i export a model?
+
+ --------- ps what's the difference between wrapper subclass and fake tensor?
+
+ --------- what should i do to approach the conv2d?
+
+ --------- what should i do? could anyone help me?
+
+ --------- my question is:
+why there are floats in the quantized model?
+why when i try to quantize embeddings manually with quantstub(embedding), it returns exactly the same float embedding?
+
+what should i do to quantize my model?
+
+ --------- optimize(model_str, passes)
+indexerror: _map_base::at
+in fact, caffe2 runs twice as fast as libtorch, so i've been using caffe2 as a deployment, what are some good suggestions for using libtorch?
+
+ --------- any ideas what is the issue?
+
+ --------- what is wrong there? has anything changed?
+
+ --------- what's the reason maybe?  what's the version of onnx is supported by pytorch?
+
+ --------- what is that?
+
+ --------- _cuda_init()
+can anybody tell me what is the issues??
+
+ --------- i am unsure if other container types need similar guards, but i suppose in this case that we need to duck-type inputs by their dtype and tensor metas)
+we can use a similar method to disablecontext but with extra guard metadata? what's the advantage of this compared with just installing an attribute on the function itself?
+
+ --------- is it that binarize should be of some other type? what can i do to fix this?
+
+ --------- hi, @ezyang @apaszke @neoinmtv @soumith what is the mac machine requirements to install caffe2?
+
+ --------- cpp
 
 
-could it include a visual explanation of what dimensions are aggregated over?
+         line 133
+      in
+      0a07488
 
- --------- so what is it doing when batch size is 1?
+
+
+
+
+
+ scale /= counts[k]; 
+
+
+
+
+
+also, what is the reason for initializing the counter to zeros, then incrementing by 1 here, rather than initializing to 1?
+
+ --------- 📚 what we can do to substitute the assert no grad function?
+
+ --------- 75% of the time , what does this kernel do and why does it cost so long?
+how to debug and accelerate convtranspose1d?
+
+ --------- for example, what if we want to run _unshard_params(recurse=false)? then, the auto-wrapped fully_shard needs to enforce that the 0th handle is the root's handle -- but what if the root had no parameters and hence no handle?
+
+ --------- could you please tell me, what is wrong? what is the cause of this error?
+
+ --------- lowering: [warning] using triton random, expect difference from eager
+-> what is actionable for these? specifically, for spda, what is the recommendation?
+
+ --------- h that say
+
+what is the plan to decouple these things to not use tsnode (and its related functions)?
+
+ --------- what is the best approach to create those vectors?
+
+ --------- what do you think ?
+
+ --------- the ddp is like
+
+and the fsdp is like
+
+what is possible reason?
+
+ --------- so what's the pytorch's requirements for nvidia driver version, cuda version,and system version?
+
+ --------- what is this test testing? if it okay to skip this test?
+
+ --------- could we change "aaa" to "important" so that not everyone needs to dig through the source code to understand what this test is?
+
+ --------- version"
+what should i do?
+
+ --------- am i using it wrong? what else do i need to do?
+
+ --------- what's going on?
+
+ --------- root cause
+what was the root cause of this issue?
 
  --------- the following is the definition of the model (i know there are many better ways of achieving what i'm trying to do here; this is just a contrived example to demonstrate the problem):
 
@@ -103,285 +336,17 @@ and then the model is parallelized with:
 
 could someone indicate what i'm missing here?
 
- --------- @apaszke @soumith  any pointers about what i'd need to change or thoughts in general?
-
- --------- trackback information is attached below:
-
-my implementation of batch renormalization is shown below:
-
-what should i do to solve this problem?
-
- --------- is there anyone who can tell me about what i'm missing?
-
- --------- cuh:317
-any idea what's wrong?
-
- --------- what should we do?
-
- --------- any tips what to do?
-
- --------- i would like to help on the implementation if needed, could anyone give me a brief guideline that what have be done and what still need to be do?
-
- --------- root cause
-what was the root cause of this issue?
-
- --------- generates the following output
-tensor([140263153322976, 140263153322976,          0,          0, 1095518586898], device='cuda:0')
-which is not deterministic, as if i run the code block again i might get something like this
-tensor([13002568209, 4457420148379391, 3435973871943, 4479410455445504, 4294998028], device='cuda:0')
-what is going wrong?
-
- --------- what is this invariant?
-
- --------- what are your views on it?
-
- --------- i couldn't understand what went wrong i tried installing multiple times (each time in a new conda env), could someone help me figure out the issue?
-
- --------- h
-static_assert(std::is_pod<argumentinfo>::value, "argumentinfo is to be a pod struct");
-so we wonder is check pod necessary ？ what is the significance of doing this?
-
- --------- i got all kinds of errors like:
-
-and i have tried in 3 machines,and they all give similar cmake errors,what did i wrong?
-
- --------- i want to know what causes it?
-
- --------- 🚀 the feature, motivation and pitch
-what should the result of
-
-be?
-
- --------- i wonder that what is this trivial case for? consider that if the size of a tensor is 0 on dim=-1, it will be an empty tensor and will never be a matrix?
-
- --------- what am i missing here?
-
- --------- the error shows:
-
-what can i do to make the concat op support quant?
-
- --------- why is the deprecated launch utility doc hasn't been updated with what is supposed to be used now? this is the main dist doc - seriously?
-
- --------- 10/30 7:27a incident began
-10/30 8:30a detected by 
-10/30 9:00 pm root caused as…
-10/30 9:10 pm mitigated by…
-10/31 10: am closed by…
-
-
-user impact
-how does this affect users of pytorch ci?
-root cause
-what was the root cause of this issue?
-mitigation
-how did we mitigate the issue?
-prevention/followups
-how do we prevent issues like this in the future?
-
- --------- after compiling pytorch on tx2 and run the model, i meet the following error:
-
-the model is running on cpu only
-what is the problem?
-
- --------- hi,dear
-just want to install the great pytorch, but when i use pip ,ups the error
-
-ubuntu1804,
-python37
-so what should i do ?
-
- --------- cpp:733
-i somewhat understand where this might come from, but i expected when the underlying arrays and tensors are the same dimensions, that broadcasting behavior would be the same? can someone help me understand what's going on here?
-
- --------- the above code throws an exception:
-
-what is the difference between them?
-
- --------- ❓ questions and help
-hi, i want to ask about the difference between the following two pieces of code:
-
-i passed vgg to model in  modeloutputs()
-and
-
-i'm just curious about what  the difference between the two pieces of code above for backward and forward is? when the loss backward, will the gradients be different?
-could someone help me?
-
- --------- what should i do?
-
- --------- what can i do?
-
- --------- here is how weight drop class looks like:
-
-what model's init looks like:
-
-what should i do to update my code?
-
- --------- any clue on what could be the problem?
-
- --------- in my project, if i do
-
-it all links and works great!
-but, if i do the following manually,
-
-it fails when i try to load the library with:
-
-what is find_package(torch) adding that i am missing?
-
- --------- h that say
-
-what is the plan to decouple these things to not use tsnode (and its related functions)?
-
- --------- what is the problem?
-
- --------- now what is next?
-
- --------- what would we like to do?
-
- --------- is this change intentional? what is the recommended way to run mypy only on locally-changed files?
-
- --------- can someone help me or tell what's the issue?
-
- --------- i compiled and installed pytorch from source on win10,  then compared the speed of resnet50 running on caffe and libtorch, both the speed of loading model and evaluating data, caffe is 2~3 times faster than libtorch!
-why libtorch is so  slow? what can i do to accelerate libtorch's model loading and predicting speed?
-
- --------- you might ask "what should we do with the existing serialization logic in the serialize function, and would the change break backward compatibility of the user's existing serialized optimizers?
-
- --------- ], device='cuda:0')
-
-
-
-there is no problem with the above operation，but there is a problem when running the following demo, what's going on?
-
- --------- typeerror: only integer tensors of a single element can be converted to an index
-
-what index is referred to?
-
- --------- what is the exact meaning of this? does it include operations like initial socket connection establishment?
-
- --------- pytorch devs, would you be interested in having this functionality added to the code base?  what constraints would it need to satisfy?
-
- --------- 10/30 7:27a incident began
-10/30 8:30a detected by 
-10/30 9:00 pm root caused as…
-10/30 9:10 pm mitigated by…
-10/31 10: am closed by…
-
-
-user impact
-how does this affect users of pytorch ci?
-root cause
-what was the root cause of this issue?
-mitigation
-how did we mitigate the issue?
-prevention/followups
-how do we prevent issues like this in the future?
-
- --------- is there any log file can help troubleshoot what's the root cause behind this?
-
- --------- floattensor"):
-
-what to do for workaround?
-
- --------- shape[0]/batch_size)
-train_dataset = tensordataset(x_train,y_train)
-sampler= mysamplerforbalancedbatches(train_dataset, n_classes, batch_size,steps)
-train_loader = dataloader(train_dataset, shuffle=false, sampler=sampler)
-"
-i am not sure it is working as i expect, when i try to check what the function dataloader gives me back by using:
-"for sample in train_loader:
-print(sample[0])
-break"
-i have this error:
-<indexerror: tensors used as indices must be long, byte or bool tensors>
-does anyone know how to solve this problem?
-
- --------- here is our current proposal, on which we welcome any kind of feedback!
-
-
-the main point is: when do we mark such futures as complete? what are the requirements for that to happen?
-
- --------- i'm adding an attention mechanism on yolov5 to train my model, i  added c3cbam ,& im getting this issue, what should i need to do to solve this issue?
-
- --------- what problems is it trying to solve?
-
- --------- py
-but when traininf fow a while ,raise errors: what did it  means?
-
- --------- i got
-
-then i try to make a cast
-
-it returns most of the time
-
-the peculiar thing is for only once,  it didnt throw any exception but gave me a warning
-
-so, i wonder what's wrong here and how can i fix it?
-
- --------- 10/30 7:27a incident began
-10/30 8:30a detected by 
-10/30 9:00 pm root caused as…
-10/30 9:10 pm mitigated by…
-10/31 10: am closed by…
-
-
-user impact
-how does this affect users of pytorch ci?
-root cause
-what was the root cause of this issue?
-mitigation
-how did we mitigate the issue?
-prevention/followups
-how do we prevent issues like this in the future?
-
- --------- html
-
-what am i doing wrong?
-or does pytorch have too much overhead for simple scenarios, and only really shines for larger or gpu accelerated cases?
-
- --------- what happens when requires_grad is false?
-
- --------- what causes this large difference?
-
  --------- please tell me what the problem is, is it because pytorch does not support multi process? how can i solve this problem?
 
- --------- 3960]]]],
-why output_padding not padding 0 to out?what number is pad?
+ --------- what's the reason for this discrepancy and what's the correct output? can we align the behavior of two backends?
 
- --------- what's the difference between the old and new clas?
+ --------- are any developers familiar with what this indicates?
 
- --------- any suggestions/ideas on what i am doing wrong or if there is a simpler way to achieve this without playing with hooks?
+ --------- cuda runtime_version is not detected
+what could be the source of this problem?
 
- --------- any idea what might cause this ?
+ --------- to me this smells a lot like a bug, but if this is intended behaviour, could you please explain why it is happing and what the motivation for it is?
 
- --------- so, what should i do to run successfully in xp 32bit?
+ --------- what are point-wise?
 
- --------- what is way to get the correct version using the conda command ?
-
- --------- from what i've read i assume i need to add some library links to the compiler?
-
- --------- i know pytorch support a variety of python version, but i wonder what version is suggested?
-
- --------- hello sir,
-in my project i'm trying to use 3d convloutional networks
-on some video frames, but when i perform a forward propagation, the program
-shows this error:
-
-i don't know exactly what is the origin of this error,
-and what it means ?
-
- --------- py to load onnx model, i get this error
-"exception: don't know how to translate op max_pool2d"
-
-
-what should i do?
-
- --------- for meta tensors
-what happens when one accesses the data_ptr for a meta tensor? meta tensors currently don't work with linalg_cholesky, but is the data_ptr read going to be problematic?
-
- --------- when pytorch does batch normalization, what batch size it use, 32 or 32 x 8?
-
- --------- it's a bit annoying, but i created a mini partitioner that partitions the user graph in two, and calls aot autograd on each subgraph (similar to what the ddp optimizer does)
-
-running the above gives:
-
-why?
+ --------- what can i do?
